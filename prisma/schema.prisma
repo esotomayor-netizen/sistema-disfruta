@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Parcela {
+  id           Int          @id @default(autoincrement())
+  nombre       String
+  superficie   Float
+  cultivo      String
+  ubicacion    String
+  activa       Boolean      @default(true)
+  labores      Labor[]
+  aplicaciones Aplicacion[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Usuario {
+  id           Int          @id @default(autoincrement())
+  nombre       String
+  apellido     String
+  email        String       @unique
+  rol          String
+  telefono     String?
+  activo       Boolean      @default(true)
+  labores      Labor[]      @relation("Responsable")
+  aplicaciones Aplicacion[] @relation("Tecnico")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Labor {
+  id            Int       @id @default(autoincrement())
+  tipo          String
+  descripcion   String
+  fecha         DateTime
+  fechaFin      DateTime?
+  estado        String    @default("PENDIENTE")
+  observaciones String?
+  parcela       Parcela   @relation(fields: [parcelaId], references: [id])
+  parcelaId     Int
+  responsable   Usuario   @relation("Responsable", fields: [responsableId], references: [id])
+  responsableId Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Aplicacion {
+  id            Int       @id @default(autoincrement())
+  producto      String
+  tipoProducto  String
+  dosis         Float
+  unidad        String
+  fecha         DateTime
+  estado        String    @default("PENDIENTE")
+  observaciones String?
+  parcela       Parcela   @relation(fields: [parcelaId], references: [id])
+  parcelaId     Int
+  tecnico       Usuario   @relation("Tecnico", fields: [tecnicoId], references: [id])
+  tecnicoId     Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
