@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Header from '@/components/Header'
 import Link from 'next/link'
+import ParcelaSelect from '@/components/ParcelaSelect'
 import {
   estadoLaborColor,
   formatDate,
@@ -65,19 +66,7 @@ export default async function LaborePage({ searchParams }: { searchParams: Searc
           </a>
         ))}
 
-        {parcelas.length > 0 && (
-          <select
-            className="input ml-auto w-auto text-sm"
-            value={parcelaId ?? ''}
-            onChange={(e) => {
-              const v = e.target.value
-              window.location.href = v ? `/labores?${estado ? `estado=${estado}&` : ''}parcelaId=${v}` : `/labores${estado ? `?estado=${estado}` : ''}`
-            }}
-          >
-            <option value="">Todas las parcelas</option>
-            {parcelas.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-          </select>
-        )}
+        <ParcelaSelect parcelas={parcelas} estado={estado} parcelaId={parcelaId} />
       </div>
 
       <div className="card p-0 overflow-hidden">
