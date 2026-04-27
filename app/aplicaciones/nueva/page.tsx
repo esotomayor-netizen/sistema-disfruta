@@ -8,12 +8,36 @@ import { TIPOS_PRODUCTO, ESTADOS_APLICACION, UNIDADES } from '@/lib/constants'
 
 interface Predio { id: number; nombre: string; cultivo: string; activa: boolean }
 interface Usuario { id: number; nombre: string; apellido: string; rol: string; activo: boolean }
+interface ProgramaItem {
+  id: number
+  producto: string
+  tratamientoObjetivo: string | null
+  dosisHa: string | null
+  ingredienteActivo: string | null
+}
+
+function parseDosisHa(dosisHa: string | null): { dosis: string; unidad: string } {
+  if (!dosisHa) return { dosis: '', unidad: 'L/ha' }
+  const match = dosisHa.match(/^([\d.]+)\s*(.+)$/)
+  if (!match) return { dosis: '', unidad: 'L/ha' }
+  const unitMap: Record<string, string> = { g: 'g/ha', cc: 'mL/ha', ml: 'mL/ha', kg: 'kg/ha', l: 'L/ha', lt: 'L/ha' }
+  return { dosis: match[1], unidad: unitMap[match[2].toLowerCase().trim()] ?? 'L/ha' }
+}
+
+function inferTipo(item: ProgramaItem): string {
+  const t = (item.tratamientoObjetivo ?? '').toLowerCase()
+  if (['pulgon', 'mosca', 'trips', 'drosophila', 'tortricides', 'cochinillas'].some((k) => t.includes(k))) return 'INSECTICIDA'
+  if (['monilia', 'oidio', 'botrytis', 'pudricion', 'chancro', 'cancro', 'tiro de municion', 'bacteriano', 'pseudomonas', 'limpieza'].some((k) => t.includes(k))) return 'FUNGICIDA'
+  return 'OTRO'
+}
 
 export default function NuevaAplicacionPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [predios, setPredios] = useState<Predio[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [programa, setPrograma] = useState<ProgramaItem[]>([])
+  const [productoPersonalizado, setProductoPersonalizado] = useState(false)
   const [form, setForm] = useState({
     producto: '',
     tipoProducto: 'FUNGICIDA',
@@ -30,15 +54,41 @@ export default function NuevaAplicacionPage() {
     Promise.all([
       fetch('/api/predios').then((r) => r.json()),
       fetch('/api/equipo').then((r) => r.json()),
-    ]).then(([p, u]) => {
+      fetch('/api/programa').then((r) => r.json()),
+    ]).then(([p, u, prog]) => {
       const pa = (p as Predio[]).filter((x) => x.activa)
       const ua = (u as Usuario[]).filter((x) => x.activo)
       setPredios(pa)
       setUsuarios(ua)
+      setPrograma(prog as ProgramaItem[])
       if (pa.length) setForm((f) => ({ ...f, predioId: String(pa[0].id) }))
       if (ua.length) setForm((f) => ({ ...f, tecnicoId: String(ua[0].id) }))
     })
   }, [])
+
+  // Productos únicos del programa (sin duplicados por nombre)
+  const productosUnicos = programa.reduce<ProgramaItem[]>((acc, p) => {
+    if (!acc.find((x) => x.producto === p.producto)) acc.push(p)
+    return acc
+  }, [])
+
+  const handleProductoSelect = (productoNombre: string) => {
+    if (productoNombre === '__otro__') {
+      setProductoPersonalizado(true)
+      setForm((f) => ({ ...f, producto: '' }))
+      return
+    }
+    const item = programa.find((p) => p.producto === productoNombre)
+    if (!item) return
+    const { dosis, unidad } = parseDosisHa(item.dosisHa)
+    setForm((f) => ({
+      ...f,
+      producto: item.producto,
+      tipoProducto: inferTipo(item),
+      dosis,
+      unidad,
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,7 +117,40 @@ export default function NuevaAplicacionPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Producto</label>
-              <input className="input" required value={form.producto} onChange={(e) => setForm({ ...form, producto: e.target.value })} placeholder="Ej: Mancozeb 80 WP" />
+              {productoPersonalizado ? (
+                <div className="flex gap-2">
+                  <input
+                    className="input flex-1"
+                    required
+                    value={form.producto}
+                    onChange={(e) => setForm({ ...form, producto: e.target.value })}
+                    placeholder="Nombre del producto"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    className="text-xs text-primary-600 underline whitespace-nowrap"
+                    onClick={() => { setProductoPersonalizado(false); setForm((f) => ({ ...f, producto: '' })) }}
+                  >
+                    Usar programa
+                  </button>
+                </div>
+              ) : (
+                <select
+                  className="input"
+                  required
+                  value={form.producto}
+                  onChange={(e) => handleProductoSelect(e.target.value)}
+                >
+                  <option value="">Seleccionar producto…</option>
+                  {productosUnicos.map((p) => (
+                    <option key={p.id} value={p.producto}>
+                      {p.producto}{p.ingredienteActivo ? ` — ${p.ingredienteActivo}` : ''}
+                    </option>
+                  ))}
+                  <option value="__otro__">Otro (ingresar manualmente)…</option>
+                </select>
+              )}
             </div>
             <div>
               <label className="label">Tipo de producto</label>
