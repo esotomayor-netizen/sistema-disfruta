@@ -10,7 +10,7 @@ export default async function ProgramaPage() {
     orderBy: { id: 'asc' },
   })
 
-  const temporadas = [...new Set(programa.map((p) => p.temporada))]
+  const temporadas = Array.from(new Set(programa.map((p) => p.temporada)))
 
   return (
     <div>
