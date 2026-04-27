@@ -5,23 +5,19 @@ const prisma = new PrismaClient()
 async function main() {
   await prisma.aplicacion.deleteMany()
   await prisma.labor.deleteMany()
+  await prisma.predio.deleteMany()
   await prisma.usuario.deleteMany()
-  await prisma.parcela.deleteMany()
+  await prisma.empresa.deleteMany()
 
-  const [p1, p2, p3, p4] = await Promise.all([
-    prisma.parcela.create({
-      data: { nombre: 'Parcela Norte', superficie: 12.5, cultivo: 'Vid', ubicacion: 'Sector Norte - Fundo Disfruta', activa: true },
-    }),
-    prisma.parcela.create({
-      data: { nombre: 'Parcela Sur', superficie: 8.0, cultivo: 'Manzano', ubicacion: 'Sector Sur - Fundo Disfruta', activa: true },
-    }),
-    prisma.parcela.create({
-      data: { nombre: 'Parcela Este', superficie: 15.3, cultivo: 'Pera', ubicacion: 'Sector Este - Fundo Disfruta', activa: true },
-    }),
-    prisma.parcela.create({
-      data: { nombre: 'Parcela Oeste', superficie: 6.0, cultivo: 'Cerezo', ubicacion: 'Sector Oeste - Fundo Disfruta', activa: false },
-    }),
-  ])
+  const empresa = await prisma.empresa.create({
+    data: {
+      razonSocial: 'Agrícola Disfruta SpA',
+      rut: '76.123.456-7',
+      contactoNombre: 'Juan Pérez',
+      contactoEmail: 'j.perez@disfruta.cl',
+      contactoTelefono: '+56912345678',
+    },
+  })
 
   const [u1, u2, u3, u4] = await Promise.all([
     prisma.usuario.create({
@@ -38,6 +34,21 @@ async function main() {
     }),
   ])
 
+  const [p1, p2, p3, p4] = await Promise.all([
+    prisma.predio.create({
+      data: { nombre: 'Fundo Norte', csg: 'CSG-001', superficie: 12.5, cultivo: 'Cerezo', ubicacion: 'Sector Norte', activa: true, empresaId: empresa.id, encargadoId: u1.id },
+    }),
+    prisma.predio.create({
+      data: { nombre: 'Fundo Sur', csg: 'CSG-002', superficie: 8.0, cultivo: 'Manzano', ubicacion: 'Sector Sur', activa: true, empresaId: empresa.id, encargadoId: u2.id },
+    }),
+    prisma.predio.create({
+      data: { nombre: 'Fundo Este', csg: 'CSG-003', superficie: 15.3, cultivo: 'Cerezo', ubicacion: 'Sector Este', activa: true, empresaId: empresa.id, encargadoId: u3.id },
+    }),
+    prisma.predio.create({
+      data: { nombre: 'Fundo Oeste', csg: 'CSG-004', superficie: 6.0, cultivo: 'Pera', ubicacion: 'Sector Oeste', activa: false, empresaId: empresa.id },
+    }),
+  ])
+
   const now = new Date()
   const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
   const twoDaysAgo = new Date(now); twoDaysAgo.setDate(now.getDate() - 2)
@@ -46,108 +57,28 @@ async function main() {
 
   await Promise.all([
     prisma.labor.create({
-      data: {
-        tipo: 'PODA',
-        descripcion: 'Poda de formación temporada 2026',
-        fecha: twoDaysAgo,
-        estado: 'EN_PROGRESO',
-        parcelaId: p1.id,
-        responsableId: u2.id,
-        observaciones: 'Avance 60% completado',
-      },
+      data: { tipo: 'PODA', descripcion: 'Poda de formación temporada 2026', fecha: twoDaysAgo, estado: 'EN_PROGRESO', predioId: p1.id, responsableId: u2.id, observaciones: 'Avance 60% completado' },
     }),
     prisma.labor.create({
-      data: {
-        tipo: 'RIEGO',
-        descripcion: 'Riego por goteo sector manzanos',
-        fecha: yesterday,
-        fechaFin: yesterday,
-        estado: 'COMPLETADA',
-        parcelaId: p2.id,
-        responsableId: u3.id,
-      },
+      data: { tipo: 'RIEGO', descripcion: 'Riego por goteo sector manzanos', fecha: yesterday, fechaFin: yesterday, estado: 'COMPLETADA', predioId: p2.id, responsableId: u3.id },
     }),
     prisma.labor.create({
-      data: {
-        tipo: 'CONTROL_PLAGAS',
-        descripcion: 'Monitoreo de plagas y enfermedades',
-        fecha: now,
-        estado: 'PENDIENTE',
-        parcelaId: p3.id,
-        responsableId: u4.id,
-      },
+      data: { tipo: 'CONTROL_PLAGAS', descripcion: 'Monitoreo de plagas y enfermedades', fecha: now, estado: 'PENDIENTE', predioId: p3.id, responsableId: u4.id },
     }),
     prisma.labor.create({
-      data: {
-        tipo: 'FERTILIZACION',
-        descripcion: 'Fertilización foliar post-cuaje',
-        fecha: inThreeDays,
-        estado: 'PENDIENTE',
-        parcelaId: p1.id,
-        responsableId: u2.id,
-      },
-    }),
-    prisma.labor.create({
-      data: {
-        tipo: 'COSECHA',
-        descripcion: 'Cosecha manual de manzanas Fuji',
-        fecha: nextWeek,
-        estado: 'PENDIENTE',
-        parcelaId: p2.id,
-        responsableId: u1.id,
-      },
+      data: { tipo: 'FERTILIZACION', descripcion: 'Fertilización foliar post-cuaje', fecha: inThreeDays, estado: 'PENDIENTE', predioId: p1.id, responsableId: u2.id },
     }),
   ])
 
   await Promise.all([
     prisma.aplicacion.create({
-      data: {
-        producto: 'Mancozeb 80 WP',
-        tipoProducto: 'FUNGICIDA',
-        dosis: 2.5,
-        unidad: 'kg/ha',
-        fecha: twoDaysAgo,
-        estado: 'COMPLETADA',
-        parcelaId: p1.id,
-        tecnicoId: u3.id,
-        observaciones: 'Aplicado con pulverizadora de 800L',
-      },
+      data: { producto: 'Mancozeb 80 WP', tipoProducto: 'FUNGICIDA', dosis: 2.5, unidad: 'kg/ha', fecha: twoDaysAgo, estado: 'COMPLETADA', predioId: p1.id, tecnicoId: u3.id, observaciones: 'Aplicado con pulverizadora de 800L' },
     }),
     prisma.aplicacion.create({
-      data: {
-        producto: 'Chlorpyrifos 48 EC',
-        tipoProducto: 'INSECTICIDA',
-        dosis: 1.0,
-        unidad: 'L/ha',
-        fecha: yesterday,
-        estado: 'COMPLETADA',
-        parcelaId: p2.id,
-        tecnicoId: u3.id,
-      },
+      data: { producto: 'Chlorpyrifos 48 EC', tipoProducto: 'INSECTICIDA', dosis: 1.0, unidad: 'L/ha', fecha: yesterday, estado: 'COMPLETADA', predioId: p2.id, tecnicoId: u3.id },
     }),
     prisma.aplicacion.create({
-      data: {
-        producto: 'Nitrato de Potasio',
-        tipoProducto: 'FERTILIZANTE',
-        dosis: 5.0,
-        unidad: 'kg/ha',
-        fecha: inThreeDays,
-        estado: 'PENDIENTE',
-        parcelaId: p3.id,
-        tecnicoId: u2.id,
-      },
-    }),
-    prisma.aplicacion.create({
-      data: {
-        producto: 'Glifosato 48%',
-        tipoProducto: 'HERBICIDA',
-        dosis: 3.0,
-        unidad: 'L/ha',
-        fecha: nextWeek,
-        estado: 'PENDIENTE',
-        parcelaId: p1.id,
-        tecnicoId: u4.id,
-      },
+      data: { producto: 'Nitrato de Potasio', tipoProducto: 'FERTILIZANTE', dosis: 5.0, unidad: 'kg/ha', fecha: inThreeDays, estado: 'PENDIENTE', predioId: p3.id, tecnicoId: u2.id },
     }),
   ])
 
