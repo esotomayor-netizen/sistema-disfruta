@@ -13,10 +13,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       fecha: new Date(data.fecha),
       estado: data.estado,
       observaciones: data.observaciones || null,
-      parcelaId: parseInt(data.parcelaId),
+      predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
     },
-    include: { parcela: true, tecnico: true },
+    include: { predio: true, tecnico: true },
   })
   return NextResponse.json(aplicacion)
 }

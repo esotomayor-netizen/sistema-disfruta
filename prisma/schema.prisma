@@ -7,13 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Parcela {
+model Empresa {
+  id               Int      @id @default(autoincrement())
+  razonSocial      String
+  rut              String   @unique
+  contactoNombre   String
+  contactoEmail    String?
+  contactoTelefono String?
+  predios          Predio[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Predio {
   id           Int          @id @default(autoincrement())
   nombre       String
+  csg          String       @unique
   superficie   Float
   cultivo      String
   ubicacion    String
   activa       Boolean      @default(true)
+  empresa      Empresa      @relation(fields: [empresaId], references: [id])
+  empresaId    Int
+  encargado    Usuario?     @relation("Encargado", fields: [encargadoId], references: [id])
+  encargadoId  Int?
   labores      Labor[]
   aplicaciones Aplicacion[]
   createdAt    DateTime     @default(now())
@@ -28,6 +45,7 @@ model Usuario {
   rol          String
   telefono     String?
   activo       Boolean      @default(true)
+  predios      Predio[]     @relation("Encargado")
   labores      Labor[]      @relation("Responsable")
   aplicaciones Aplicacion[] @relation("Tecnico")
   createdAt    DateTime     @default(now())
@@ -42,8 +60,8 @@ model Labor {
   fechaFin      DateTime?
   estado        String    @default("PENDIENTE")
   observaciones String?
-  parcela       Parcela   @relation(fields: [parcelaId], references: [id])
-  parcelaId     Int
+  predio        Predio    @relation(fields: [predioId], references: [id])
+  predioId      Int
   responsable   Usuario   @relation("Responsable", fields: [responsableId], references: [id])
   responsableId Int
   createdAt     DateTime  @default(now())
@@ -59,8 +77,8 @@ model Aplicacion {
   fecha         DateTime
   estado        String    @default("PENDIENTE")
   observaciones String?
-  parcela       Parcela   @relation(fields: [parcelaId], references: [id])
-  parcelaId     Int
+  predio        Predio    @relation(fields: [predioId], references: [id])
+  predioId      Int
   tecnico       Usuario   @relation("Tecnico", fields: [tecnicoId], references: [id])
   tecnicoId     Int
   createdAt     DateTime  @default(now())

@@ -5,16 +5,16 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const estado = searchParams.get('estado')
   const tipoProducto = searchParams.get('tipoProducto')
-  const parcelaId = searchParams.get('parcelaId')
+  const predioId = searchParams.get('predioId')
 
   const aplicaciones = await prisma.aplicacion.findMany({
     where: {
       ...(estado ? { estado } : {}),
       ...(tipoProducto ? { tipoProducto } : {}),
-      ...(parcelaId ? { parcelaId: parseInt(parcelaId) } : {}),
+      ...(predioId ? { predioId: parseInt(predioId) } : {}),
     },
     orderBy: { fecha: 'desc' },
-    include: { parcela: true, tecnico: true },
+    include: { predio: true, tecnico: true },
   })
   return NextResponse.json(aplicaciones)
 }
@@ -30,10 +30,10 @@ export async function POST(req: Request) {
       fecha: new Date(data.fecha),
       estado: data.estado || 'PENDIENTE',
       observaciones: data.observaciones || null,
-      parcelaId: parseInt(data.parcelaId),
+      predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
     },
-    include: { parcela: true, tecnico: true },
+    include: { predio: true, tecnico: true },
   })
   return NextResponse.json(aplicacion, { status: 201 })
 }

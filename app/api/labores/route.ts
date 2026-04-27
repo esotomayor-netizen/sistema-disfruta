@@ -4,15 +4,15 @@ import { prisma } from '@/lib/prisma'
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const estado = searchParams.get('estado')
-  const parcelaId = searchParams.get('parcelaId')
+  const predioId = searchParams.get('predioId')
 
   const labores = await prisma.labor.findMany({
     where: {
       ...(estado ? { estado } : {}),
-      ...(parcelaId ? { parcelaId: parseInt(parcelaId) } : {}),
+      ...(predioId ? { predioId: parseInt(predioId) } : {}),
     },
     orderBy: { fecha: 'desc' },
-    include: { parcela: true, responsable: true },
+    include: { predio: true, responsable: true },
   })
   return NextResponse.json(labores)
 }
@@ -27,10 +27,10 @@ export async function POST(req: Request) {
       fechaFin: data.fechaFin ? new Date(data.fechaFin) : null,
       estado: data.estado || 'PENDIENTE',
       observaciones: data.observaciones || null,
-      parcelaId: parseInt(data.parcelaId),
+      predioId: parseInt(data.predioId),
       responsableId: parseInt(data.responsableId),
     },
-    include: { parcela: true, responsable: true },
+    include: { predio: true, responsable: true },
   })
   return NextResponse.json(labor, { status: 201 })
 }
