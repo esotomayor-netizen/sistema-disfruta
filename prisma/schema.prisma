@@ -68,6 +68,25 @@ model Labor {
   updatedAt     DateTime  @updatedAt
 }
 
+model ProgramaFitosanitario {
+  id                    Int      @id @default(autoincrement())
+  temporada             String
+  cultivo               String
+  estadoFenologico      String?
+  caracterAplicacion    String
+  tratamientoObjetivo   String?
+  fechaEstimada         String
+  producto              String
+  ingredienteActivo     String?
+  concentracion         String?
+  mojamiento            String?
+  dosisHa               String?
+  observaciones         String?
+  productosAlternativos String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
 model Aplicacion {
   id            Int       @id @default(autoincrement())
   producto      String
