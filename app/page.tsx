@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   const [
-    parcelasActivas,
+    prediosActivos,
     totalTecnicos,
     laboresActivas,
     aplicacionesMes,
@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     ultimasAplicaciones,
     laborPorEstado,
   ] = await Promise.all([
-    prisma.parcela.count({ where: { activa: true } }),
+    prisma.predio.count({ where: { activa: true } }),
     prisma.usuario.count({ where: { activo: true } }),
     prisma.labor.count({ where: { estado: { in: ['PENDIENTE', 'EN_PROGRESO'] } } }),
     prisma.aplicacion.count({
@@ -35,12 +35,12 @@ export default async function DashboardPage() {
     prisma.labor.findMany({
       take: 5,
       orderBy: { createdAt: 'desc' },
-      include: { parcela: true, responsable: true },
+      include: { predio: true, responsable: true },
     }),
     prisma.aplicacion.findMany({
       take: 5,
       orderBy: { createdAt: 'desc' },
-      include: { parcela: true, tecnico: true },
+      include: { predio: true, tecnico: true },
     }),
     prisma.labor.groupBy({ by: ['estado'], _count: { estado: true } }),
   ])
@@ -56,8 +56,8 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <StatCard
-          title="Parcelas Activas"
-          value={parcelasActivas}
+          title="Predios Activos"
+          value={prediosActivos}
           subtitle="en producción"
           color="green"
           icon={
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{labor.descripcion}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {labelFromValue(LABOR_TIPOS, labor.tipo)} · {labor.parcela.nombre} · {labor.responsable.nombre} {labor.responsable.apellido}
+                    {labelFromValue(LABOR_TIPOS, labor.tipo)} · {labor.predio.nombre} · {labor.responsable.nombre} {labor.responsable.apellido}
                   </p>
                 </div>
                 <div className="ml-3 flex flex-col items-end gap-1">
@@ -162,7 +162,7 @@ export default async function DashboardPage() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{ap.producto}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {ap.dosis} {ap.unidad} · {ap.parcela.nombre} · {ap.tecnico.nombre} {ap.tecnico.apellido}
+                    {ap.dosis} {ap.unidad} · {ap.predio.nombre} · {ap.tecnico.nombre} {ap.tecnico.apellido}
                   </p>
                 </div>
                 <div className="ml-3 flex flex-col items-end gap-1">

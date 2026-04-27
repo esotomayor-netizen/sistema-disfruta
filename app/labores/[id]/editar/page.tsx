@@ -6,7 +6,7 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { LABOR_TIPOS, ESTADOS_LABOR } from '@/lib/constants'
 
-interface Parcela { id: number; nombre: string; cultivo: string; activa: boolean }
+interface Predio { id: number; nombre: string; cultivo: string; activa: boolean }
 interface Usuario { id: number; nombre: string; apellido: string; rol: string; activo: boolean }
 
 function toDateInput(d: string | null | undefined) {
@@ -18,7 +18,7 @@ export default function EditarLaborPage() {
   const { id } = useParams()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [parcelas, setParcelas] = useState<Parcela[]>([])
+  const [predios, setPredios] = useState<Predio[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [form, setForm] = useState({
     tipo: 'SIEMBRA',
@@ -27,19 +27,19 @@ export default function EditarLaborPage() {
     fechaFin: '',
     estado: 'PENDIENTE',
     observaciones: '',
-    parcelaId: '',
+    predioId: '',
     responsableId: '',
   })
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/parcelas').then((r) => r.json()),
+      fetch('/api/predios').then((r) => r.json()),
       fetch('/api/equipo').then((r) => r.json()),
       fetch('/api/labores').then((r) => r.json()),
     ]).then(([p, u, labores]) => {
-      setParcelas((p as Parcela[]).filter((x) => x.activa))
+      setPredios((p as Predio[]).filter((x) => x.activa))
       setUsuarios((u as Usuario[]).filter((x) => x.activo))
-      const labor = (labores as { id: number; tipo: string; descripcion: string; fecha: string; fechaFin: string | null; estado: string; observaciones: string | null; parcelaId: number; responsableId: number }[]).find((l) => l.id === parseInt(id as string))
+      const labor = (labores as { id: number; tipo: string; descripcion: string; fecha: string; fechaFin: string | null; estado: string; observaciones: string | null; predioId: number; responsableId: number }[]).find((l) => l.id === parseInt(id as string))
       if (labor) {
         setForm({
           tipo: labor.tipo,
@@ -48,7 +48,7 @@ export default function EditarLaborPage() {
           fechaFin: toDateInput(labor.fechaFin),
           estado: labor.estado,
           observaciones: labor.observaciones ?? '',
-          parcelaId: String(labor.parcelaId),
+          predioId: String(labor.predioId),
           responsableId: String(labor.responsableId),
         })
       }
@@ -105,9 +105,9 @@ export default function EditarLaborPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Parcela</label>
-              <select className="input" required value={form.parcelaId} onChange={(e) => setForm({ ...form, parcelaId: e.target.value })}>
-                {parcelas.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>)}
+              <label className="label">Predio</label>
+              <select className="input" required value={form.predioId} onChange={(e) => setForm({ ...form, predioId: e.target.value })}>
+                {predios.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>)}
               </select>
             </div>
             <div>

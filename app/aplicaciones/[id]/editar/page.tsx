@@ -6,14 +6,14 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { TIPOS_PRODUCTO, ESTADOS_APLICACION, UNIDADES } from '@/lib/constants'
 
-interface Parcela { id: number; nombre: string; cultivo: string; activa: boolean }
+interface Predio { id: number; nombre: string; cultivo: string; activa: boolean }
 interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
 
 export default function EditarAplicacionPage() {
   const { id } = useParams()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [parcelas, setParcelas] = useState<Parcela[]>([])
+  const [predios, setPredios] = useState<Predio[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [form, setForm] = useState({
     producto: '',
@@ -23,19 +23,19 @@ export default function EditarAplicacionPage() {
     fecha: '',
     estado: 'PENDIENTE',
     observaciones: '',
-    parcelaId: '',
+    predioId: '',
     tecnicoId: '',
   })
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/parcelas').then((r) => r.json()),
+      fetch('/api/predios').then((r) => r.json()),
       fetch('/api/equipo').then((r) => r.json()),
       fetch('/api/aplicaciones').then((r) => r.json()),
     ]).then(([p, u, aps]) => {
-      setParcelas((p as Parcela[]).filter((x) => x.activa))
+      setPredios((p as Predio[]).filter((x) => x.activa))
       setUsuarios((u as Usuario[]).filter((x) => x.activo))
-      const ap = (aps as { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; fecha: string; estado: string; observaciones: string | null; parcelaId: number; tecnicoId: number }[]).find((a) => a.id === parseInt(id as string))
+      const ap = (aps as { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; fecha: string; estado: string; observaciones: string | null; predioId: number; tecnicoId: number }[]).find((a) => a.id === parseInt(id as string))
       if (ap) {
         setForm({
           producto: ap.producto,
@@ -45,7 +45,7 @@ export default function EditarAplicacionPage() {
           fecha: new Date(ap.fecha).toISOString().split('T')[0],
           estado: ap.estado,
           observaciones: ap.observaciones ?? '',
-          parcelaId: String(ap.parcelaId),
+          predioId: String(ap.predioId),
           tecnicoId: String(ap.tecnicoId),
         })
       }
@@ -108,9 +108,9 @@ export default function EditarAplicacionPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Parcela</label>
-              <select className="input" required value={form.parcelaId} onChange={(e) => setForm({ ...form, parcelaId: e.target.value })}>
-                {parcelas.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>)}
+              <label className="label">Predio</label>
+              <select className="input" required value={form.predioId} onChange={(e) => setForm({ ...form, predioId: e.target.value })}>
+                {predios.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>)}
               </select>
             </div>
             <div>

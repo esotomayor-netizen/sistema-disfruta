@@ -6,13 +6,13 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { TIPOS_PRODUCTO, ESTADOS_APLICACION, UNIDADES } from '@/lib/constants'
 
-interface Parcela { id: number; nombre: string; cultivo: string; activa: boolean }
+interface Predio { id: number; nombre: string; cultivo: string; activa: boolean }
 interface Usuario { id: number; nombre: string; apellido: string; rol: string; activo: boolean }
 
 export default function NuevaAplicacionPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [parcelas, setParcelas] = useState<Parcela[]>([])
+  const [predios, setPredios] = useState<Predio[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [form, setForm] = useState({
     producto: '',
@@ -22,20 +22,20 @@ export default function NuevaAplicacionPage() {
     fecha: new Date().toISOString().split('T')[0],
     estado: 'PENDIENTE',
     observaciones: '',
-    parcelaId: '',
+    predioId: '',
     tecnicoId: '',
   })
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/parcelas').then((r) => r.json()),
+      fetch('/api/predios').then((r) => r.json()),
       fetch('/api/equipo').then((r) => r.json()),
     ]).then(([p, u]) => {
-      const pa = (p as Parcela[]).filter((x) => x.activa)
+      const pa = (p as Predio[]).filter((x) => x.activa)
       const ua = (u as Usuario[]).filter((x) => x.activo)
-      setParcelas(pa)
+      setPredios(pa)
       setUsuarios(ua)
-      if (pa.length) setForm((f) => ({ ...f, parcelaId: String(pa[0].id) }))
+      if (pa.length) setForm((f) => ({ ...f, predioId: String(pa[0].id) }))
       if (ua.length) setForm((f) => ({ ...f, tecnicoId: String(ua[0].id) }))
     })
   }, [])
@@ -92,10 +92,10 @@ export default function NuevaAplicacionPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Parcela</label>
-              <select className="input" required value={form.parcelaId} onChange={(e) => setForm({ ...form, parcelaId: e.target.value })}>
-                <option value="">Seleccionar parcela…</option>
-                {parcelas.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>)}
+              <label className="label">Predio</label>
+              <select className="input" required value={form.predioId} onChange={(e) => setForm({ ...form, predioId: e.target.value })}>
+                <option value="">Seleccionar predio…</option>
+                {predios.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>)}
               </select>
             </div>
             <div>

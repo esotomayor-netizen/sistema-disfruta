@@ -17,17 +17,14 @@ interface SearchParams { estado?: string; tipoProducto?: string }
 export default async function AplicacionesPage({ searchParams }: { searchParams: SearchParams }) {
   const { estado, tipoProducto } = searchParams
 
-  const [aplicaciones, parcelas] = await Promise.all([
-    prisma.aplicacion.findMany({
-      where: {
-        ...(estado ? { estado } : {}),
-        ...(tipoProducto ? { tipoProducto } : {}),
-      },
-      orderBy: { fecha: 'desc' },
-      include: { parcela: true, tecnico: true },
-    }),
-    prisma.parcela.findMany({ where: { activa: true }, orderBy: { nombre: 'asc' } }),
-  ])
+  const aplicaciones = await prisma.aplicacion.findMany({
+    where: {
+      ...(estado ? { estado } : {}),
+      ...(tipoProducto ? { tipoProducto } : {}),
+    },
+    orderBy: { fecha: 'desc' },
+    include: { predio: true, tecnico: true },
+  })
 
   return (
     <div>
@@ -68,7 +65,7 @@ export default async function AplicacionesPage({ searchParams }: { searchParams:
               <th className="table-th">Producto</th>
               <th className="table-th">Tipo</th>
               <th className="table-th">Dosis</th>
-              <th className="table-th">Parcela</th>
+              <th className="table-th">Predio</th>
               <th className="table-th">Técnico</th>
               <th className="table-th">Fecha</th>
               <th className="table-th">Estado</th>
@@ -98,8 +95,8 @@ export default async function AplicacionesPage({ searchParams }: { searchParams:
                   {ap.dosis} {ap.unidad}
                 </td>
                 <td className="table-td">
-                  <p>{ap.parcela.nombre}</p>
-                  <p className="text-xs text-gray-400">{ap.parcela.cultivo}</p>
+                  <p>{ap.predio.nombre}</p>
+                  <p className="text-xs text-gray-400">{ap.predio.cultivo}</p>
                 </td>
                 <td className="table-td">
                   {ap.tecnico.nombre} {ap.tecnico.apellido}

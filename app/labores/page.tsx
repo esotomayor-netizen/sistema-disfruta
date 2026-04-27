@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Header from '@/components/Header'
 import Link from 'next/link'
-import ParcelaSelect from '@/components/ParcelaSelect'
+import PredioSelect from '@/components/PredioSelect'
 import {
   estadoLaborColor,
   formatDate,
@@ -12,21 +12,21 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-interface SearchParams { estado?: string; parcelaId?: string }
+interface SearchParams { estado?: string; predioId?: string }
 
 export default async function LaborePage({ searchParams }: { searchParams: SearchParams }) {
-  const { estado, parcelaId } = searchParams
+  const { estado, predioId } = searchParams
 
-  const [labores, parcelas] = await Promise.all([
+  const [labores, predios] = await Promise.all([
     prisma.labor.findMany({
       where: {
         ...(estado ? { estado } : {}),
-        ...(parcelaId ? { parcelaId: parseInt(parcelaId) } : {}),
+        ...(predioId ? { predioId: parseInt(predioId) } : {}),
       },
       orderBy: { fecha: 'desc' },
-      include: { parcela: true, responsable: true },
+      include: { predio: true, responsable: true },
     }),
-    prisma.parcela.findMany({ where: { activa: true }, orderBy: { nombre: 'asc' } }),
+    prisma.predio.findMany({ where: { activa: true }, orderBy: { nombre: 'asc' } }),
   ])
 
   const counts = ESTADOS_LABOR.reduce((acc, e) => {
@@ -66,7 +66,7 @@ export default async function LaborePage({ searchParams }: { searchParams: Searc
           </a>
         ))}
 
-        <ParcelaSelect parcelas={parcelas} estado={estado} parcelaId={parcelaId} />
+        <PredioSelect predios={predios} estado={estado} predioId={predioId} />
       </div>
 
       <div className="card p-0 overflow-hidden">
@@ -75,7 +75,7 @@ export default async function LaborePage({ searchParams }: { searchParams: Searc
             <tr>
               <th className="table-th">Descripción</th>
               <th className="table-th">Tipo</th>
-              <th className="table-th">Parcela</th>
+              <th className="table-th">Predio</th>
               <th className="table-th">Responsable</th>
               <th className="table-th">Fecha</th>
               <th className="table-th">Estado</th>
@@ -104,8 +104,8 @@ export default async function LaborePage({ searchParams }: { searchParams: Searc
                   </span>
                 </td>
                 <td className="table-td">
-                  <p className="text-sm text-gray-900">{labor.parcela.nombre}</p>
-                  <p className="text-xs text-gray-400">{labor.parcela.cultivo}</p>
+                  <p className="text-sm text-gray-900">{labor.predio.nombre}</p>
+                  <p className="text-xs text-gray-400">{labor.predio.cultivo}</p>
                 </td>
                 <td className="table-td">
                   {labor.responsable.nombre} {labor.responsable.apellido}
