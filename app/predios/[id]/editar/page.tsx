@@ -30,7 +30,7 @@ export default function EditarPredioPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/empresas').then((r) => r.json()),
-      fetch('/api/equipo').then((r) => r.json()),
+      fetch('/api/equipo?encargados=true').then((r) => r.json()),
       fetch(`/api/predios/${id}`).then((r) => r.json()),
     ]).then(([e, u, predio]) => {
       setEmpresas(e as Empresa[])

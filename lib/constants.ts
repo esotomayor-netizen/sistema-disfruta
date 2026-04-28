@@ -37,6 +37,10 @@ export const ROLES_USUARIO = [
   { value: 'APLICADOR', label: 'Aplicador' },
 ]
 
+export const ROLES_ENCARGADO = [
+  { value: 'ENCARGADO', label: 'Encargado de Predio' },
+]
+
 export const UNIDADES = ['kg/ha', 'L/ha', 'g/ha', 'mL/ha', 'kg', 'L', 'unidades']
 
 export const CULTIVOS = ['Cerezo', 'Ciruela', 'Durazno', 'Nectarin', 'Kiwi', 'Uva de mesa']

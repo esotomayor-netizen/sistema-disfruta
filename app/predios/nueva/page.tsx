@@ -29,7 +29,7 @@ export default function NuevoPredioPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/empresas').then((r) => r.json()),
-      fetch('/api/equipo').then((r) => r.json()),
+      fetch('/api/equipo?encargados=true').then((r) => r.json()),
     ]).then(([e, u]) => {
       setEmpresas(e as Empresa[])
       setUsuarios((u as Usuario[]).filter((x) => x.activo))
