@@ -34,6 +34,7 @@ model Predio {
   encargadoId  Int?
   labores      Labor[]
   aplicaciones Aplicacion[]
+  visitas      Visita[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -49,8 +50,24 @@ model Usuario {
   predios      Predio[]     @relation("Encargado")
   labores      Labor[]      @relation("Responsable")
   aplicaciones Aplicacion[] @relation("Tecnico")
+  visitas      Visita[]     @relation("TecnicoVisita")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+}
+
+model Visita {
+  id            Int          @id @default(autoincrement())
+  fecha         DateTime
+  predio        Predio       @relation(fields: [predioId], references: [id])
+  predioId      Int
+  tecnico       Usuario      @relation("TecnicoVisita", fields: [tecnicoId], references: [id])
+  tecnicoId     Int
+  observaciones String?
+  estado        String       @default("EN_PROGRESO")
+  labores       Labor[]
+  aplicaciones  Aplicacion[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Labor {
@@ -65,6 +82,8 @@ model Labor {
   predioId      Int
   responsable   Usuario   @relation("Responsable", fields: [responsableId], references: [id])
   responsableId Int
+  visita        Visita?   @relation(fields: [visitaId], references: [id])
+  visitaId      Int?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -114,6 +133,8 @@ model Aplicacion {
   predioId      Int
   tecnico       Usuario   @relation("Tecnico", fields: [tecnicoId], references: [id])
   tecnicoId     Int
+  visita        Visita?   @relation(fields: [visitaId], references: [id])
+  visitaId      Int?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

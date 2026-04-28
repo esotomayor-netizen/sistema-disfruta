@@ -32,6 +32,7 @@ export async function POST(req: Request) {
       observaciones: data.observaciones || null,
       predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
+      visitaId: data.visitaId ? parseInt(data.visitaId) : null,
     },
     include: { predio: true, tecnico: true },
   })
