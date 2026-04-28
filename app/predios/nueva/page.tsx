@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
+import { CULTIVOS, VARIEDADES_POR_CULTIVO } from '@/lib/constants'
 
-interface Empresa { id: number; razonSocial: string }
+interface Empresa { id: number; razonSocial: string; contactoNombre: string }
 interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
 
 export default function NuevoPredioPage() {
@@ -22,6 +23,7 @@ export default function NuevoPredioPage() {
     activa: true,
     empresaId: '',
     encargadoId: '',
+    variedades: '',
   })
 
   useEffect(() => {
@@ -30,11 +32,40 @@ export default function NuevoPredioPage() {
       fetch('/api/equipo').then((r) => r.json()),
     ]).then(([e, u]) => {
       setEmpresas(e as Empresa[])
-      const activos = (u as Usuario[]).filter((x) => x.activo)
-      setUsuarios(activos)
-      if ((e as Empresa[]).length) setForm((f) => ({ ...f, empresaId: String((e as Empresa[])[0].id) }))
+      setUsuarios((u as Usuario[]).filter((x) => x.activo))
     })
   }, [])
+
+  const handleEmpresaChange = (empresaId: string) => {
+    const empresa = empresas.find((e) => String(e.id) === empresaId)
+    if (empresa) {
+      const nombreRef = empresa.contactoNombre.toLowerCase()
+      const usuario = usuarios.find((u) =>
+        `${u.nombre} ${u.apellido}`.toLowerCase() === nombreRef ||
+        nombreRef.includes(u.apellido.toLowerCase())
+      )
+      setForm((f) => ({
+        ...f,
+        empresaId,
+        encargadoId: usuario ? String(usuario.id) : f.encargadoId,
+      }))
+    } else {
+      setForm((f) => ({ ...f, empresaId }))
+    }
+  }
+
+  const handleCultivoChange = (cultivo: string) => {
+    setForm((f) => ({ ...f, cultivo, variedades: '' }))
+  }
+
+  const toggleVariedad = (v: string) => {
+    const current = form.variedades ? form.variedades.split(',') : []
+    const updated = current.includes(v) ? current.filter((x) => x !== v) : [...current, v]
+    setForm((f) => ({ ...f, variedades: updated.filter(Boolean).join(',') }))
+  }
+
+  const variedadesDisponibles = VARIEDADES_POR_CULTIVO[form.cultivo] ?? []
+  const variedadesSeleccionadas = form.variedades ? form.variedades.split(',') : []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,36 +91,13 @@ export default function NuevoPredioPage() {
       />
       <div className="max-w-2xl card">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Nombre del Predio</label>
-              <input
-                className="input"
-                required
-                value={form.nombre}
-                onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                placeholder="Ej: Predio Norte"
-              />
-            </div>
-            <div>
-              <label className="label">Código CSG (SAG)</label>
-              <input
-                className="input"
-                required
-                value={form.csg}
-                onChange={(e) => setForm({ ...form, csg: e.target.value })}
-                placeholder="Ej: CSG-2024-001"
-              />
-            </div>
-          </div>
-
           <div>
-            <label className="label">Empresa</label>
+            <label className="label">Empresa (Razón Social)</label>
             <select
               className="input"
               required
               value={form.empresaId}
-              onChange={(e) => setForm({ ...form, empresaId: e.target.value })}
+              onChange={(e) => handleEmpresaChange(e.target.value)}
             >
               <option value="">Seleccionar empresa…</option>
               {empresas.map((e) => (
@@ -100,14 +108,53 @@ export default function NuevoPredioPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Cultivo</label>
+              <label className="label">Nombre del Predio</label>
               <input
                 className="input"
                 required
-                value={form.cultivo}
-                onChange={(e) => setForm({ ...form, cultivo: e.target.value })}
-                placeholder="Ej: Vid"
+                value={form.nombre}
+                onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                placeholder="Ej: Fundo Norte"
               />
+            </div>
+            <div>
+              <label className="label">Código CSG (SAG)</label>
+              <input
+                className="input"
+                required
+                value={form.csg}
+                onChange={(e) => setForm({ ...form, csg: e.target.value })}
+                placeholder="Ej: 105294"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Encargado / Responsable</label>
+            <select
+              className="input"
+              value={form.encargadoId}
+              onChange={(e) => setForm({ ...form, encargadoId: e.target.value })}
+            >
+              <option value="">Sin encargado asignado</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Especie / Cultivo</label>
+              <select
+                className="input"
+                required
+                value={form.cultivo}
+                onChange={(e) => handleCultivoChange(e.target.value)}
+              >
+                <option value="">Seleccionar cultivo…</option>
+                {CULTIVOS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <div>
               <label className="label">Superficie (ha)</label>
@@ -124,6 +171,30 @@ export default function NuevoPredioPage() {
             </div>
           </div>
 
+          {variedadesDisponibles.length > 0 && (
+            <div>
+              <label className="label">Variedades</label>
+              <div className="grid grid-cols-3 gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                {variedadesDisponibles.map((v) => (
+                  <label key={v} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={variedadesSeleccionadas.includes(v)}
+                      onChange={() => toggleVariedad(v)}
+                      className="w-4 h-4 text-primary-600 rounded"
+                    />
+                    <span className="text-sm text-gray-700">{v}</span>
+                  </label>
+                ))}
+              </div>
+              {variedadesSeleccionadas.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Seleccionadas: {variedadesSeleccionadas.join(', ')}
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="label">Ubicación</label>
             <input
@@ -131,22 +202,8 @@ export default function NuevoPredioPage() {
               required
               value={form.ubicacion}
               onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
-              placeholder="Ej: Sector Norte - Fundo Disfruta"
+              placeholder="Ej: Sector Norte, Curicó"
             />
-          </div>
-
-          <div>
-            <label className="label">Encargado (opcional)</label>
-            <select
-              className="input"
-              value={form.encargadoId}
-              onChange={(e) => setForm({ ...form, encargadoId: e.target.value })}
-            >
-              <option value="">Sin encargado asignado</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
-              ))}
-            </select>
           </div>
 
           <div className="flex items-center gap-2">

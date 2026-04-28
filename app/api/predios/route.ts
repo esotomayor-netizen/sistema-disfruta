@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       activa: data.activa ?? true,
       empresaId: parseInt(data.empresaId),
       encargadoId: data.encargadoId ? parseInt(data.encargadoId) : null,
+      variedades: data.variedades || null,
     },
     include: { empresa: true, encargado: true },
   })

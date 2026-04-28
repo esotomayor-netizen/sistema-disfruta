@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
+import { CULTIVOS, VARIEDADES_POR_CULTIVO } from '@/lib/constants'
 
-interface Empresa { id: number; razonSocial: string }
+interface Empresa { id: number; razonSocial: string; contactoNombre: string }
 interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
 
 export default function EditarPredioPage() {
@@ -23,6 +24,7 @@ export default function EditarPredioPage() {
     activa: true,
     empresaId: '',
     encargadoId: '',
+    variedades: '',
   })
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function EditarPredioPage() {
     ]).then(([e, u, predio]) => {
       setEmpresas(e as Empresa[])
       setUsuarios((u as Usuario[]).filter((x) => x.activo))
-      if (predio) {
+      if (predio && !predio.error) {
         setForm({
           nombre: predio.nombre,
           csg: predio.csg,
@@ -43,10 +45,24 @@ export default function EditarPredioPage() {
           activa: predio.activa,
           empresaId: String(predio.empresaId),
           encargadoId: predio.encargadoId ? String(predio.encargadoId) : '',
+          variedades: predio.variedades ?? '',
         })
       }
     })
   }, [id])
+
+  const handleCultivoChange = (cultivo: string) => {
+    setForm((f) => ({ ...f, cultivo, variedades: '' }))
+  }
+
+  const toggleVariedad = (v: string) => {
+    const current = form.variedades ? form.variedades.split(',') : []
+    const updated = current.includes(v) ? current.filter((x) => x !== v) : [...current, v]
+    setForm((f) => ({ ...f, variedades: updated.filter(Boolean).join(',') }))
+  }
+
+  const variedadesDisponibles = VARIEDADES_POR_CULTIVO[form.cultivo] ?? []
+  const variedadesSeleccionadas = form.variedades ? form.variedades.split(',') : []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,6 +94,21 @@ export default function EditarPredioPage() {
       />
       <div className="max-w-2xl card">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="label">Empresa (Razón Social)</label>
+            <select
+              className="input"
+              required
+              value={form.empresaId}
+              onChange={(e) => setForm({ ...form, empresaId: e.target.value })}
+            >
+              <option value="">Seleccionar empresa…</option>
+              {empresas.map((e) => (
+                <option key={e.id} value={e.id}>{e.razonSocial}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Nombre del Predio</label>
@@ -100,29 +131,31 @@ export default function EditarPredioPage() {
           </div>
 
           <div>
-            <label className="label">Empresa</label>
+            <label className="label">Encargado / Responsable</label>
             <select
               className="input"
-              required
-              value={form.empresaId}
-              onChange={(e) => setForm({ ...form, empresaId: e.target.value })}
+              value={form.encargadoId}
+              onChange={(e) => setForm({ ...form, encargadoId: e.target.value })}
             >
-              <option value="">Seleccionar empresa…</option>
-              {empresas.map((e) => (
-                <option key={e.id} value={e.id}>{e.razonSocial}</option>
+              <option value="">Sin encargado asignado</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
               ))}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Cultivo</label>
-              <input
+              <label className="label">Especie / Cultivo</label>
+              <select
                 className="input"
                 required
                 value={form.cultivo}
-                onChange={(e) => setForm({ ...form, cultivo: e.target.value })}
-              />
+                onChange={(e) => handleCultivoChange(e.target.value)}
+              >
+                <option value="">Seleccionar cultivo…</option>
+                {CULTIVOS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <div>
               <label className="label">Superficie (ha)</label>
@@ -138,6 +171,30 @@ export default function EditarPredioPage() {
             </div>
           </div>
 
+          {variedadesDisponibles.length > 0 && (
+            <div>
+              <label className="label">Variedades</label>
+              <div className="grid grid-cols-3 gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                {variedadesDisponibles.map((v) => (
+                  <label key={v} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={variedadesSeleccionadas.includes(v)}
+                      onChange={() => toggleVariedad(v)}
+                      className="w-4 h-4 text-primary-600 rounded"
+                    />
+                    <span className="text-sm text-gray-700">{v}</span>
+                  </label>
+                ))}
+              </div>
+              {variedadesSeleccionadas.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Seleccionadas: {variedadesSeleccionadas.join(', ')}
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="label">Ubicación</label>
             <input
@@ -146,20 +203,6 @@ export default function EditarPredioPage() {
               value={form.ubicacion}
               onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
             />
-          </div>
-
-          <div>
-            <label className="label">Encargado (opcional)</label>
-            <select
-              className="input"
-              value={form.encargadoId}
-              onChange={(e) => setForm({ ...form, encargadoId: e.target.value })}
-            >
-              <option value="">Sin encargado asignado</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
-              ))}
-            </select>
           </div>
 
           <div className="flex items-center gap-2">

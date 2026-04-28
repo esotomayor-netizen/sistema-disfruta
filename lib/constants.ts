@@ -39,6 +39,17 @@ export const ROLES_USUARIO = [
 
 export const UNIDADES = ['kg/ha', 'L/ha', 'g/ha', 'mL/ha', 'kg', 'L', 'unidades']
 
+export const CULTIVOS = ['Cerezo', 'Ciruela', 'Durazno', 'Nectarin', 'Kiwi', 'Uva de mesa']
+
+export const VARIEDADES_POR_CULTIVO: Record<string, string[]> = {
+  'Cerezo': ['BING', 'CHELAN', 'CORAL', 'KORDIA', 'LAPINS', 'REGINA', 'ROYAL DAWN', 'SANTINA', 'SWEET HEART', 'TIETON'],
+  'Ciruela': ['ANGELENO', 'D AGEN', 'FORTUNE', 'FRIAR', 'LARRY ANN', 'PRESIDENT'],
+  'Durazno': ['AUGUST PRIDE', 'ELEGANT LADY', 'O HENRY'],
+  'Nectarin': ['FANTASIA', 'MAYFIRE', 'RUBY DIAMOND', 'ZEE FIRE'],
+  'Kiwi': ['BRUNO', 'GOLD', 'HAYWARD'],
+  'Uva de mesa': ['ARRA 15', 'CRIMSON SEEDLESS', 'FLAME SEEDLESS', 'RED GLOBE', 'SUPERIOR SEEDLESS', 'THOMPSON SEEDLESS'],
+}
+
 export function estadoLaborColor(estado: string) {
   const map: Record<string, string> = {
     PENDIENTE: 'bg-yellow-100 text-yellow-800',

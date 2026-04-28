@@ -37,7 +37,7 @@ export default async function PrediosPage() {
               <th className="table-th">CSG</th>
               <th className="table-th">Empresa</th>
               <th className="table-th">Encargado</th>
-              <th className="table-th">Cultivo</th>
+              <th className="table-th">Cultivo / Variedades</th>
               <th className="table-th">Superficie</th>
               <th className="table-th">Estado</th>
               <th className="table-th">Actividad</th>
@@ -72,7 +72,16 @@ export default async function PrediosPage() {
                   )}
                 </td>
                 <td className="table-td">
-                  <p className="text-sm text-gray-900">{p.cultivo}</p>
+                  <p className="text-sm font-medium text-gray-900">{p.cultivo}</p>
+                  {p.variedades && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {p.variedades.split(',').map((v) => (
+                        <span key={v} className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                          {v}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </td>
                 <td className="table-td whitespace-nowrap">
                   <p className="text-sm text-gray-900">{p.superficie} ha</p>
