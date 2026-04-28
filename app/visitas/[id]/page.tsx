@@ -96,7 +96,7 @@ export default function VisitaDetailPage() {
         fecha: visita.fecha,
         estado: 'COMPLETADA',
         observaciones: laborSeleccionada.descripcion,
-        predioId: visita.predioId ?? visita.predio.id,
+        predioId: visita.predio.id,
         responsableId: visita.tecnico.id,
         visitaId: visita.id,
       }),
