@@ -87,6 +87,19 @@ model ProgramaFitosanitario {
   updatedAt             DateTime @updatedAt
 }
 
+model CatalogoLabor {
+  id             Int      @id @default(autoincrement())
+  grupo          String
+  especie        String
+  categoria      String
+  labor          String
+  descripcion    String
+  prioridad      String
+  mesesEjecucion String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model Aplicacion {
   id            Int       @id @default(autoincrement())
   producto      String
