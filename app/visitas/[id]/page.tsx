@@ -44,6 +44,7 @@ export default function VisitaDetailPage() {
   const [saving, setSaving] = useState(false)
   const [laborSeleccionada, setLaborSeleccionada] = useState<CatalogoItem | null>(null)
   const [busquedaLabor, setBusquedaLabor] = useState('')
+  const [busquedaProducto, setBusquedaProducto] = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProgramaItem | null>(null)
   const [dosisOverride, setDosisOverride] = useState('')
   const [unidadOverride, setUnidadOverride] = useState('L/ha')
@@ -75,6 +76,14 @@ export default function VisitaDetailPage() {
     if (!acc.find((x) => x.producto === p.producto)) acc.push(p)
     return acc
   }, [])
+
+  const productosFiltrados = busquedaProducto.trim()
+    ? productosUnicos.filter((p) =>
+        p.producto.toLowerCase().includes(busquedaProducto.toLowerCase()) ||
+        (p.ingredienteActivo ?? '').toLowerCase().includes(busquedaProducto.toLowerCase()) ||
+        (p.tratamientoObjetivo ?? '').toLowerCase().includes(busquedaProducto.toLowerCase())
+      )
+    : productosUnicos
 
   const handleSelectProducto = (productoNombre: string) => {
     const item = programa.find((p) => p.producto === productoNombre)
@@ -231,7 +240,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Aplicaciones ({visita.aplicaciones.length})</h2>
             {visita.estado === 'EN_PROGRESO' && (
-              <button onClick={() => { setModal('aplicacion'); setProductoSeleccionado(null); setDosisOverride(''); }} className="btn-primary text-xs py-1.5 px-3">+ Agregar aplicación</button>
+              <button onClick={() => { setModal('aplicacion'); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); }} className="btn-primary text-xs py-1.5 px-3">+ Agregar aplicación</button>
             )}
           </div>
           <div className="space-y-2">
@@ -314,55 +323,81 @@ export default function VisitaDetailPage() {
       {/* Modal agregar aplicacion */}
       {modal === 'aplicacion' && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Agregar aplicación</h3>
               <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="label">Producto (Programa Fitosanitario)</label>
-                <select
-                  className="input"
-                  value={productoSeleccionado?.producto ?? ''}
-                  onChange={(e) => handleSelectProducto(e.target.value)}
-                >
-                  <option value="">Seleccionar producto…</option>
-                  {productosUnicos.map((p) => (
-                    <option key={p.id} value={p.producto}>{p.producto}{p.ingredienteActivo ? ` — ${p.ingredienteActivo}` : ''}</option>
-                  ))}
-                </select>
+
+            {/* Buscador de producto */}
+            <div className="px-4 pt-4 pb-2">
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Buscar producto, ingrediente activo u objetivo…"
+                  value={busquedaProducto}
+                  onChange={(e) => { setBusquedaProducto(e.target.value); setProductoSeleccionado(null) }}
+                  className="input pl-9"
+                />
               </div>
-              {productoSeleccionado && (
-                <>
-                  {productoSeleccionado.tratamientoObjetivo && (
-                    <div className="bg-blue-50 rounded-lg px-3 py-2">
-                      <p className="text-xs text-blue-600 font-medium mb-0.5">Objetivo</p>
-                      <p className="text-xs text-blue-800">{productoSeleccionado.tratamientoObjetivo}</p>
-                    </div>
-                  )}
+              <p className="text-xs text-gray-400 mt-1">{productosFiltrados.length} producto{productosFiltrados.length !== 1 ? 's' : ''} encontrado{productosFiltrados.length !== 1 ? 's' : ''}</p>
+            </div>
+
+            {/* Lista de productos */}
+            <div className="overflow-y-auto px-4 pb-2 space-y-1.5" style={{ maxHeight: productoSeleccionado ? 160 : 320 }}>
+              {productosFiltrados.length === 0 && (
+                <p className="text-gray-400 text-sm text-center py-4">
+                  {busquedaProducto ? `Sin resultados para "${busquedaProducto}"` : 'No hay productos en el programa'}
+                </p>
+              )}
+              {productosFiltrados.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => handleSelectProducto(p.producto)}
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${productoSeleccionado?.producto === p.producto ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300'}`}
+                >
+                  <p className="font-medium text-sm text-gray-900">{p.producto}</p>
+                  {p.ingredienteActivo && <p className="text-xs text-gray-400 mt-0.5">{p.ingredienteActivo}</p>}
+                  {p.tratamientoObjetivo && <p className="text-xs text-gray-500 mt-0.5 italic">{p.tratamientoObjetivo}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* Detalle del producto seleccionado */}
+            {productoSeleccionado && (
+              <div className="px-4 pb-2 space-y-3 border-t border-gray-100 pt-3">
+                {productoSeleccionado.tratamientoObjetivo && (
+                  <div className="bg-blue-50 rounded-lg px-3 py-2">
+                    <p className="text-xs text-blue-600 font-medium mb-0.5">Objetivo</p>
+                    <p className="text-xs text-blue-800">{productoSeleccionado.tratamientoObjetivo}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="label">Tipo de producto</label>
+                  <select className="input" value={tipoOverride} onChange={(e) => setTipoOverride(e.target.value)}>
+                    {TIPOS_PRODUCTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="label">Tipo de producto</label>
-                    <select className="input" value={tipoOverride} onChange={(e) => setTipoOverride(e.target.value)}>
-                      {TIPOS_PRODUCTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    <label className="label">Dosis</label>
+                    <input className="input" type="number" step="0.01" value={dosisOverride} onChange={(e) => setDosisOverride(e.target.value)} placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label className="label">Unidad</label>
+                    <select className="input" value={unidadOverride} onChange={(e) => setUnidadOverride(e.target.value)}>
+                      {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
                     </select>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="label">Dosis</label>
-                      <input className="input" type="number" step="0.01" value={dosisOverride} onChange={(e) => setDosisOverride(e.target.value)} placeholder="0.00" />
-                    </div>
-                    <div>
-                      <label className="label">Unidad</label>
-                      <select className="input" value={unidadOverride} onChange={(e) => setUnidadOverride(e.target.value)}>
-                        {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="px-6 pb-6 flex gap-3">
+                </div>
+              </div>
+            )}
+
+            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
               <button onClick={handleAgregarAplicacion} disabled={!productoSeleccionado || !dosisOverride || saving} className="btn-primary flex-1">
                 {saving ? 'Guardando…' : 'Agregar aplicación'}
               </button>
