@@ -53,6 +53,7 @@ export default function VisitaDetailPage() {
   const [dosisOverride, setDosisOverride] = useState('')
   const [unidadOverride, setUnidadOverride] = useState('L/ha')
   const [tipoOverride, setTipoOverride] = useState('FUNGICIDA')
+  const [modoEdicion, setModoEdicion] = useState(false)
 
   const fetchVisita = useCallback(() => {
     fetch(`/api/visitas/${id}`).then((r) => r.json()).then(setVisita)
@@ -200,6 +201,16 @@ export default function VisitaDetailPage() {
     fetchVisita()
   }
 
+  const handleEliminarLabor = async (laborId: number) => {
+    await fetch(`/api/labores/${laborId}`, { method: 'DELETE' })
+    fetchVisita()
+  }
+
+  const handleEliminarAplicacion = async (aplicacionId: number) => {
+    await fetch(`/api/aplicaciones/${aplicacionId}`, { method: 'DELETE' })
+    fetchVisita()
+  }
+
   const handleCompletar = async () => {
     await fetch(`/api/visitas/${id}`, {
       method: 'PUT',
@@ -219,6 +230,15 @@ export default function VisitaDetailPage() {
         action={
           <div className="flex gap-2">
             <Link href="/visitas" className="btn-secondary">← Visitas</Link>
+            <button
+              onClick={() => setModoEdicion(!modoEdicion)}
+              className={`btn-secondary flex items-center gap-1.5 ${modoEdicion ? 'ring-2 ring-red-300 text-red-600' : ''}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              {modoEdicion ? 'Salir de edición' : 'Editar visita'}
+            </button>
             {visita.estado === 'COMPLETADA' && (
               <Link href={`/visitas/${id}/imprimir`} target="_blank" className="btn-secondary flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,12 +281,22 @@ export default function VisitaDetailPage() {
         )}
       </div>
 
+      {/* Banner modo edición */}
+      {modoEdicion && (
+        <div className="mb-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-700">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <span><strong>Modo edición activo</strong> — haz clic en el icono de papelera para eliminar una labor o aplicación. Esta acción no se puede deshacer.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Labores */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Labores ({visita.labores.length})</h2>
-            {visita.estado === 'EN_PROGRESO' && (
+            {(visita.estado === 'EN_PROGRESO' || modoEdicion) && (
               <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null); setBosquejo(null) }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
             )}
           </div>
@@ -275,12 +305,27 @@ export default function VisitaDetailPage() {
               <div className="card text-center py-8 text-gray-400 text-sm">No hay labores aún</div>
             )}
             {visita.labores.map((l) => (
-              <div key={l.id} className="card py-3 px-4">
-                <p className="font-medium text-gray-900 text-sm">{l.descripcion}</p>
-                {l.observaciones && (
-                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">{l.observaciones}</p>
-                )}
-                <p className="text-xs text-gray-400 mt-1">{l.tipo} · {l.responsable.nombre} {l.responsable.apellido}</p>
+              <div key={l.id} className={`card py-3 px-4 transition-colors ${modoEdicion ? 'border-red-100 hover:border-red-300' : ''}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 text-sm">{l.descripcion}</p>
+                    {l.observaciones && (
+                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">{l.observaciones}</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">{l.tipo} · {l.responsable.nombre} {l.responsable.apellido}</p>
+                  </div>
+                  {modoEdicion && (
+                    <button
+                      onClick={() => handleEliminarLabor(l.id)}
+                      className="flex-shrink-0 p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title="Eliminar labor"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 {l.dibujo && (
                   <div className="mt-2 border border-purple-100 rounded-lg overflow-hidden">
                     <div className="px-2 py-1 bg-purple-50 text-xs text-purple-600 font-medium">Bosquejo técnico</div>
@@ -296,7 +341,7 @@ export default function VisitaDetailPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Aplicaciones ({visita.aplicaciones.length})</h2>
-            {visita.estado === 'EN_PROGRESO' && (
+            {(visita.estado === 'EN_PROGRESO' || modoEdicion) && (
               <button onClick={() => { setModal('aplicacion'); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); }} className="btn-primary text-xs py-1.5 px-3">+ Agregar aplicación</button>
             )}
           </div>
@@ -305,15 +350,30 @@ export default function VisitaDetailPage() {
               <div className="card text-center py-8 text-gray-400 text-sm">No hay aplicaciones aún</div>
             )}
             {visita.aplicaciones.map((a) => (
-              <div key={a.id} className="card py-3 px-4">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-gray-900 text-sm">{a.producto}</p>
-                  <span className={`badge text-xs ${tipoProductoColor(a.tipoProducto)}`}>{labelFromValue(TIPOS_PRODUCTO, a.tipoProducto)}</span>
+              <div key={a.id} className={`card py-3 px-4 transition-colors ${modoEdicion ? 'border-red-100 hover:border-red-300' : ''}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-gray-900 text-sm">{a.producto}</p>
+                      <span className={`badge text-xs ${tipoProductoColor(a.tipoProducto)}`}>{labelFromValue(TIPOS_PRODUCTO, a.tipoProducto)}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{a.dosis} {a.unidad}</p>
+                    {a.observaciones && (
+                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">Objetivo: {a.observaciones}</p>
+                    )}
+                  </div>
+                  {modoEdicion && (
+                    <button
+                      onClick={() => handleEliminarAplicacion(a.id)}
+                      className="flex-shrink-0 p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title="Eliminar aplicación"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">{a.dosis} {a.unidad}</p>
-                {a.observaciones && (
-                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">Objetivo: {a.observaciones}</p>
-                )}
               </div>
             ))}
           </div>
