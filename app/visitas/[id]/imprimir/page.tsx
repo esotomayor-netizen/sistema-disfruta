@@ -74,7 +74,7 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
         <div className="report-header">
           <div>
             <h1>Informe de Visita Técnica</h1>
-            <p className="subtitle">Sistema Disfruta — Gestión Agrícola</p>
+            <p className="subtitle">DLC Export — Disfruta · Lecaros · Cox · Chile</p>
           </div>
           <div className="meta">
             <div style={{ marginBottom: 4 }}>
@@ -224,7 +224,7 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
 
         {/* Pie */}
         <div className="report-footer">
-          <span>Sistema Disfruta · Fundo Disfruta</span>
+          <span>DLC Export · Disfruta · Lecaros · Cox · Chile</span>
           <span>Visita N° {visita.id} · {formatDate(visita.fecha)}</span>
         </div>
       </div>
