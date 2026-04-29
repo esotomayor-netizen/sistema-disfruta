@@ -277,7 +277,7 @@ export default function AgendaPage() {
               <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 12 }}
-                formatter={(value: number, name: string) => [
+                formatter={(value, name) => [
                   value,
                   name === 'planificadas' ? 'Planificadas' : 'Realizadas',
                 ]}
