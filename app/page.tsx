@@ -49,12 +49,12 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <div className="mb-6">
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">Resumen general de operaciones del fundo</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5 mb-6">
         <StatCard
           title="Predios Activos"
           value={prediosActivos}
@@ -101,7 +101,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Pendientes', estado: 'PENDIENTE', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
           { label: 'En Progreso', estado: 'EN_PROGRESO', color: 'bg-blue-100 text-blue-800 border-blue-200' },
