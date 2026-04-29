@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model AgendaVisita {
+  id        Int      @id @default(autoincrement())
+  fecha     DateTime
+  notas     String?
+  predio    Predio   @relation(fields: [predioId], references: [id])
+  predioId  Int
+  tecnico   Usuario  @relation("TecnicoAgenda", fields: [tecnicoId], references: [id])
+  tecnicoId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Empresa {
   id               Int      @id @default(autoincrement())
   razonSocial      String
@@ -35,6 +47,7 @@ model Predio {
   labores      Labor[]
   aplicaciones Aplicacion[]
   visitas      Visita[]
+  agendas      AgendaVisita[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -51,6 +64,7 @@ model Usuario {
   labores      Labor[]      @relation("Responsable")
   aplicaciones Aplicacion[] @relation("Tecnico")
   visitas      Visita[]     @relation("TecnicoVisita")
+  agendas      AgendaVisita[] @relation("TecnicoAgenda")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
