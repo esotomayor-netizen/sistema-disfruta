@@ -7,6 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Recorrido {
+  id             Int      @id @default(autoincrement())
+  fecha          DateTime
+  kmInicio       Float
+  kmFin          Float
+  litrosCargados Float?
+  notas          String?
+  tecnico        Usuario  @relation("TecnicoRecorrido", fields: [tecnicoId], references: [id])
+  tecnicoId      Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model AgendaVisita {
   id        Int      @id @default(autoincrement())
   fecha     DateTime
@@ -40,6 +53,8 @@ model Predio {
   ubicacion    String
   activa       Boolean      @default(true)
   variedades   String?
+  latitud      Float?
+  longitud     Float?
   empresa      Empresa      @relation(fields: [empresaId], references: [id])
   empresaId    Int
   encargado    Usuario?     @relation("Encargado", fields: [encargadoId], references: [id])
@@ -63,8 +78,9 @@ model Usuario {
   predios      Predio[]     @relation("Encargado")
   labores      Labor[]      @relation("Responsable")
   aplicaciones Aplicacion[] @relation("Tecnico")
-  visitas      Visita[]     @relation("TecnicoVisita")
+  visitas      Visita[]       @relation("TecnicoVisita")
   agendas      AgendaVisita[] @relation("TecnicoAgenda")
+  recorridos   Recorrido[]    @relation("TecnicoRecorrido")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
