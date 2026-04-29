@@ -4,11 +4,17 @@ import { prisma } from '@/lib/prisma'
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const month = searchParams.get('month') // YYYY-MM
+  const fecha = searchParams.get('fecha') // YYYY-MM-DD (single day)
   const tecnicoId = searchParams.get('tecnicoId')
 
   let start: Date | undefined
   let end: Date | undefined
-  if (month) {
+  if (fecha) {
+    start = new Date(fecha)
+    start.setHours(0, 0, 0, 0)
+    end = new Date(fecha)
+    end.setHours(23, 59, 59, 999)
+  } else if (month) {
     const [y, m] = month.split('-').map(Number)
     start = new Date(y, m - 1, 1)
     end = new Date(y, m, 1)
@@ -16,7 +22,7 @@ export async function GET(req: Request) {
 
   const agendas = await prisma.agendaVisita.findMany({
     where: {
-      ...(start && end ? { fecha: { gte: start, lt: end } } : {}),
+      ...(start && end ? { fecha: fecha ? { gte: start, lte: end } : { gte: start, lt: end } } : {}),
       ...(tecnicoId ? { tecnicoId: parseInt(tecnicoId) } : {}),
     },
     orderBy: { fecha: 'asc' },

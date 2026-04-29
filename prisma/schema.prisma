@@ -21,15 +21,32 @@ model Recorrido {
 }
 
 model AgendaVisita {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   fecha     DateTime
   notas     String?
-  predio    Predio   @relation(fields: [predioId], references: [id])
+  predio    Predio    @relation(fields: [predioId], references: [id])
   predioId  Int
-  tecnico   Usuario  @relation("TecnicoAgenda", fields: [tecnicoId], references: [id])
+  tecnico   Usuario   @relation("TecnicoAgenda", fields: [tecnicoId], references: [id])
   tecnicoId Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  checkins  CheckIn[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model CheckIn {
+  id        Int          @id @default(autoincrement())
+  fecha     DateTime     @default(now())
+  latitud   Float
+  longitud  Float
+  notas     String?
+  tecnico   Usuario      @relation("TecnicoCheckIn", fields: [tecnicoId], references: [id])
+  tecnicoId Int
+  predio    Predio?      @relation(fields: [predioId], references: [id])
+  predioId  Int?
+  agenda    AgendaVisita? @relation(fields: [agendaId], references: [id])
+  agendaId  Int?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model Empresa {
@@ -63,6 +80,7 @@ model Predio {
   aplicaciones Aplicacion[]
   visitas      Visita[]
   agendas      AgendaVisita[]
+  checkins     CheckIn[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -81,6 +99,7 @@ model Usuario {
   visitas      Visita[]       @relation("TecnicoVisita")
   agendas      AgendaVisita[] @relation("TecnicoAgenda")
   recorridos   Recorrido[]    @relation("TecnicoRecorrido")
+  checkins     CheckIn[]      @relation("TecnicoCheckIn")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
