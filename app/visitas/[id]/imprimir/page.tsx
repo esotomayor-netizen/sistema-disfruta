@@ -36,6 +36,10 @@ const printStyles = `
   th { background: #f0fdf4; text-align: left; padding: 6px 8px; font-size: 10px; font-weight: 700; color: #166534; border: 1px solid #d1fae5; }
   td { padding: 6px 8px; font-size: 10px; border: 1px solid #e5e7eb; vertical-align: top; }
   tr:nth-child(even) td { background: #fafafa; }
+  .sketch-row td { background: #faf5ff; padding: 10px 12px; border-top: none; }
+  .sketch-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #7c3aed; margin-bottom: 6px; }
+  .sketch-wrap { border: 1px solid #e9d5ff; border-radius: 6px; overflow: hidden; background: white; display: inline-block; max-width: 100%; }
+  .sketch-wrap svg { display: block; max-width: 100%; height: auto; }
   .report-footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 9px; color: #9ca3af; }
   .firma { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
   .firma-box { border-top: 1px solid #374151; padding-top: 8px; font-size: 10px; color: #374151; text-align: center; }
@@ -142,16 +146,29 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
               </thead>
               <tbody>
                 {visita.labores.map((l, i) => (
-                  <tr key={l.id}>
-                    <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                    <td><strong>{l.descripcion}</strong></td>
-                    <td>
-                      <span className={`badge ${l.tipo === 'PODA' ? 'badge-blue' : l.tipo === 'CONTROL_PLAGAS' ? 'badge-orange' : 'badge-gray'}`}>
-                        {labelFromValue(LABOR_TIPOS, l.tipo)}
-                      </span>
-                    </td>
-                    <td>{(l as any).observaciones ?? '—'}</td>
-                  </tr>
+                  <>
+                    <tr key={l.id}>
+                      <td style={{ color: '#9ca3af' }}>{i + 1}</td>
+                      <td><strong>{l.descripcion}</strong></td>
+                      <td>
+                        <span className={`badge ${l.tipo === 'PODA' ? 'badge-blue' : l.tipo === 'CONTROL_PLAGAS' ? 'badge-orange' : 'badge-gray'}`}>
+                          {labelFromValue(LABOR_TIPOS, l.tipo)}
+                        </span>
+                      </td>
+                      <td>{(l as any).observaciones ?? '—'}</td>
+                    </tr>
+                    {(l as any).dibujo && (
+                      <tr key={`${l.id}-sketch`} className="sketch-row">
+                        <td colSpan={4}>
+                          <div className="sketch-label">Bosquejo técnico</div>
+                          <div
+                            className="sketch-wrap"
+                            dangerouslySetInnerHTML={{ __html: (l as any).dibujo }}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
               </tbody>
             </table>
