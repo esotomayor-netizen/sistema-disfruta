@@ -8,7 +8,7 @@ import { formatDate, TIPOS_PRODUCTO, UNIDADES, labelFromValue, tipoProductoColor
 
 interface Predio { id: number; nombre: string; csg: string; cultivo: string; variedades: string | null; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
-interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; estado: string; responsable: Usuario }
+interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; estado: string; responsable: Usuario }
 interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; observaciones: string | null; estado: string; tecnico: Usuario }
 interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
 interface CatalogoItem { id: number; labor: string; categoria: string; descripcion: string; especie: string }
@@ -45,6 +45,8 @@ export default function VisitaDetailPage() {
   const [laborSeleccionada, setLaborSeleccionada] = useState<CatalogoItem | null>(null)
   const [descripcionEditable, setDescripcionEditable] = useState('')
   const [refinando, setRefinando] = useState(false)
+  const [bosquejo, setBosquejo] = useState<string | null>(null)
+  const [generandoBosquejo, setGenerandoBosquejo] = useState(false)
   const [busquedaLabor, setBusquedaLabor] = useState('')
   const [busquedaProducto, setBusquedaProducto] = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProgramaItem | null>(null)
@@ -105,6 +107,24 @@ export default function VisitaDetailPage() {
   const handleSeleccionarLabor = (item: CatalogoItem) => {
     setLaborSeleccionada(item)
     setDescripcionEditable(item.descripcion)
+    setBosquejo(null)
+  }
+
+  const handleGenerarBosquejo = async () => {
+    if (!laborSeleccionada) return
+    setGenerandoBosquejo(true)
+    const res = await fetch('/api/ia/bosquejo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        labor: laborSeleccionada.labor,
+        categoria: laborSeleccionada.categoria,
+        descripcion: descripcionEditable,
+      }),
+    })
+    const data = await res.json()
+    if (data.svg) setBosquejo(data.svg)
+    setGenerandoBosquejo(false)
   }
 
   const handleRefinarDescripcion = async () => {
@@ -141,6 +161,7 @@ export default function VisitaDetailPage() {
         fecha: visita.fecha,
         estado: 'COMPLETADA',
         observaciones: descripcionEditable,
+        dibujo: bosquejo,
         predioId: visita.predio.id,
         responsableId: visita.tecnico.id,
         visitaId: visita.id,
@@ -150,6 +171,7 @@ export default function VisitaDetailPage() {
     setModal(null)
     setLaborSeleccionada(null)
     setBusquedaLabor('')
+    setBosquejo(null)
     fetchVisita()
   }
 
@@ -245,7 +267,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Labores ({visita.labores.length})</h2>
             {visita.estado === 'EN_PROGRESO' && (
-              <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null) }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
+              <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null); setBosquejo(null) }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
             )}
           </div>
           <div className="space-y-2">
@@ -259,6 +281,12 @@ export default function VisitaDetailPage() {
                   <p className="text-xs text-gray-600 mt-1 leading-relaxed">{l.observaciones}</p>
                 )}
                 <p className="text-xs text-gray-400 mt-1">{l.tipo} · {l.responsable.nombre} {l.responsable.apellido}</p>
+                {l.dibujo && (
+                  <div className="mt-2 border border-purple-100 rounded-lg overflow-hidden">
+                    <div className="px-2 py-1 bg-purple-50 text-xs text-purple-600 font-medium">Bosquejo técnico</div>
+                    <div className="p-1" dangerouslySetInnerHTML={{ __html: l.dibujo }} />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -340,27 +368,45 @@ export default function VisitaDetailPage() {
               ))}
             </div>
 
-            {/* Descripción editable + IA */}
+            {/* Descripción editable + IA + Bosquejo */}
             {laborSeleccionada && (
-              <div className="px-4 pb-2 border-t border-gray-100 pt-3 space-y-2">
+              <div className="px-4 pb-2 border-t border-gray-100 pt-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="label mb-0">Detalle de la labor</label>
-                  <button
-                    onClick={handleRefinarDescripcion}
-                    disabled={refinando}
-                    className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 font-medium disabled:opacity-50"
-                  >
-                    {refinando ? (
-                      <span className="animate-pulse">Refinando…</span>
-                    ) : (
-                      <>
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        Mejorar con IA
-                      </>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleRefinarDescripcion}
+                      disabled={refinando}
+                      className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 font-medium disabled:opacity-50"
+                    >
+                      {refinando ? (
+                        <span className="animate-pulse">Refinando…</span>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          Mejorar con IA
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleGenerarBosquejo}
+                      disabled={generandoBosquejo}
+                      className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium disabled:opacity-50"
+                    >
+                      {generandoBosquejo ? (
+                        <span className="animate-pulse">Generando…</span>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                          {bosquejo ? 'Regenerar bosquejo' : 'Generar bosquejo'}
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   className="input text-sm leading-relaxed"
@@ -369,6 +415,18 @@ export default function VisitaDetailPage() {
                   onChange={(e) => setDescripcionEditable(e.target.value)}
                   placeholder="Describe el detalle de esta labor…"
                 />
+                {bosquejo && (
+                  <div className="border border-purple-200 rounded-lg overflow-hidden bg-white">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-purple-50 border-b border-purple-100">
+                      <span className="text-xs text-purple-700 font-medium">Bosquejo técnico generado</span>
+                      <button onClick={() => setBosquejo(null)} className="text-purple-400 hover:text-purple-600 text-xs">✕ quitar</button>
+                    </div>
+                    <div
+                      className="p-2"
+                      dangerouslySetInnerHTML={{ __html: bosquejo }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

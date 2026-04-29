@@ -78,6 +78,7 @@ model Labor {
   fechaFin      DateTime?
   estado        String    @default("PENDIENTE")
   observaciones String?
+  dibujo        String?
   predio        Predio    @relation(fields: [predioId], references: [id])
   predioId      Int
   responsable   Usuario   @relation("Responsable", fields: [responsableId], references: [id])

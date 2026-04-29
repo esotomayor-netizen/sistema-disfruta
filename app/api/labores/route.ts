@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       fechaFin: data.fechaFin ? new Date(data.fechaFin) : null,
       estado: data.estado || 'PENDIENTE',
       observaciones: data.observaciones || null,
+      dibujo: data.dibujo || null,
       predioId: parseInt(data.predioId),
       responsableId: parseInt(data.responsableId),
       visitaId: data.visitaId ? parseInt(data.visitaId) : null,
