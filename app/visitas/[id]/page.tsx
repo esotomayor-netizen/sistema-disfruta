@@ -43,6 +43,8 @@ export default function VisitaDetailPage() {
   const [modal, setModal] = useState<'labor' | 'aplicacion' | null>(null)
   const [saving, setSaving] = useState(false)
   const [laborSeleccionada, setLaborSeleccionada] = useState<CatalogoItem | null>(null)
+  const [descripcionEditable, setDescripcionEditable] = useState('')
+  const [refinando, setRefinando] = useState(false)
   const [busquedaLabor, setBusquedaLabor] = useState('')
   const [busquedaProducto, setBusquedaProducto] = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProgramaItem | null>(null)
@@ -61,7 +63,12 @@ export default function VisitaDetailPage() {
   }, [fetchVisita])
 
   const laboresDisponibles = visita
-    ? catalogo.filter((c) => c.especie === normalizarCultivo(visita.predio.cultivo))
+    ? catalogo
+        .filter((c) => c.especie === normalizarCultivo(visita.predio.cultivo))
+        .reduce<CatalogoItem[]>((acc, c) => {
+          if (!acc.find((x) => x.labor === c.labor)) acc.push(c)
+          return acc
+        }, [])
     : []
 
   const laboresFiltradas = busquedaLabor.trim()
@@ -95,6 +102,28 @@ export default function VisitaDetailPage() {
     setTipoOverride(inferTipo(item))
   }
 
+  const handleSeleccionarLabor = (item: CatalogoItem) => {
+    setLaborSeleccionada(item)
+    setDescripcionEditable(item.descripcion)
+  }
+
+  const handleRefinarDescripcion = async () => {
+    if (!laborSeleccionada) return
+    setRefinando(true)
+    const res = await fetch('/api/ia/refinar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        labor: laborSeleccionada.labor,
+        categoria: laborSeleccionada.categoria,
+        descripcion: descripcionEditable,
+      }),
+    })
+    const data = await res.json()
+    if (data.descripcion) setDescripcionEditable(data.descripcion)
+    setRefinando(false)
+  }
+
   const handleAgregarLabor = async () => {
     if (!laborSeleccionada || !visita) return
     setSaving(true)
@@ -111,7 +140,7 @@ export default function VisitaDetailPage() {
         descripcion: `${laborSeleccionada.labor} — ${visita.predio.cultivo}`,
         fecha: visita.fecha,
         estado: 'COMPLETADA',
-        observaciones: laborSeleccionada.descripcion,
+        observaciones: descripcionEditable,
         predioId: visita.predio.id,
         responsableId: visita.tecnico.id,
         visitaId: visita.id,
@@ -290,7 +319,7 @@ export default function VisitaDetailPage() {
               <p className="text-xs text-gray-400 mt-1">{laboresFiltradas.length} labor{laboresFiltradas.length !== 1 ? 'es' : ''} encontrada{laboresFiltradas.length !== 1 ? 's' : ''}</p>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-4 pb-4 space-y-2">
+            <div className="overflow-y-auto px-4 pb-2 space-y-2" style={{ maxHeight: laborSeleccionada ? 200 : 340 }}>
               {laboresFiltradas.length === 0 && (
                 <p className="text-gray-400 text-sm text-center py-4">
                   {busquedaLabor ? `Sin resultados para "${busquedaLabor}"` : `No hay labores en el catálogo para ${visita.predio.cultivo}`}
@@ -299,17 +328,50 @@ export default function VisitaDetailPage() {
               {laboresFiltradas.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => setLaborSeleccionada(item)}
+                  onClick={() => handleSeleccionarLabor(item)}
                   className={`p-3 rounded-lg border cursor-pointer transition-colors ${laborSeleccionada?.id === item.id ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300'}`}
                 >
                   <p className="font-medium text-sm text-gray-900">{item.labor}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{item.categoria}</p>
-                  {item.descripcion && (
+                  {!laborSeleccionada && item.descripcion && (
                     <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.descripcion}</p>
                   )}
                 </div>
               ))}
             </div>
+
+            {/* Descripción editable + IA */}
+            {laborSeleccionada && (
+              <div className="px-4 pb-2 border-t border-gray-100 pt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="label mb-0">Detalle de la labor</label>
+                  <button
+                    onClick={handleRefinarDescripcion}
+                    disabled={refinando}
+                    className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 font-medium disabled:opacity-50"
+                  >
+                    {refinando ? (
+                      <span className="animate-pulse">Refinando…</span>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Mejorar con IA
+                      </>
+                    )}
+                  </button>
+                </div>
+                <textarea
+                  className="input text-sm leading-relaxed"
+                  rows={3}
+                  value={descripcionEditable}
+                  onChange={(e) => setDescripcionEditable(e.target.value)}
+                  placeholder="Describe el detalle de esta labor…"
+                />
+              </div>
+            )}
+
             <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
               <button onClick={handleAgregarLabor} disabled={!laborSeleccionada || saving} className="btn-primary flex-1">
                 {saving ? 'Guardando…' : 'Agregar labor'}
