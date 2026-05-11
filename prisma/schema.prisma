@@ -117,3 +117,73 @@ model Aplicacion {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+model RecepcionCalidad {
+  id                             Int      @id @default(autoincrement())
+  codEmp                         String
+  lote                           Int
+  guia                           String
+  binsTotems                     Int
+  horaLlegada                    String?
+  tipoTransporte                 String?
+  patente                        String?
+  fechaMuestra                   DateTime
+  exportadora                    String
+  productor                      String
+  predioDescripcion              String
+  csg                            String
+  variedad                       String
+  tempPulpa                      Float?
+  grsMuestra                     Float?
+  decisionFinal                  String?
+  clasificacionFinal             String?
+  estadoCarpa                    Int?
+  estadoEsponja                  Int?
+  estadoTotem                    Int?
+  estadoRacimo                   Int?
+  estadoRestos                   Int?
+  estadoLimpCamion               Int?
+  estadoLimpBins                 Int?
+  estadoHidrocooler              Int?
+  // Defectos de condición
+  condMachuconM1                 Float?
+  condSobremadurezM1             Float?
+  condHerIdaAbiertaM1            Float?
+  condDanioPajaroM1              Float?
+  condPittingM1                  Float?
+  condPartiduraSuperficialM1     Float?
+  condPudricionM1                Float?
+  condPartiduraEstrellaM1        Float?
+  condPartiduraMediaLunaM1       Float?
+  condDeshidratacionFrutoPediM1  Float?
+  condDesgarroPedicelarM1        Float?
+  condOtro1M1                    Float?
+  condOtro2M1                    Float?
+  // Defectos de calidad
+  calRoceM1                      Float?
+  calRussetM1                    Float?
+  calManchaM1                    Float?
+  calDeformeM1                   Float?
+  calFrutoDobleM1                Float?
+  calHerIdaCicatrizadaM1         Float?
+  calPreCalibreM1                Float?
+  calFaltaColorM1                Float?
+  calDanioInsectoM1              Float?
+  calVirosisM1                   Float?
+  calOtro1M1                     Float?
+  // Resumen
+  resTotalDefectosM1             Float?
+  resFrutaSanaM1                 Float?
+  // Calibres
+  calibre5J                      Float?
+  calibre4J                      Float?
+  calibre3J                      Float?
+  calibre2J                      Float?
+  calibreJ                       Float?
+  calibreXL                      Float?
+  calibreL                       Float?
+  calibrePC                      Float?
+  // Observaciones
+  observaciones                  String?
+  createdAt                      DateTime @default(now())
+}
