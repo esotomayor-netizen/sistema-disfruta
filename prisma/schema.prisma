@@ -117,3 +117,100 @@ model Aplicacion {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+// ── Módulo Cosecha & Exportación ─────────────────────────────────────────────
+
+model Temporada {
+  id                  Int                   @id @default(autoincrement())
+  nombre              String                @unique
+  descripcion         String?
+  activa              Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  programacionSemanal ProgramacionSemanal[]
+  compromisosCliente  CompromisoCliente[]
+  cosechaReal         CosechaReal[]
+  preciosCalibres     PrecioCalibres[]
+}
+
+model VariedadCosecha {
+  id            Int      @id @default(autoincrement())
+  codigo        String   @unique
+  nombre        String
+  semanaInicio  String
+  semanaFin     String
+  pct5J         Float    @default(0)
+  pct4J         Float    @default(0)
+  pct3J         Float    @default(0)
+  pct2J         Float    @default(0)
+  pctJ          Float    @default(0)
+  pctXL         Float    @default(0)
+  pctExportacion Float   @default(0.85)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ProgramacionSemanal {
+  id           Int       @id @default(autoincrement())
+  temporada    Temporada @relation(fields: [temporadaId], references: [id])
+  temporadaId  Int
+  variedad     String
+  productor    String
+  sem44        Int       @default(0)
+  sem45        Int       @default(0)
+  sem46        Int       @default(0)
+  sem47        Int       @default(0)
+  sem48        Int       @default(0)
+  sem49        Int       @default(0)
+  sem50        Int       @default(0)
+  sem51        Int       @default(0)
+  sem52        Int       @default(0)
+  sem1         Int       @default(0)
+  sem2         Int       @default(0)
+  totalKg      Int       @default(0)
+  kg2JMasGrandes Int     @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model CompromisoCliente {
+  id                  Int       @id @default(autoincrement())
+  temporada           Temporada @relation(fields: [temporadaId], references: [id])
+  temporadaId         Int
+  cliente             String
+  pais                String
+  variedad            String
+  calibreSolicitado   String
+  sem47               Int       @default(0)
+  sem48               Int       @default(0)
+  sem49               Int       @default(0)
+  sem50               Int       @default(0)
+  sem51               Int       @default(0)
+  totalKgComprometido Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model CosechaReal {
+  id          Int       @id @default(autoincrement())
+  temporada   Temporada @relation(fields: [temporadaId], references: [id])
+  temporadaId Int
+  variedad    String
+  semana      String
+  kgReal      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model PrecioCalibres {
+  id          Int       @id @default(autoincrement())
+  temporada   Temporada @relation(fields: [temporadaId], references: [id])
+  temporadaId Int
+  calibre     String
+  precioUSD   Float
+  precioBajo  Float
+  precioAlto  Float
+  descripcion String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
