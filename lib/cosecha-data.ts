@@ -256,3 +256,147 @@ export function fmtKg(n: number): string {
 export function fmtUSD(n: number): string {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
+
+export interface Productor {
+  id: number
+  razonSocial: string
+  nombreHuerto: string
+  comuna: string
+  region: string
+  csg: string
+  direccion: string
+  especie: string
+  variedades: string[]
+}
+
+export const PRODUCTORES: Productor[] = [
+  { id: 1,  razonSocial: 'AGROELITE',                                    nombreHuerto: 'AGROELITE',           comuna: 'OLIVAR',       region: "VI - O'Higgins", csg: '154148',   direccion: 'Sector El Olivar, Rancagua',        especie: 'CEREZAS', variedades: ['Santina', 'Lapins', 'Regina'] },
+  { id: 2,  razonSocial: 'AGROLIQUID',                                   nombreHuerto: 'AGROLIQUID',           comuna: 'RENGO',        region: "VI - O'Higgins", csg: '3141487',  direccion: 'Sector Rengo Sur',                  especie: 'CEREZAS', variedades: ['Santina'] },
+  { id: 3,  razonSocial: 'ALIRO CORNEJO',                                nombreHuerto: 'ALIRO CORNEJO',        comuna: 'CHIMBARONGO',  region: "VI - O'Higgins", csg: '119368',   direccion: 'Camino Chimbarongo',                especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 4,  razonSocial: 'ANDREA DEL PILAR FARIAS LORCA',               nombreHuerto: 'ANDREA DEL PILAR',    comuna: 'REQUINOA',     region: "VI - O'Higgins", csg: '3129656',  direccion: 'Sector Requínoa',                   especie: 'CEREZAS', variedades: ['Lapins'] },
+  { id: 5,  razonSocial: 'ANDRES RISOPATRON',                            nombreHuerto: 'ANDRES RISOPATRON',   comuna: 'RENGO',        region: "VI - O'Higgins", csg: '161057',   direccion: 'Av. Camino Las Nieves, Rengo',      especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 6,  razonSocial: 'ANGEL MARTINEZ',                               nombreHuerto: 'ANGEL MARTINEZ',      comuna: 'MALLOA',       region: "VI - O'Higgins", csg: '116120',   direccion: 'Sector Los Cristales, Malloa',      especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 7,  razonSocial: 'CASAS VIEJAS',                                 nombreHuerto: 'CASAS VIEJAS',        comuna: 'SAN FERNANDO', region: "VI - O'Higgins", csg: '99315',    direccion: 'Camino Las Casas, San Fernando',    especie: 'CEREZAS', variedades: ['Lapins', 'Santina', 'Royal Dawn'] },
+  { id: 8,  razonSocial: 'COPA DE AGUA',                                 nombreHuerto: 'COPA DE AGUA',        comuna: 'NANCAGUA',     region: "VI - O'Higgins", csg: '3176698',  direccion: 'Sector Copa de Agua, Nancagua',     especie: 'CEREZAS', variedades: ['Skeena', 'Regina'] },
+  { id: 9,  razonSocial: 'CORCOLEN',                                     nombreHuerto: 'CORCOLEN',            comuna: 'COLTAUCO',     region: "VI - O'Higgins", csg: '153813',   direccion: 'Fundo Corcolén, Coltauco',          especie: 'CEREZAS', variedades: ['Santina'] },
+  { id: 10, razonSocial: 'CREMASCHI',                                    nombreHuerto: 'CREMASCHI',           comuna: 'CHIMBARONGO',  region: "VI - O'Higgins", csg: '169553',   direccion: 'Camino Chimbarongo Interior',       especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 11, razonSocial: 'DONA ISABEL',                                  nombreHuerto: 'DONA ISABEL',         comuna: 'RENGO',        region: "VI - O'Higgins", csg: '105440',   direccion: 'Fundo Doña Isabel, Rengo',          especie: 'CEREZAS', variedades: ['Santina'] },
+  { id: 12, razonSocial: 'FUSION',                                       nombreHuerto: 'FUSION',              comuna: 'REQUINOA',     region: "VI - O'Higgins", csg: '174461',   direccion: 'Sector El Arrayán, Requínoa',       especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 13, razonSocial: 'INV MAULE',                                    nombreHuerto: 'INV MAULE',           comuna: 'CURICO',       region: 'VII - Maule',    csg: '97574',    direccion: 'Sector Longitudinal, Curicó',       especie: 'CEREZAS', variedades: ['Lapins'] },
+  { id: 14, razonSocial: 'J LECAROS',                                    nombreHuerto: 'J LECAROS',           comuna: 'RENGO',        region: "VI - O'Higgins", csg: '118224',   direccion: 'Fundo Las Higueras, Rengo',         especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 15, razonSocial: 'JOSE ANTONIO DE LA JARA',                     nombreHuerto: 'JOSE ANTONIO DE LA JARA', comuna: 'REQUINOA', region: "VI - O'Higgins", csg: '171784',   direccion: 'Camino San Vicente, Requínoa',      especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 16, razonSocial: 'LAS RAICES',                                   nombreHuerto: 'LAS RAICES',          comuna: 'CHIMBARONGO',  region: "VI - O'Higgins", csg: '96274',    direccion: 'Fundo Las Raíces, Chimbarongo',     especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 17, razonSocial: 'LEFENDA',                                      nombreHuerto: 'LEFENDA',             comuna: 'NANCAGUA',     region: "VI - O'Higgins", csg: '3176868',  direccion: 'Sector La Fenda, Nancagua',         especie: 'CEREZAS', variedades: ['Santina', 'Lapins'] },
+  { id: 18, razonSocial: 'LUIS DE LA JARA',                             nombreHuerto: 'LUIS DE LA JARA',     comuna: 'REQUINOA',     region: "VI - O'Higgins", csg: '177929',   direccion: 'Camino El Olivar, Requínoa',        especie: 'CEREZAS', variedades: ['Lapins'] },
+  { id: 19, razonSocial: 'MARIA RITA GONZALEZ',                         nombreHuerto: 'MARIA RITA GONZALEZ', comuna: 'MALLOA',       region: "VI - O'Higgins", csg: '3126282',  direccion: 'Sector El Carmen, Malloa',          especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 20, razonSocial: 'SOCIEDAD AGRICOLA Y FORESTAL PINO SPA',       nombreHuerto: 'MAURICIO PINO',       comuna: 'MALLOA',       region: "VI - O'Higgins", csg: '3130897',  direccion: 'Camino Longitudinal Malloa s/n',    especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 21, razonSocial: 'JUAN DOMINGO RIVERA ARENAS',                  nombreHuerto: 'JUAN DOMINGO RIVERA', comuna: 'CHIMBARONGO',  region: "VI - O'Higgins", csg: '163821',   direccion: 'Calle Las Arenas, Chimbarongo',     especie: 'CEREZAS', variedades: ['Lapins'] },
+  { id: 22, razonSocial: 'RICARDO BRINKMANN',                           nombreHuerto: 'RICARDO BRINKMANN',   comuna: 'SAN FERNANDO', region: "VI - O'Higgins", csg: '3103510',  direccion: 'Fundo El Parral, San Fernando',     especie: 'CEREZAS', variedades: ['Lapins'] },
+  { id: 23, razonSocial: 'SAN ALBERTO',                                 nombreHuerto: 'SAN ALBERTO',         comuna: 'RENGO',        region: "VI - O'Higgins", csg: '90732',    direccion: 'Fundo San Alberto, Rengo',          especie: 'CEREZAS', variedades: ['Santina'] },
+  { id: 24, razonSocial: 'SOC AGRICOLA GANADERA Y FORESTAL SAN RAMON LTDA', nombreHuerto: 'SAN RAMON',  comuna: 'REQUINOA',     region: "VI - O'Higgins", csg: '172170',   direccion: 'Camino Longitudinal, Requínoa',     especie: 'CEREZAS', variedades: ['Santina', 'Lapins'] },
+  { id: 25, razonSocial: 'SANTA ADELAIDA',                              nombreHuerto: 'SANTA ADELAIDA',      comuna: 'CHIMBARONGO',  region: "VI - O'Higgins", csg: '3125863',  direccion: 'Fundo Santa Adelaida, Chimbarongo', especie: 'CEREZAS', variedades: ['Santina', 'Lapins', 'Royal Dawn', 'Brooks'] },
+  { id: 26, razonSocial: 'SANTA JULIA',                                 nombreHuerto: 'SANTA JULIA',         comuna: 'RENGO',        region: "VI - O'Higgins", csg: '98957',    direccion: 'Fundo Santa Julia, Rengo',          especie: 'CEREZAS', variedades: ['Santina', 'Lapins', 'Frisco', 'Royal Dawn', 'Brooks', 'Van'] },
+  { id: 27, razonSocial: 'SANTA MARIA ODESSA',                         nombreHuerto: 'SANTA MARIA ODESSA',  comuna: 'SAN FERNANDO', region: "VI - O'Higgins", csg: '95779',    direccion: 'Fundo Santa María Odessa, San Fernando', especie: 'CEREZAS', variedades: ['Lapins', 'Sweet Heart', 'Regina', 'Santina', 'Bing'] },
+  { id: 28, razonSocial: 'SANTA ROSARIO',                              nombreHuerto: 'SANTA ROSARIO',       comuna: 'MALLOA',       region: "VI - O'Higgins", csg: '95400',    direccion: 'Camino El Rosario, Malloa',         especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 29, razonSocial: 'SIRZO BALTAZAR CARO LIZANA',                 nombreHuerto: 'SIRZO',               comuna: 'CHIMBARONGO',  region: "VI - O'Higgins", csg: '3129422',  direccion: 'Sector Los Nogales, Chimbarongo',   especie: 'CEREZAS', variedades: ['Santina', 'Lapins'] },
+  { id: 30, razonSocial: 'TORREFUT',                                    nombreHuerto: 'TORREFRUT',           comuna: 'REQUINOA',     region: "VI - O'Higgins", csg: '3176834',  direccion: 'Sector La Torre, Requínoa',         especie: 'CEREZAS', variedades: ['Lapins', 'Santina', 'Kordia', 'Regina'] },
+  { id: 31, razonSocial: 'TOTIHE',                                      nombreHuerto: 'TOTIHUE',             comuna: 'COLTAUCO',     region: "VI - O'Higgins", csg: '3153979',  direccion: 'Fundo Totihuén, Coltauco',          especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 32, razonSocial: 'VILLA',                                       nombreHuerto: 'VILLA',               comuna: 'CHIMBARONGO',  region: "VI - O'Higgins", csg: '—',        direccion: 'Sector La Villa, Chimbarongo',      especie: 'CEREZAS', variedades: ['Lapins', 'Santina'] },
+  { id: 33, razonSocial: 'VISTA AL VALLE',                             nombreHuerto: 'VISTA AL VALLE',      comuna: 'RENGO',        region: "VI - O'Higgins", csg: '90655',    direccion: 'Fundo Vista al Valle, Rengo',       especie: 'CEREZAS', variedades: ['Lapins', 'Bing', 'Regina', 'Santina', 'Skeena'] },
+  { id: 34, razonSocial: 'SOCIEDAD AGRICOLA EL RINCON B LIMITADA',     nombreHuerto: 'EL RINCON',           comuna: 'SAN FERNANDO', region: "VI - O'Higgins", csg: '—',        direccion: 'Sector El Rincón, San Fernando',    especie: 'CEREZAS', variedades: [] },
+]
+
+export interface HectareaRow {
+  id: number
+  razonSocial: string
+  huerto: string
+  haCerezo: number | null
+  anioPlantacion: number | null
+  edadAnios: number | null
+  rendEstKgHa: number
+  kgEsperadoTotal: number | null
+  kgProgramado: number
+  diferenciKg: number | null
+  pctUsoCapacidad: number | null
+  observacion: string
+}
+
+export function getHectareas(): HectareaRow[] {
+  const rendEstKgHa = 18000
+  return PRODUCTORES.map((p) => {
+    const kgProg = PROGRAMACION_SEMANAL.filter((r) => r.productor === p.nombreHuerto || r.productor === p.razonSocial.split(' ')[0]).reduce((s, r) => s + r.totalKg, 0)
+    return {
+      id: p.id,
+      razonSocial: p.razonSocial,
+      huerto: p.nombreHuerto,
+      haCerezo: null,
+      anioPlantacion: null,
+      edadAnios: null,
+      rendEstKgHa,
+      kgEsperadoTotal: null,
+      kgProgramado: kgProg,
+      diferenciKg: null,
+      pctUsoCapacidad: null,
+      observacion: '✏️ Ingresar Ha.',
+    }
+  })
+}
+
+export interface ExportacionRow {
+  variedad: string
+  kgCampo: number
+  pctExportacion: number
+  pctDescarte: number
+  kgExportEstimado: number
+  kgDescarteEstimado: number
+  kgComprometido: number
+  kgLibres: number
+}
+
+export function getExportacionDescarte(): ExportacionRow[] {
+  const resumen = getResumenPorVariedad()
+  const comprometidoPorVariedad: Record<string, number> = {}
+  for (const c of COMPROMISOS_CLIENTES) {
+    comprometidoPorVariedad[c.variedad] = (comprometidoPorVariedad[c.variedad] ?? 0) + c.totalKgComprometido
+  }
+  return resumen.map((v) => {
+    const varDef = VARIEDADES.find((vd) => vd.codigo === v.variedad || vd.nombre.toUpperCase() === v.variedad)
+    const pctExp = varDef?.pctExportacion ?? 0.85
+    const kgCampo = v.totalKg
+    const kgExp = Math.round(kgCampo * pctExp)
+    const kgDesc = kgCampo - kgExp
+    const kgComp = comprometidoPorVariedad[v.variedad] ?? 0
+    return {
+      variedad: v.variedad,
+      kgCampo,
+      pctExportacion: pctExp,
+      pctDescarte: 1 - pctExp,
+      kgExportEstimado: kgExp,
+      kgDescarteEstimado: kgDesc,
+      kgComprometido: kgComp,
+      kgLibres: kgExp - kgComp,
+    }
+  })
+}
+
+export interface EmbarqueRow {
+  id: number
+  nContenedor: string
+  clienteDestino: string
+  paisDestino: string
+  naviera: string
+  fechaZarpe: string
+  puertoOrigen: string
+  puertoDestino: string
+  semCosecha: string
+  variedad: string
+  kgEmbarque: number
+  calibreEmbarque: string
+  estado: 'PENDIENTE' | 'CONFIRMADO' | 'EN_TRANSITO' | 'ENTREGADO'
+}
+
+export const EMBARQUES: EmbarqueRow[] = [
+  { id: 1, nContenedor: 'TCKU3456781', clienteDestino: 'Shinemore HK Ltd', paisDestino: 'China',    naviera: 'Cosco Shipping', fechaZarpe: '2026-12-01', puertoOrigen: 'San Antonio', puertoDestino: 'Shanghai',  semCosecha: 'Sem 47-48', variedad: 'LAPINS',  kgEmbarque: 18000, calibreEmbarque: '5J+4J', estado: 'PENDIENTE' },
+  { id: 2, nContenedor: 'MSCU8812340', clienteDestino: 'Fresh Asia KK',    paisDestino: 'Japón',    naviera: 'MSC',            fechaZarpe: '2026-12-08', puertoOrigen: 'Valparaíso',  puertoDestino: 'Osaka',     semCosecha: 'Sem 48-49', variedad: 'SANTINA', kgEmbarque: 13000, calibreEmbarque: '4J+3J', estado: 'PENDIENTE' },
+  { id: 3, nContenedor: 'HLXU2209871', clienteDestino: 'Metro Fruits EU',  paisDestino: 'Alemania', naviera: 'Hapag-Lloyd',    fechaZarpe: '2026-12-15', puertoOrigen: 'San Antonio', puertoDestino: 'Hamburgo',  semCosecha: 'Sem 49-50', variedad: 'KORDIA',  kgEmbarque: 11000, calibreEmbarque: '5J',    estado: 'PENDIENTE' },
+]
