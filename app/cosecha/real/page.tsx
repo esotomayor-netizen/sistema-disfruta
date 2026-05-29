@@ -234,6 +234,7 @@ export default function CosechaRealPage() {
   const [avance, setAvance] = useState<AvanceRow[]>([])
   const [alertas, setAlertas] = useState<AlertaRow[]>([])
   const [importStatus, setImportStatus] = useState<{ msg: string; type: 'success' | 'error' | 'warning' } | null>(null)
+  const [pdfLoading, setPdfLoading] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Manual form state
@@ -335,6 +336,31 @@ export default function CosechaRealPage() {
     saveRecepciones([])
   }, [])
 
+  const descargarPDF = useCallback(async (productor: string) => {
+    setPdfLoading(productor)
+    try {
+      const { generarPDFProductor } = await import('@/lib/pdf-generator')
+      generarPDFProductor(productor, PROGRAMACION_SEMANAL, recepciones)
+    } finally {
+      setPdfLoading(null)
+    }
+  }, [recepciones])
+
+  const descargarTodosPDF = useCallback(async () => {
+    const productores = Array.from(new Set(PROGRAMACION_SEMANAL.map((r) => r.productor)))
+    setPdfLoading('__all__')
+    try {
+      const { generarPDFProductor } = await import('@/lib/pdf-generator')
+      for (const p of productores) {
+        generarPDFProductor(p, PROGRAMACION_SEMANAL, recepciones)
+        // small delay to avoid browser blocking multiple downloads
+        await new Promise((res) => setTimeout(res, 300))
+      }
+    } finally {
+      setPdfLoading(null)
+    }
+  }, [recepciones])
+
   const estadoBadge = (estado: AvanceRow['estado']) => {
     switch (estado) {
       case 'completado': return 'bg-green-100 text-green-800'
@@ -375,12 +401,26 @@ export default function CosechaRealPage() {
               </p>
             </div>
           </div>
-          {recepciones.length > 0 && (
-            <button onClick={handleClearAll} className="btn-danger text-xs py-1.5">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              Limpiar recepciones
+          <div className="flex items-center gap-2">
+            <button
+              onClick={descargarTodosPDF}
+              disabled={pdfLoading !== null}
+              className="btn-secondary text-xs py-1.5 disabled:opacity-50"
+            >
+              {pdfLoading === '__all__' ? (
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              ) : (
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              )}
+              Exportar todos los PDF
             </button>
-          )}
+            {recepciones.length > 0 && (
+              <button onClick={handleClearAll} className="btn-danger text-xs py-1.5">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Limpiar recepciones
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -451,9 +491,11 @@ export default function CosechaRealPage() {
 
       {/* Section 3: Tabla avance */}
       <div className="card p-0 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Avance por Productor / Variedad</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Comparativo plan vs real</p>
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-gray-900">Avance por Productor / Variedad</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Comparativo plan vs real</p>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -466,12 +508,13 @@ export default function CosechaRealPage() {
                 <th className="table-th text-right">% Avance</th>
                 <th className="table-th text-center">Semana Pico</th>
                 <th className="table-th text-center">Estado</th>
+                <th className="table-th text-center">PDF</th>
               </tr>
             </thead>
             <tbody>
               {avance.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="table-td text-center text-gray-400 py-8">
+                  <td colSpan={8} className="table-td text-center text-gray-400 py-8">
                     Sin datos de recepciones. Importa un archivo Excel o usa el registro manual.
                   </td>
                 </tr>
@@ -507,6 +550,21 @@ export default function CosechaRealPage() {
                         {estadoLabel(row.estado)}
                       </span>
                     </td>
+                    <td className="table-td text-center">
+                      <button
+                        onClick={() => descargarPDF(row.productor)}
+                        disabled={pdfLoading !== null}
+                        title={`Descargar PDF de ${row.productor}`}
+                        className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-40 transition-colors"
+                      >
+                        {pdfLoading === row.productor ? (
+                          <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        )}
+                        PDF
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -517,7 +575,7 @@ export default function CosechaRealPage() {
                   <td colSpan={2} className="table-td font-bold text-white">TOTAL</td>
                   <td className="table-td text-right font-bold text-gray-300">{fmtKg(avance.reduce((s, r) => s + r.kgPlan, 0))}</td>
                   <td className="table-td text-right font-bold text-green-400">{fmtKg(totalKgRecepcionado)}</td>
-                  <td colSpan={3} className="table-td text-gray-400">{pctDelPlan.toFixed(1)}% del plan</td>
+                  <td colSpan={4} className="table-td text-gray-400">{pctDelPlan.toFixed(1)}% del plan</td>
                 </tr>
               </tfoot>
             )}
