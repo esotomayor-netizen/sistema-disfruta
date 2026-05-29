@@ -47,7 +47,7 @@ export default function RealVsPlanPage() {
     <div>
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <a href="/cosecha" className="text-gray-400 hover:text-gray-600 text-sm">← Dashboard</a>
+          <a href="/cosecha" className="text-gray-400 hover:text-gray-600 text-sm">← Inicio</a>
           <span className="text-gray-300">/</span>
           <span className="text-sm text-gray-600 font-medium">Real vs Planificado</span>
         </div>

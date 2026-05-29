@@ -6,8 +6,8 @@ import Sidebar from '@/components/Sidebar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Sistema Disfruta - Gestión Agrícola',
-  description: 'Plataforma de supervisión de labores, aplicaciones y equipo técnico',
+  title: 'Disfruta × Lecaros Cox — Gestión de Temporada',
+  description: 'Planificación de cosecha, exportación y compromisos comerciales. Temporada 2026-2027.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
