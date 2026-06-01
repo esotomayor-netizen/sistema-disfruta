@@ -74,6 +74,22 @@ export function loadHectareas(): ProductorHectareasEdit[] | null {
   try { return JSON.parse(raw) } catch { return null }
 }
 
+// ── KG Programado ─────────────────────────────────────────────────────────────
+
+const KG_PROGRAMADO_KEY = 'cosecha_kg_programado'
+
+export function saveKgProgramado(data: Record<string, number>) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(KG_PROGRAMADO_KEY, JSON.stringify(data))
+}
+
+export function loadKgProgramado(): Record<string, number> {
+  if (typeof window === 'undefined') return {}
+  const raw = localStorage.getItem(KG_PROGRAMADO_KEY)
+  if (!raw) return {}
+  try { return JSON.parse(raw) } catch { return {} }
+}
+
 // ── Recepciones ───────────────────────────────────────────────────────────────
 
 export interface Recepcion {
