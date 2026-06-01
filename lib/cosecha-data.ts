@@ -342,6 +342,344 @@ export function getHectareas(): HectareaRow[] {
   })
 }
 
+// ── Hectáreas Data from Excel ─────────────────────────────────────────────────
+
+export interface HectareaBlock {
+  haCerezo: number
+  anioPlantacion: number | null
+  rendEstKgHa: number
+}
+
+export interface HectareaData {
+  nombreHuerto: string       // matches PRODUCTORES nombreHuerto
+  blocks: HectareaBlock[]    // one per plantation block in the Excel
+  haCerezoTotal: number | null
+  anioPlantacionPrincipal: number | null  // earliest planting year
+  rendEstKgHa: number        // weighted-average or dominant value
+  kgEsperadoTotal: number | null
+}
+
+// Aggregated from Excel "🌿 Hectáreas y Rendimiento" sheet.
+// Producers with no Ha data (✏️ Ingresar Ha.) have null values.
+export const HECTAREAS_DATA: HectareaData[] = [
+  {
+    nombreHuerto: 'AGROELITE',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'AGROLIQUID',
+    blocks: [{ haCerezo: 13, anioPlantacion: 2022, rendEstKgHa: 8000 }],
+    haCerezoTotal: 13,
+    anioPlantacionPrincipal: 2022,
+    rendEstKgHa: 8000,
+    kgEsperadoTotal: 104000,
+  },
+  {
+    nombreHuerto: 'ALIRO CORNEJO',
+    blocks: [{ haCerezo: 2.5, anioPlantacion: 2018, rendEstKgHa: 14000 }],
+    haCerezoTotal: 2.5,
+    anioPlantacionPrincipal: 2018,
+    rendEstKgHa: 14000,
+    kgEsperadoTotal: 35000,
+  },
+  {
+    nombreHuerto: 'ANDREA DEL PILAR',
+    blocks: [{ haCerezo: 0.6, anioPlantacion: 2021, rendEstKgHa: 8000 }],
+    haCerezoTotal: 0.6,
+    anioPlantacionPrincipal: 2021,
+    rendEstKgHa: 8000,
+    kgEsperadoTotal: 4800,
+  },
+  {
+    nombreHuerto: 'ANDRES RISOPATRON',
+    blocks: [
+      { haCerezo: 14, anioPlantacion: 2020, rendEstKgHa: 14000 },
+      { haCerezo: 10, anioPlantacion: 2023, rendEstKgHa: 8000 },
+    ],
+    haCerezoTotal: 24,
+    anioPlantacionPrincipal: 2020,
+    rendEstKgHa: 11417,
+    kgEsperadoTotal: 276000,
+  },
+  {
+    nombreHuerto: 'ANGEL MARTINEZ',
+    blocks: [
+      { haCerezo: 2, anioPlantacion: 2010, rendEstKgHa: 18000 },
+      { haCerezo: 1.5, anioPlantacion: 2022, rendEstKgHa: 8000 },
+    ],
+    haCerezoTotal: 3.5,
+    anioPlantacionPrincipal: 2010,
+    rendEstKgHa: 13714,
+    kgEsperadoTotal: 48000,
+  },
+  {
+    nombreHuerto: 'CASAS VIEJAS',
+    blocks: [
+      { haCerezo: 3, anioPlantacion: 2014, rendEstKgHa: 18000 },
+      { haCerezo: 4, anioPlantacion: 2021, rendEstKgHa: 8000 },
+      { haCerezo: 8, anioPlantacion: 2022, rendEstKgHa: 8000 },
+      { haCerezo: 4, anioPlantacion: 2023, rendEstKgHa: 8000 },
+      { haCerezo: 1, anioPlantacion: 2024, rendEstKgHa: 3000 },
+    ],
+    haCerezoTotal: 20,
+    anioPlantacionPrincipal: 2014,
+    rendEstKgHa: 9250,
+    kgEsperadoTotal: 185000,
+  },
+  {
+    nombreHuerto: 'COPA DE AGUA',
+    blocks: [{ haCerezo: 8, anioPlantacion: 2021, rendEstKgHa: 8000 }],
+    haCerezoTotal: 8,
+    anioPlantacionPrincipal: 2021,
+    rendEstKgHa: 8000,
+    kgEsperadoTotal: 64000,
+  },
+  {
+    nombreHuerto: 'CORCOLEN',
+    blocks: [{ haCerezo: 90, anioPlantacion: null, rendEstKgHa: 18000 }],
+    haCerezoTotal: 90,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: 1620000,
+  },
+  {
+    nombreHuerto: 'CREMASCHI',
+    blocks: [{ haCerezo: 4, anioPlantacion: 2022, rendEstKgHa: 8000 }],
+    haCerezoTotal: 4,
+    anioPlantacionPrincipal: 2022,
+    rendEstKgHa: 8000,
+    kgEsperadoTotal: 32000,
+  },
+  {
+    nombreHuerto: 'DONA ISABEL',
+    blocks: [
+      { haCerezo: 7.45, anioPlantacion: 2018, rendEstKgHa: 14000 },
+      { haCerezo: 4, anioPlantacion: 2021, rendEstKgHa: 8000 },
+      { haCerezo: 2, anioPlantacion: 2022, rendEstKgHa: 8000 },
+    ],
+    haCerezoTotal: 13.45,
+    anioPlantacionPrincipal: 2018,
+    rendEstKgHa: 11404,
+    kgEsperadoTotal: 152300,
+  },
+  {
+    nombreHuerto: 'FUSION',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'INV MAULE',
+    blocks: [
+      { haCerezo: 7, anioPlantacion: 2021, rendEstKgHa: 8000 },
+      { haCerezo: 2, anioPlantacion: 2023, rendEstKgHa: 8000 },
+      { haCerezo: 7, anioPlantacion: 2025, rendEstKgHa: 3000 },
+    ],
+    haCerezoTotal: 16,
+    anioPlantacionPrincipal: 2021,
+    rendEstKgHa: 6563,
+    kgEsperadoTotal: 93000,
+  },
+  {
+    nombreHuerto: 'J LECAROS',
+    blocks: [{ haCerezo: 8.4, anioPlantacion: 2021, rendEstKgHa: 8000 }],
+    haCerezoTotal: 8.4,
+    anioPlantacionPrincipal: 2021,
+    rendEstKgHa: 8000,
+    kgEsperadoTotal: 67200,
+  },
+  {
+    nombreHuerto: 'JOSE ANTONIO DE LA JARA',
+    blocks: [
+      { haCerezo: 6, anioPlantacion: 2019, rendEstKgHa: 14000 },
+      { haCerezo: 5.5, anioPlantacion: 2024, rendEstKgHa: 3000 },
+    ],
+    haCerezoTotal: 11.5,
+    anioPlantacionPrincipal: 2019,
+    rendEstKgHa: 8978,
+    kgEsperadoTotal: 100500,
+  },
+  {
+    nombreHuerto: 'LAS RAICES',
+    blocks: [
+      { haCerezo: 3, anioPlantacion: 2019, rendEstKgHa: 14000 },
+      { haCerezo: 3, anioPlantacion: 2023, rendEstKgHa: 8000 },
+      { haCerezo: 2, anioPlantacion: 2020, rendEstKgHa: 14000 },
+    ],
+    haCerezoTotal: 8,
+    anioPlantacionPrincipal: 2019,
+    rendEstKgHa: 12000,
+    kgEsperadoTotal: 94000,
+  },
+  {
+    nombreHuerto: 'LEFENDA',
+    blocks: [{ haCerezo: 11, anioPlantacion: 2022, rendEstKgHa: 8000 }],
+    haCerezoTotal: 11,
+    anioPlantacionPrincipal: 2022,
+    rendEstKgHa: 8000,
+    kgEsperadoTotal: 88000,
+  },
+  {
+    nombreHuerto: 'LUIS DE LA JARA',
+    blocks: [
+      { haCerezo: 3, anioPlantacion: 2018, rendEstKgHa: 14000 },
+      { haCerezo: 7, anioPlantacion: 2022, rendEstKgHa: 8000 },
+      { haCerezo: 5, anioPlantacion: 2024, rendEstKgHa: 3000 },
+    ],
+    haCerezoTotal: 15,
+    anioPlantacionPrincipal: 2018,
+    rendEstKgHa: 7533,
+    kgEsperadoTotal: 113000,
+  },
+  {
+    nombreHuerto: 'MARIA RITA GONZALEZ',
+    blocks: [{ haCerezo: 6, anioPlantacion: 2019, rendEstKgHa: 14000 }],
+    haCerezoTotal: 6,
+    anioPlantacionPrincipal: 2019,
+    rendEstKgHa: 14000,
+    kgEsperadoTotal: 84000,
+  },
+  {
+    nombreHuerto: 'MAURICIO PINO',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'JUAN DOMINGO RIVERA',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'RICARDO BRINKMANN',
+    blocks: [{ haCerezo: 2, anioPlantacion: 2016, rendEstKgHa: 14000 }],
+    haCerezoTotal: 2,
+    anioPlantacionPrincipal: 2016,
+    rendEstKgHa: 14000,
+    kgEsperadoTotal: 28000,
+  },
+  {
+    nombreHuerto: 'SAN ALBERTO',
+    blocks: [{ haCerezo: 20, anioPlantacion: 2021, rendEstKgHa: 8000 }],
+    haCerezoTotal: 20,
+    anioPlantacionPrincipal: 2021,
+    rendEstKgHa: 8000,
+    kgEsperadoTotal: 160000,
+  },
+  {
+    nombreHuerto: 'SAN RAMON',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'SANTA ADELAIDA',
+    blocks: [{ haCerezo: 41, anioPlantacion: null, rendEstKgHa: 18000 }],
+    haCerezoTotal: 41,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: 738000,
+  },
+  {
+    nombreHuerto: 'SANTA JULIA',
+    blocks: [{ haCerezo: 59.3, anioPlantacion: null, rendEstKgHa: 18000 }],
+    haCerezoTotal: 59.3,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: 1067400,
+  },
+  {
+    nombreHuerto: 'SANTA MARIA ODESSA',
+    blocks: [
+      { haCerezo: 9, anioPlantacion: 2017, rendEstKgHa: 14000 },
+      { haCerezo: 2.5, anioPlantacion: 2010, rendEstKgHa: 18000 },
+      { haCerezo: 5.5, anioPlantacion: 2010, rendEstKgHa: 18000 },
+      { haCerezo: 1, anioPlantacion: 2009, rendEstKgHa: 18000 },
+      { haCerezo: 7.5, anioPlantacion: 2020, rendEstKgHa: 14000 },
+    ],
+    haCerezoTotal: 25.5,
+    anioPlantacionPrincipal: 2009,
+    rendEstKgHa: 15412,
+    kgEsperadoTotal: 393000,
+  },
+  {
+    nombreHuerto: 'SANTA ROSARIO',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'SIRZO',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'TORREFUT',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'TOTIHE',
+    blocks: [
+      { haCerezo: 6, anioPlantacion: 2024, rendEstKgHa: 3000 },
+      { haCerezo: 6, anioPlantacion: 2021, rendEstKgHa: 8000 },
+    ],
+    haCerezoTotal: 12,
+    anioPlantacionPrincipal: 2021,
+    rendEstKgHa: 5500,
+    kgEsperadoTotal: 66000,
+  },
+  {
+    nombreHuerto: 'VILLA',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+  {
+    nombreHuerto: 'VISTA AL VALLE',
+    blocks: [
+      { haCerezo: 5, anioPlantacion: 2006, rendEstKgHa: 18000 },
+      { haCerezo: 5, anioPlantacion: 2008, rendEstKgHa: 18000 },
+      { haCerezo: 3.3, anioPlantacion: 2015, rendEstKgHa: 18000 },
+    ],
+    haCerezoTotal: 13.3,
+    anioPlantacionPrincipal: 2006,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: 239400,
+  },
+  {
+    nombreHuerto: 'EL RINCON',
+    blocks: [],
+    haCerezoTotal: null,
+    anioPlantacionPrincipal: null,
+    rendEstKgHa: 18000,
+    kgEsperadoTotal: null,
+  },
+]
+
 export interface ExportacionRow {
   variedad: string
   kgCampo: number
