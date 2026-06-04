@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 
 export async function GET() {
-  const programa = await prisma.programaFitosanitario.findMany({
-    orderBy: [{ temporada: 'asc' }, { id: 'asc' }],
-  })
-  return NextResponse.json(programa)
+  return NextResponse.json([])
 }
 
-export async function POST(req: Request) {
-  const data = await req.json()
-  const item = await prisma.programaFitosanitario.create({ data })
-  return NextResponse.json(item)
+export async function POST() {
+  return NextResponse.json({ error: 'Not implemented' }, { status: 501 })
 }

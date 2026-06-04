@@ -3,35 +3,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-model Empresa {
-  id               Int      @id @default(autoincrement())
-  razonSocial      String
-  rut              String   @unique
-  contactoNombre   String
-  contactoEmail    String?
-  contactoTelefono String?
-  predios          Predio[]
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
 }
 
 model Predio {
   id           Int          @id @default(autoincrement())
   nombre       String
-  csg          String       @unique
   superficie   Float
   cultivo      String
   ubicacion    String
   activa       Boolean      @default(true)
-  variedades   String?
-  empresa      Empresa      @relation(fields: [empresaId], references: [id])
-  empresaId    Int
-  encargado    Usuario?     @relation("Encargado", fields: [encargadoId], references: [id])
-  encargadoId  Int?
   labores      Labor[]
   aplicaciones Aplicacion[]
   createdAt    DateTime     @default(now())
@@ -46,7 +28,6 @@ model Usuario {
   rol          String
   telefono     String?
   activo       Boolean      @default(true)
-  predios      Predio[]     @relation("Encargado")
   labores      Labor[]      @relation("Responsable")
   aplicaciones Aplicacion[] @relation("Tecnico")
   createdAt    DateTime     @default(now())
@@ -69,38 +50,6 @@ model Labor {
   updatedAt     DateTime  @updatedAt
 }
 
-model ProgramaFitosanitario {
-  id                    Int      @id @default(autoincrement())
-  temporada             String
-  cultivo               String
-  estadoFenologico      String?
-  caracterAplicacion    String
-  tratamientoObjetivo   String?
-  fechaEstimada         String
-  producto              String
-  ingredienteActivo     String?
-  concentracion         String?
-  mojamiento            String?
-  dosisHa               String?
-  observaciones         String?
-  productosAlternativos String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-}
-
-model CatalogoLabor {
-  id             Int      @id @default(autoincrement())
-  grupo          String
-  especie        String
-  categoria      String
-  labor          String
-  descripcion    String
-  prioridad      String
-  mesesEjecucion String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-}
-
 model Aplicacion {
   id            Int       @id @default(autoincrement())
   producto      String
@@ -116,101 +65,4 @@ model Aplicacion {
   tecnicoId     Int
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-}
-
-// ── Módulo Cosecha & Exportación ─────────────────────────────────────────────
-
-model Temporada {
-  id                  Int                   @id @default(autoincrement())
-  nombre              String                @unique
-  descripcion         String?
-  activa              Boolean               @default(true)
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  programacionSemanal ProgramacionSemanal[]
-  compromisosCliente  CompromisoCliente[]
-  cosechaReal         CosechaReal[]
-  preciosCalibres     PrecioCalibres[]
-}
-
-model VariedadCosecha {
-  id            Int      @id @default(autoincrement())
-  codigo        String   @unique
-  nombre        String
-  semanaInicio  String
-  semanaFin     String
-  pct5J         Float    @default(0)
-  pct4J         Float    @default(0)
-  pct3J         Float    @default(0)
-  pct2J         Float    @default(0)
-  pctJ          Float    @default(0)
-  pctXL         Float    @default(0)
-  pctExportacion Float   @default(0.85)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model ProgramacionSemanal {
-  id           Int       @id @default(autoincrement())
-  temporada    Temporada @relation(fields: [temporadaId], references: [id])
-  temporadaId  Int
-  variedad     String
-  productor    String
-  sem44        Int       @default(0)
-  sem45        Int       @default(0)
-  sem46        Int       @default(0)
-  sem47        Int       @default(0)
-  sem48        Int       @default(0)
-  sem49        Int       @default(0)
-  sem50        Int       @default(0)
-  sem51        Int       @default(0)
-  sem52        Int       @default(0)
-  sem1         Int       @default(0)
-  sem2         Int       @default(0)
-  totalKg      Int       @default(0)
-  kg2JMasGrandes Int     @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-}
-
-model CompromisoCliente {
-  id                  Int       @id @default(autoincrement())
-  temporada           Temporada @relation(fields: [temporadaId], references: [id])
-  temporadaId         Int
-  cliente             String
-  pais                String
-  variedad            String
-  calibreSolicitado   String
-  sem47               Int       @default(0)
-  sem48               Int       @default(0)
-  sem49               Int       @default(0)
-  sem50               Int       @default(0)
-  sem51               Int       @default(0)
-  totalKgComprometido Int       @default(0)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-}
-
-model CosechaReal {
-  id          Int       @id @default(autoincrement())
-  temporada   Temporada @relation(fields: [temporadaId], references: [id])
-  temporadaId Int
-  variedad    String
-  semana      String
-  kgReal      Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model PrecioCalibres {
-  id          Int       @id @default(autoincrement())
-  temporada   Temporada @relation(fields: [temporadaId], references: [id])
-  temporadaId Int
-  calibre     String
-  precioUSD   Float
-  precioBajo  Float
-  precioAlto  Float
-  descripcion String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 }
