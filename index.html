@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plataforma Estratégica — Disfruta Lecaros/Cox</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --primary: #1a3a5c;
+      --accent: #c0392b;
+      --light-bg: #f4f7fa;
+      --card-shadow: 0 4px 18px rgba(0,0,0,.10);
+    }
+    body { background: var(--light-bg); font-family: 'Segoe UI', sans-serif; }
+
+    /* ── Navbar ── */
+    .navbar { background: var(--primary) !important; padding: .9rem 1.5rem; }
+    .navbar-brand { font-weight: 700; font-size: 1.15rem; letter-spacing: .3px; color: #fff !important; }
+    .nav-link { color: rgba(255,255,255,.8) !important; font-size: .88rem; transition: color .2s; }
+    .nav-link:hover, .nav-link.active { color: #fff !important; border-bottom: 2px solid #fff; }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #2980b9 100%);
+      color: #fff; padding: 2.5rem 2rem; border-radius: 0 0 1rem 1rem;
+      margin-bottom: 2rem;
+    }
+    .hero h1 { font-size: 1.9rem; font-weight: 700; }
+    .hero p { opacity: .85; margin: 0; font-size: 1rem; }
+    .hero .badge-season { background: rgba(255,255,255,.2); padding: .3rem .75rem;
+      border-radius: 20px; font-size: .8rem; display: inline-block; margin-top: .5rem; }
+
+    /* ── KPI Cards ── */
+    .kpi-card {
+      background: #fff; border-radius: .75rem; padding: 1.25rem 1.5rem;
+      box-shadow: var(--card-shadow); border-left: 4px solid var(--primary);
+      height: 100%;
+    }
+    .kpi-card .value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+    .kpi-card .label { color: #6c757d; font-size: .82rem; text-transform: uppercase; letter-spacing: .5px; }
+    .kpi-card .delta { font-size: .78rem; margin-top: .25rem; }
+    .delta-up { color: #27ae60; } .delta-down { color: var(--accent); }
+
+    /* ── Section cards ── */
+    .section-card {
+      background: #fff; border-radius: .75rem; padding: 1.75rem;
+      box-shadow: var(--card-shadow); margin-bottom: 1.75rem;
+    }
+    .section-card h4 { color: var(--primary); font-weight: 700; border-bottom: 2px solid #e9ecef;
+      padding-bottom: .5rem; margin-bottom: 1.2rem; }
+
+    /* ── Tab nav ── */
+    .nav-tabs .nav-link { color: #495057; border: none; padding: .6rem 1.1rem;
+      border-radius: .5rem .5rem 0 0; font-size: .9rem; }
+    .nav-tabs .nav-link.active { background: var(--primary); color: #fff !important; }
+    .tab-content { background: #fff; border-radius: 0 .75rem .75rem .75rem;
+      box-shadow: var(--card-shadow); padding: 1.75rem; }
+
+    /* ── Tabla ── */
+    .table thead th { background: var(--primary); color: #fff; font-size: .82rem; }
+    .table td { font-size: .87rem; vertical-align: middle; }
+
+    /* ── Progress bars ── */
+    .progress { height: 10px; border-radius: 10px; }
+    .progress-bar { background: var(--primary); }
+
+    /* ── Organigrama ── */
+    .mermaid { font-size: .9rem; }
+    .org-box {
+      background: #fff; border-left: 4px solid var(--primary); border-radius: .5rem;
+      padding: 1rem 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    }
+    .org-box h6 { color: var(--primary); font-weight: 700; margin-bottom: .25rem; }
+    .org-box small { color: #6c757d; }
+    .kpi-badge { background: #e8f4fd; color: var(--primary); border-radius: 20px;
+      padding: .15rem .6rem; font-size: .73rem; margin: .15rem .1rem; display: inline-block; }
+
+    /* ── Mercados cards ── */
+    .mercado-card {
+      border-radius: .65rem; padding: 1.1rem 1.25rem; height: 100%;
+      border: 1px solid #dee2e6; transition: box-shadow .2s;
+    }
+    .mercado-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+    .mercado-card .flag { font-size: 1.6rem; }
+    .mercado-card h6 { font-weight: 700; margin: .4rem 0 .3rem; }
+    .badge-margen { background: #d5f5e3; color: #1e8449; font-size: .75rem; padding: .2rem .55rem; border-radius: 20px; }
+    .badge-riesgo { background: #fdecea; color: #a93226; font-size: .75rem; padding: .2rem .55rem; border-radius: 20px; }
+
+    /* ── Tech timeline ── */
+    .tech-item { border-left: 3px solid var(--primary); padding: .75rem 1.25rem; margin-bottom: 1rem; position: relative; }
+    .tech-item::before { content: ''; position: absolute; left: -8px; top: 1rem;
+      width: 13px; height: 13px; border-radius: 50%; background: var(--primary); }
+    .tech-cost { background: #fff3cd; color: #856404; border-radius: 20px;
+      padding: .15rem .6rem; font-size: .75rem; display: inline-block; margin-top: .3rem; }
+
+    /* ── Costo/ha table ── */
+    .ha-table thead th { background: var(--primary); color: #fff; font-size: .8rem; }
+    .ha-table td { font-size: .83rem; vertical-align: middle; }
+    .ha-badge-alto  { background: #fdecea; color: #a93226; border-radius: 20px; padding: .15rem .55rem; font-size: .72rem; }
+    .ha-badge-medio { background: #fff3cd; color: #856404; border-radius: 20px; padding: .15rem .55rem; font-size: .72rem; }
+    .ha-badge-bajo  { background: #d5f5e3; color: #1e8449; border-radius: 20px; padding: .15rem .55rem; font-size: .72rem; }
+
+    /* ── KPI threshold table ── */
+    .kpi-threshold { width: 100%; font-size: .78rem; border-collapse: collapse; margin-top: .5rem; }
+    .kpi-threshold th { background: #f0f4f8; color: #495057; padding: .3rem .6rem; text-align: center; font-weight: 600; }
+    .kpi-threshold td { padding: .28rem .6rem; text-align: center; border-top: 1px solid #e9ecef; }
+    .lvl-s { color: #1e8449; font-weight: 700; }
+    .lvl-b { color: #1a3a5c; font-weight: 600; }
+    .lvl-r { color: #856404; font-weight: 600; }
+
+    /* ── Chart wrapper ── */
+    .chart-wrap { position: relative; height: 280px; }
+    .chart-sm { position: relative; height: 220px; }
+
+    /* ── Footer ── */
+    footer { text-align: center; color: #adb5bd; font-size: .78rem; padding: 2rem 0; }
+
+    /* ── Org Chart Interactivo ── */
+    .org-chart-wrap { display:flex; flex-direction:column; align-items:center; gap:0; padding:1rem 0; }
+    .org-level { display:flex; justify-content:center; align-items:flex-start; gap:1.5rem; width:100%; }
+    .org-level-2 { margin-top:.5rem; }
+    .org-level-3 { margin-top:.5rem; }
+    .org-branch { display:flex; flex-direction:column; align-items:center; }
+    .org-branch-sub { display:flex; flex-direction:column; align-items:center; }
+    .org-spacer { width: 80px; }
+    .org-spacer-large { width: 40px; }
+    .org-connector-v-main { width:2px; height:24px; background:#adb5bd; margin:0 auto; }
+    .org-node {
+      cursor:pointer; border-radius:.6rem; padding:.65rem 1.1rem;
+      font-weight:600; font-size:.83rem; text-align:center; min-width:160px;
+      transition:all .2s; user-select:none; position:relative;
+    }
+    .org-node::after { content:''; display:block; width:2px; height:18px;
+      background:#adb5bd; margin:0 auto; }
+    .org-nivel-1 { background:var(--primary); color:#fff; font-size:.9rem;
+      box-shadow:0 4px 14px rgba(26,58,92,.3); min-width:200px; }
+    .org-nivel-1::after { display:none; }
+    .org-nivel-2 { background:#2980b9; color:#fff;
+      box-shadow:0 3px 10px rgba(41,128,185,.25); }
+    .org-nivel-3 { background:#e8f4fd; color:var(--primary); border:2px solid #5dade2;
+      box-shadow:0 2px 8px rgba(0,0,0,.08); }
+    .org-nivel-3::after { display:none; }
+    .org-node:hover { transform:translateY(-3px); filter:brightness(1.08);
+      box-shadow:0 6px 20px rgba(0,0,0,.18); }
+    .org-node.selected { outline:3px solid #f39c12; outline-offset:2px; }
+    .org-detail-panel {
+      margin-top:1.5rem; background:#f8fbff; border-radius:.75rem;
+      border:2px solid #5dade2; padding:1.5rem;
+      animation: slideIn .25s ease;
+    }
+    @keyframes slideIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+
+    /* ── Mapa Mental ── */
+    #chartMapaMental { display:block; }
+
+    /* ── Mercado Chile ── */
+    .var-pos { color: #1e8449; font-weight: 700; }
+    .var-neg { color: #a93226; font-weight: 700; }
+    .var-neu { color: #6c757d; font-weight: 600; }
+    .badge-salida { background:#fdecea; color:#a93226; font-size:.72rem; padding:.12rem .5rem; border-radius:20px; }
+    .badge-lider  { background:#d5f5e3; color:#1e8449; font-size:.72rem; padding:.12rem .5rem; border-radius:20px; }
+    .calibre-bar-wrap { background:#e9ecef; border-radius:6px; height:22px; position:relative; overflow:hidden; }
+    .calibre-bar-inner { height:100%; border-radius:6px; display:flex; align-items:center; padding-left:6px;
+      font-size:.72rem; font-weight:700; color:#fff; transition:width .6s ease; }
+    .alert-ranco { background:#fff8e1; border-left:4px solid #f39c12; border-radius:.5rem;
+      padding:.9rem 1.1rem; font-size:.87rem; margin-bottom:1.25rem; }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 1.4rem; }
+      .kpi-card .value { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════ NAVBAR ══════════════════════ -->
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand">🍒 Disfruta — Lecaros/Cox</span>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="#mercado">Mercado Chile</a></li>
+        <li class="nav-item"><a class="nav-link" href="#diversificacion">Diversificación</a></li>
+        <li class="nav-item"><a class="nav-link" href="#tecnologias">Tecnologías</a></li>
+        <li class="nav-item"><a class="nav-link" href="#organigrama">Organigrama</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<div class="hero text-center">
+  <h1>Plataforma Estratégica de Directorio</h1>
+  <p>Exportadora Disfruta S.A. — Asociación Lecaros / Cox</p>
+  <span class="badge-season">Temporada 2025–2026</span>
+</div>
+
+<div class="container-fluid px-4 px-md-5">
+
+  <!-- ══════════════════════ KPIs RESUMEN ══════════════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="label">Mercado Cerezas Chile</div>
+        <div class="value">569K</div>
+        <div class="delta delta-down">▼ −9% temporada 2025/26 (Tons)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="label">Variedad en Alza</div>
+        <div class="value">Regina</div>
+        <div class="delta delta-up">▲ +13% única variedad positiva</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="label">Inversión Tecnológica</div>
+        <div class="value">$650K</div>
+        <div class="delta delta-up">Cobertores · IoT · Drones</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="label">Mercados Objetivo</div>
+        <div class="value">8+</div>
+        <div class="delta delta-up">China + Perú + USA + Europa</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ DIVERSIFICACIÓN ══════════════════════ -->
+  <div id="diversificacion" class="section-card">
+    <h4>🌍 Diversificación de Mercados y Productos</h4>
+
+    <ul class="nav nav-tabs mb-0" id="divTabs">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#divExport">Exportación Chile</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#divImport">Oportunidades Regionales</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#divMargenes">Márgenes por Especie</button></li>
+    </ul>
+
+    <div class="tab-content rounded-top-0">
+
+      <!-- TAB 1: EXPORTACIÓN CHILE -->
+      <div class="tab-pane fade show active" id="divExport">
+        <h6 class="text-muted mb-3">Mercados Destino — Frutas de Exportación</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6 col-lg-3">
+            <div class="mercado-card">
+              <div class="flag">🇨🇳</div>
+              <h6>China</h6>
+              <p class="small text-muted mb-1">Cerezas, uvas Thompson/Red Globe. Mercado principal, ventana nov–feb.</p>
+              <span class="badge-margen">Mercado principal</span>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="mercado-card">
+              <div class="flag">🇪🇺</div>
+              <h6>Europa (UE)</h6>
+              <p class="small text-muted mb-1">Uvas orgánicas, kiwi premium. Exige GlobalGAP y carbon neutral.</p>
+              <span class="badge-margen">Margen alto</span>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="mercado-card">
+              <div class="flag">🇺🇸</div>
+              <h6>Estados Unidos</h6>
+              <p class="small text-muted mb-1">Carozos (duraznos, nectarines), uvas early season. Ventana antes de California.</p>
+              <span class="badge-margen">Ventana temprana</span>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="mercado-card">
+              <div class="flag">🇮🇳</div>
+              <h6>India y Vietnam</h6>
+              <p class="small text-muted mb-1">Mercados emergentes de alto crecimiento.</p>
+              <span class="badge-margen">+15% anual</span>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="text-muted mb-2 mt-3">Uvas — Variedades y Mercados Específicos</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered align-middle" style="font-size:.82rem">
+            <thead style="background:var(--primary);color:#fff">
+              <tr><th>Variedad Uva</th><th>Tipo</th><th>Mercado Principal</th><th>Ventana</th><th>Margen Est.</th><th>Observación</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Thompson Seedless</strong></td><td>Blanca sin semilla</td><td>🇨🇳 China / 🇦🇪 Medio Oriente</td><td>Dic–Feb</td><td class="var-pos">22%</td><td>Alta demanda, volumen masivo</td></tr>
+              <tr><td><strong>Red Globe</strong></td><td>Roja con semilla</td><td>🇨🇳 China</td><td>Dic–Mar</td><td class="var-pos">20%</td><td>Preferida mercado chino, calibre grande</td></tr>
+              <tr><td><strong>Crimson Seedless</strong></td><td>Roja sin semilla</td><td>🇺🇸 EE.UU. / 🇪🇺 Europa</td><td>Feb–Abr</td><td class="var-pos">28%</td><td>Premium, ideal destinos exigentes</td></tr>
+              <tr><td><strong>Arra 15 / Sweet Celebrate</strong></td><td>Roja sin semilla premium</td><td>🇪🇺 Europa / 🇬🇧 UK</td><td>Ene–Mar</td><td class="var-pos">35%</td><td>Alta remuneración, requiere royalty</td></tr>
+              <tr><td><strong>Cotton Candy</strong></td><td>Verde sabor especial</td><td>🇺🇸 EE.UU.</td><td>Feb–Mar</td><td class="var-pos">38%</td><td>Diferenciadora, nicho premium</td></tr>
+              <tr><td><strong>Sugra One / Scarlotta</strong></td><td>Roja sin semilla</td><td>🇪🇺 Europa</td><td>Mar–Abr</td><td class="var-pos">30%</td><td>Temporada extendida, buena post-vida</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: OPORTUNIDADES REGIONALES (PERÚ / USA) -->
+      <div class="tab-pane fade" id="divImport">
+        <div class="alert-ranco mb-3">
+          🌎 <strong>Estrategia regional:</strong> Complementar la oferta nacional con fruta de contraestación desde Perú y logística compartida desde USA, maximizando la ventana comercial durante todo el año.
+        </div>
+        <div class="row g-3">
+
+          <!-- Perú -->
+          <div class="col-md-6">
+            <div class="section-card mb-0 p-3 border shadow-none" style="border-left:4px solid #e74c3c !important">
+              <h6 class="fw-bold mb-2">🇵🇪 Perú — Oportunidades de Abastecimiento / Intermediación</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0" style="font-size:.8rem">
+                  <thead style="background:#e74c3c;color:#fff">
+                    <tr><th>Producto</th><th>Variedad</th><th>Ventana</th><th>Margen Est.</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><strong>Uvas de Mesa</strong></td><td>Red Globe, Thompson, Crimson</td><td>Ago–Nov</td><td class="var-pos">18–22%</td></tr>
+                    <tr><td><strong>Paltas</strong></td><td>Hass</td><td>Mar–Sep</td><td class="var-pos">25–30%</td></tr>
+                    <tr><td><strong>Cítricos</strong></td><td>Mandarinas W. Murcott, Naranja</td><td>Abr–Ago</td><td class="var-pos">20–25%</td></tr>
+                    <tr><td><strong>Arándanos</strong></td><td>Biloxi, Ventura</td><td>Oct–Dic</td><td class="var-pos">28–35%</td></tr>
+                    <tr><td><strong>Mango</strong></td><td>Kent, Haden</td><td>Nov–Mar</td><td class="var-pos">22–28%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="small text-muted mt-2 mb-0">↳ Posible intermediación hacia China y Europa aprovechando red logística existente.</p>
+            </div>
+          </div>
+
+          <!-- USA / Otros -->
+          <div class="col-md-6">
+            <div class="section-card mb-0 p-3 border shadow-none" style="border-left:4px solid #3498db !important">
+              <h6 class="fw-bold mb-2">🇺🇸 USA / Otros — Carozos y Productos Premium</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0" style="font-size:.8rem">
+                  <thead style="background:#3498db;color:#fff">
+                    <tr><th>Producto</th><th>Variedad</th><th>Destino</th><th>Margen Est.</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><strong>Duraznos / Nectarines</strong></td><td>Paraguayo, Flat, Spring Lady</td><td>🇺🇸 USA / 🇨🇦 Canadá</td><td class="var-pos">20–25%</td></tr>
+                    <tr><td><strong>Ciruelas</strong></td><td>Angeleno, Black Amber</td><td>🇺🇸 USA / 🇪🇺 Europa</td><td class="var-pos">22–27%</td></tr>
+                    <tr><td><strong>Kiwi Gold</strong></td><td>Zespri SunGold</td><td>🇨🇳 China / 🇦🇪 Medio Oriente</td><td class="var-pos">28–32%</td></tr>
+                    <tr><td><strong>Granadas</strong></td><td>Wonderful</td><td>🇪🇺 Europa / 🇬🇧 UK</td><td class="var-pos">30–35%</td></tr>
+                    <tr><td><strong>Arándanos Chile</strong></td><td>O'Neal, Biloxi</td><td>🇺🇸 USA / 🇯🇵 Japón</td><td class="var-pos">25–30%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="small text-muted mt-2 mb-0">↳ Ventana competitiva antes que producción californiana alcance peak.</p>
+            </div>
+          </div>
+
+          <!-- Chart comparativo -->
+          <div class="col-12">
+            <div class="section-card mb-0 p-3 border shadow-none">
+              <h6 class="fw-bold text-primary mb-2">Comparativo de Márgenes por Producto y Origen</h6>
+              <div style="position:relative;height:260px"><canvas id="chartMargenesRegional"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: MÁRGENES -->
+      <div class="tab-pane fade" id="divMargenes">
+        <div class="row g-3 align-items-start">
+          <div class="col-md-6">
+            <div class="chart-sm"><canvas id="chartMargenes"></canvas></div>
+          </div>
+          <div class="col-md-6">
+            <div class="chart-sm"><canvas id="chartCrecimiento"></canvas></div>
+          </div>
+          <div class="col-12 mt-2">
+            <h6 class="text-muted mb-2">Ranking de Especies por Margen Estimado</h6>
+            <div id="especiesProgress"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-content diversificación -->
+  </div>
+
+  <!-- ══════════════════════ TECNOLOGÍAS ══════════════════════ -->
+  <div id="tecnologias" class="section-card">
+    <h4>⚙️ Nuevas Tecnologías</h4>
+    <div class="row g-3">
+
+      <div class="col-md-4">
+        <h6 class="text-primary fw-bold">Línea de Tiempo de Implementación</h6>
+        <div class="tech-item">
+          <strong>Cobertores Cerezos</strong>
+          <p class="small text-muted mb-1">7–10 días de precocidad. Protección contra heladas.</p>
+          <span class="tech-cost">US$ 1–2/m²</span>
+          <span class="tech-cost">+15–25% precio</span>
+        </div>
+        <div class="tech-item">
+          <strong>Sensores IoT</strong>
+          <p class="small text-muted mb-1">Monitoreo en tiempo real de humedad, temperatura y plagas.</p>
+          <span class="tech-cost">US$ 200,000</span>
+        </div>
+        <div class="tech-item">
+          <strong>Drones Aplicación</strong>
+          <p class="small text-muted mb-1">Aplicación precisa de fitosanitarios, reducción de costos.</p>
+          <span class="tech-cost">US$ 150,000</span>
+        </div>
+        <div class="tech-item">
+          <strong>Refrigeración Inteligente</strong>
+          <p class="small text-muted mb-1">Control de cadena de frío post-cosecha con IA.</p>
+          <span class="tech-cost">US$ 300,000</span>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <h6 class="text-primary fw-bold">Distribución de Inversión</h6>
+        <div class="chart-wrap"><canvas id="chartInversion"></canvas></div>
+        <p class="text-center text-muted small mt-1">Total: US$ 650,000</p>
+      </div>
+
+      <div class="col-md-4">
+        <h6 class="text-primary fw-bold">Certificaciones</h6>
+        <div class="org-box mb-2">
+          <h6>🌱 GlobalGAP</h6>
+          <small>Acceso a mercados premium en Europa. Requisito para supermercados de cadena.</small>
+          <div class="mt-2">
+            <div class="d-flex justify-content-between small mb-1"><span>Avance</span><span>65%</span></div>
+            <div class="progress"><div class="progress-bar" style="width:65%"></div></div>
+          </div>
+        </div>
+        <div class="org-box mb-2">
+          <h6>🍃 Orgánico</h6>
+          <small>Márgenes superiores en EE.UU. y Canadá. Proceso 3 años.</small>
+          <div class="mt-2">
+            <div class="d-flex justify-content-between small mb-1"><span>Avance</span><span>30%</span></div>
+            <div class="progress"><div class="progress-bar bg-success" style="width:30%"></div></div>
+          </div>
+        </div>
+        <div class="org-box">
+          <h6>🌍 Carbon Neutral</h6>
+          <small>Requisito para exportaciones sostenibles a Europa 2026+.</small>
+          <div class="mt-2">
+            <div class="d-flex justify-content-between small mb-1"><span>Avance</span><span>15%</span></div>
+            <div class="progress"><div class="progress-bar bg-warning" style="width:15%"></div></div>
+          </div>
+        </div>
+
+        <h6 class="text-primary fw-bold mt-3">Nuevas Variedades</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0" style="font-size:.8rem">
+            <thead style="background:var(--primary);color:#fff">
+              <tr><th>Variedad</th><th>Especie</th><th>Ventaja</th><th>Costo Variable</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Royal Dawn</strong></td><td>Cereza</td><td>Cosecha temprana +12 días</td><td><span class="ha-badge-alto">Depende royalty</span></td></tr>
+              <tr><td><strong>Lapins mejorado</strong></td><td>Cereza</td><td>Alta productividad y calibre</td><td><span class="ha-badge-medio">Depende royalty</span></td></tr>
+              <tr><td><strong>Arra 15 / Sweet Celebrate</strong></td><td>Uva</td><td>Premium, Europa y UK</td><td><span class="ha-badge-alto">Depende royalty</span></td></tr>
+              <tr><td><strong>Crimson Seedless</strong></td><td>Uva</td><td>Sin semilla, alta demanda</td><td><span class="ha-badge-medio">Depende royalty</span></td></tr>
+              <tr><td><strong>Zespri SunGold</strong></td><td>Kiwi</td><td>Premium Asia y Medio Oriente</td><td><span class="ha-badge-alto">Depende royalty</span></td></tr>
+              <tr><td><strong>Nectarines híbridos</strong></td><td>Carozo</td><td>Resistente plagas, EE.UU.</td><td><span class="ha-badge-bajo">Sin royalty</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small text-muted mt-2">⚠️ El costo variable de cada variedad protegida depende directamente del royalty negociado con el obtentor (breeder). Evaluar costo total antes de plantar.</p>
+      </div><!-- /col-md-4 tercera columna -->
+
+    </div><!-- /row tecnologías -->
+  </div><!-- /section-card tecnologías -->
+
+  <!-- ══════════════════════ ORGANIGRAMA ══════════════════════ -->
+  <div id="organigrama" class="section-card">
+    <h4>🏢 Organigrama y KPIs</h4>
+    <ul class="nav nav-tabs mb-0" id="orgTabs">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabOrg">Organigrama Interactivo</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabMapa">Mapa Mental KPIs</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabKpis">KPIs Detalle</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabRadar">Radar de Desempeño</button></li>
+    </ul>
+    <div class="tab-content rounded-top-0">
+
+      <!-- ORGANIGRAMA INTERACTIVO -->
+      <div class="tab-pane fade show active" id="tabOrg">
+        <p class="text-muted small mb-3">Haz clic en cualquier cargo para ver su descripción y KPIs.</p>
+
+        <div class="org-chart-wrap">
+          <!-- Nivel 1 -->
+          <div class="org-level">
+            <div class="org-node org-nivel-1" data-cargo="GG" onclick="mostrarCargo('GG')">
+              🎯 Gerente General
+            </div>
+          </div>
+          <div class="org-connector-v-main"></div>
+          <!-- Nivel 2 -->
+          <div class="org-level org-level-2">
+            <div class="org-branch">
+              <div class="org-node org-nivel-2" data-cargo="GC" onclick="mostrarCargo('GC')">💼 Gerente Comercial</div>
+            </div>
+            <div class="org-spacer"></div>
+            <div class="org-branch">
+              <div class="org-node org-nivel-2" data-cargo="GP" onclick="mostrarCargo('GP')">🏭 Gerente de Producción</div>
+            </div>
+          </div>
+          <!-- Nivel 3 -->
+          <div class="org-level org-level-3">
+            <div class="org-branch-sub">
+              <div class="org-node org-nivel-3" data-cargo="JC" onclick="mostrarCargo('JC')">📋 Jefa de Comex</div>
+            </div>
+            <div class="org-spacer-large"></div>
+            <div class="org-branch-sub">
+              <div class="org-node org-nivel-3" data-cargo="JO" onclick="mostrarCargo('JO')">🔧 Jefe Operaciones</div>
+            </div>
+            <div class="org-branch-sub">
+              <div class="org-node org-nivel-3" data-cargo="EA" onclick="mostrarCargo('EA')">📦 Encarg. Abastecimiento</div>
+            </div>
+            <div class="org-branch-sub">
+              <div class="org-node org-nivel-3" data-cargo="AG" onclick="mostrarCargo('AG')">🌱 Agrónomos (1 y 2)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de detalle -->
+        <div id="orgDetailPanel" class="org-detail-panel" style="display:none">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <h5 id="detailTitle" class="mb-0 text-primary fw-bold"></h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="cerrarDetalle()">✕ Cerrar</button>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="org-box h-100">
+                <h6>📌 Descripción del Cargo</h6>
+                <p id="detailDesc" class="small text-muted mb-0"></p>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <h6 class="text-muted mb-2">KPIs del Cargo</h6>
+              <div id="detailKpis"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAPA MENTAL KPIs -->
+      <div class="tab-pane fade" id="tabMapa">
+        <p class="text-muted small mb-3">Flujo de medición desde la Gerencia General hacia todas las áreas. Cada nodo muestra el KPI principal del cargo.</p>
+        <div style="position:relative;width:100%;overflow-x:auto">
+          <canvas id="chartMapaMental" style="width:100%;min-height:500px"></canvas>
+        </div>
+        <div id="mapaLeyenda" class="mt-3 d-flex gap-3 flex-wrap justify-content-center"></div>
+      </div>
+
+      <!-- KPIs ACCORDION -->
+      <div class="tab-pane fade" id="tabKpis">
+        <div class="accordion" id="accKPIs">
+
+          <div class="accordion-item border-0 mb-2">
+            <h2 class="accordion-header">
+              <button class="accordion-button rounded" type="button" data-bs-toggle="collapse" data-bs-target="#kGG">
+                🎯 Gerente General
+              </button>
+            </h2>
+            <div id="kGG" class="accordion-collapse collapse show" data-bs-parent="#accKPIs">
+              <div class="accordion-body pt-2">
+                <p class="small text-muted">Lidera la asociación, define estrategias y supervisa integración.</p>
+                <div id="kpiGG"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item border-0 mb-2">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#kGC">
+                💼 Gerente Comercial
+              </button>
+            </h2>
+            <div id="kGC" class="accordion-collapse collapse" data-bs-parent="#accKPIs">
+              <div class="accordion-body pt-2">
+                <p class="small text-muted">Gestiona ventas, mercados y estrategias comerciales.</p>
+                <div id="kpiGC"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item border-0 mb-2">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#kJC">
+                📋 Jefa de Comex
+              </button>
+            </h2>
+            <div id="kJC" class="accordion-collapse collapse" data-bs-parent="#accKPIs">
+              <div class="accordion-body pt-2">
+                <p class="small text-muted">Gestiona operaciones de comercio exterior y logística internacional.</p>
+                <div id="kpiJC"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item border-0 mb-2">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#kGP">
+                🏭 Gerente de Producción
+              </button>
+            </h2>
+            <div id="kGP" class="accordion-collapse collapse" data-bs-parent="#accKPIs">
+              <div class="accordion-body pt-2">
+                <p class="small text-muted">Supervisa operaciones agrícolas, post-cosecha y abastecimiento.</p>
+                <div id="kpiGP"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item border-0 mb-2">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#kJO">
+                🔧 Jefe de Operaciones y Post-Cosecha
+              </button>
+            </h2>
+            <div id="kJO" class="accordion-collapse collapse" data-bs-parent="#accKPIs">
+              <div class="accordion-body pt-2">
+                <p class="small text-muted">Coordina cosecha, embalaje, cadena de frío y despacho a packing.</p>
+                <div id="kpiJO"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item border-0 mb-2">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#kEA">
+                📦 Encargado de Abastecimiento
+              </button>
+            </h2>
+            <div id="kEA" class="accordion-collapse collapse" data-bs-parent="#accKPIs">
+              <div class="accordion-body pt-2">
+                <p class="small text-muted">Gestiona compras, insumos agrícolas y proveedores estratégicos.</p>
+                <div id="kpiEA"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item border-0 mb-2">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed rounded" type="button" data-bs-toggle="collapse" data-bs-target="#kAG">
+                🌱 Agrónomos (1 y 2)
+              </button>
+            </h2>
+            <div id="kAG" class="accordion-collapse collapse" data-bs-parent="#accKPIs">
+              <div class="accordion-body pt-2">
+                <p class="small text-muted">Monitorean estado fitosanitario, manejo de suelo y aplicación de protocolos agronómicos.</p>
+                <div id="kpiAG"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RADAR -->
+      <div class="tab-pane fade" id="tabRadar">
+        <div class="row align-items-center">
+          <div class="col-md-7">
+            <div class="chart-wrap"><canvas id="chartRadar"></canvas></div>
+          </div>
+          <div class="col-md-5">
+            <h6 class="text-primary fw-bold">Evaluación Global de KPIs</h6>
+            <p class="small text-muted">Comparativo de desempeño estimado vs. metas para la temporada 2025-26.</p>
+            <div id="radarLegend"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════ MERCADO CHILE ══════════════════════ -->
+  <div id="mercado" class="section-card">
+    <h4>🍒 Contexto de Mercado — Cerezas Chile (Fuente: Ranco Cherries / Exportdata)</h4>
+
+    <ul class="nav nav-tabs mb-0" id="mktTabs">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#mktProyeccion">Proyección Exportación</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#mktVariedades">Exportación por Variedad</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#mktProductividad">Productividad / Há</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#mktCalibres">Calibres 2J+</button></li>
+    </ul>
+
+    <div class="tab-content rounded-top-0">
+
+      <!-- ── TAB 1: PROYECCIÓN ── -->
+      <div class="tab-pane fade show active" id="mktProyeccion">
+        <div class="alert-ranco">
+          ⚠️ <strong>Nota:</strong> Baja la proyección 2026 y 2027 por un aumento leve de arranques y ajustes en la productividad (&lt; kgs/há).
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div style="position:relative;height:300px"><canvas id="chartProyeccion"></canvas></div>
+          </div>
+          <div class="col-md-6">
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered align-middle mb-0" style="font-size:.8rem">
+                <thead style="background:var(--primary);color:#fff">
+                  <tr>
+                    <th>Variedad</th><th>2023</th><th>2024</th><th>2025</th>
+                    <th>2026 Est</th><th>2027 Est</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>Santina</td><td>86.537</td><td>194.265</td><td>177.824</td><td>232.382</td><td>256.072</td></tr>
+                  <tr><td>Lapins</td><td>176.878</td><td>230.016</td><td>212.563</td><td>215.825</td><td>219.594</td></tr>
+                  <tr><td>Regina</td><td>79.222</td><td>89.710</td><td>101.441</td><td>100.068</td><td>101.246</td></tr>
+                  <tr><td>Nuevas tempranas</td><td>755</td><td>5.360</td><td>9.063</td><td>15.672</td><td>20.766</td></tr>
+                  <tr><td>Otras</td><td>70.589</td><td>106.662</td><td>68.390</td><td>100.460</td><td>97.859</td></tr>
+                  <tr class="table-dark fw-bold"><td>Total (Tons)</td><td>413.981</td><td>626.013</td><td>569.280</td><td>664.406</td><td>695.537</td></tr>
+                  <tr><td>Sup. Prod. (há)</td><td>51.851</td><td>61.146</td><td>66.844</td><td>70.248</td><td>73.663</td></tr>
+                  <tr><td>Tons / há</td><td>7,98</td><td>10,24</td><td>8,52</td><td>9,46</td><td>9,44</td></tr>
+                  <tr><td>Export. M cajas 5k</td><td>82.796</td><td>125.203</td><td>113.856</td><td>132.881</td><td>139.107</td></tr>
+                  <tr class="table-warning"><td>M cajas 5k − 10%</td><td colspan="3" class="text-center text-muted">—</td><td>119.593</td><td>125.197</td></tr>
+                  <tr class="table-warning"><td>M cajas 5k + 10%</td><td colspan="3" class="text-center text-muted">—</td><td>146.169</td><td>153.018</td></tr>
+                  <tr class="table-info"><td><strong>Variación anual</strong></td><td>—</td><td class="var-pos">+51,2%</td><td class="var-neg">−9,1%</td><td class="var-pos">+16,7%</td><td class="var-pos">+4,7%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 2: EXPORTACIÓN POR VARIEDAD ── -->
+      <div class="tab-pane fade" id="mktVariedades">
+        <div class="alert-ranco">
+          📌 <strong>Tendencia:</strong> <strong>Bing, Sweetheart y Royal Dawn</strong> muestran caídas sostenidas — van de salida del mix exportable. <strong>Regina</strong> es la única con crecimiento (+13%).
+        </div>
+        <div class="row g-3">
+          <div class="col-md-7">
+            <div style="position:relative;height:320px"><canvas id="chartVarExport"></canvas></div>
+          </div>
+          <div class="col-md-5">
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered align-middle mb-0" style="font-size:.8rem">
+                <thead style="background:var(--primary);color:#fff">
+                  <tr><th>Variedad</th><th>2023/24</th><th>2024/25</th><th>2025/26</th><th>% Var</th></tr>
+                </thead>
+                <tbody id="tablaVarExport"></tbody>
+              </table>
+            </div>
+            <p class="small text-muted mt-2">Fuente: Exportdata</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 3: PRODUCTIVIDAD / HÁ ── -->
+      <div class="tab-pane fade" id="mktProductividad">
+        <p class="text-muted small mb-3">Toneladas exportadas por hectárea en producción — por variedad y temporada. Las líneas rojas indican la meta 2025/26.</p>
+        <div style="position:relative;height:340px"><canvas id="chartProductividad"></canvas></div>
+        <div class="row g-2 mt-2">
+          <div class="col-auto"><span class="kpi-badge">Meta Santina: <strong>9,5 t/há</strong></span></div>
+          <div class="col-auto"><span class="kpi-badge">Meta Lapins: <strong>11,8 t/há</strong></span></div>
+          <div class="col-auto"><span class="kpi-badge">Meta Regina: <strong>9,5 t/há</strong></span></div>
+          <div class="col-auto"><span class="kpi-badge">Meta Nuevas: <strong>8,0 t/át</strong></span></div>
+          <div class="col-auto"><span class="kpi-badge">Meta Otras: <strong>7,0 t/há</strong></span></div>
+        </div>
+      </div>
+
+      <!-- ── TAB 4: CALIBRES 2J+ ── -->
+      <div class="tab-pane fade" id="mktCalibres">
+        <p class="text-muted small mb-3">Porcentaje de exportación en calibre 2J up (premium). Fuente: Encuesta Frutas de Chile.</p>
+        <div class="row g-3 align-items-center">
+          <div class="col-md-5">
+            <div style="position:relative;height:280px"><canvas id="chartCalibres"></canvas></div>
+          </div>
+          <div class="col-md-7">
+            <table class="table table-sm table-bordered align-middle mb-0" style="font-size:.85rem">
+              <thead style="background:var(--primary);color:#fff">
+                <tr><th>Variedad</th><th>2024-25 (% 2J up)</th><th>2025-26 (% 2J up)</th><th>Δ</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Santina</td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:61%;background:#2980b9">61%</div></div></td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:70%;background:#1a3a5c">70%</div></div></td>
+                  <td class="var-pos">▲ +9pp</td></tr>
+                <tr><td>Lapins</td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:72%;background:#2980b9">72%</div></div></td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:80%;background:#1a3a5c">80%</div></div></td>
+                  <td class="var-pos">▲ +8pp</td></tr>
+                <tr><td>Regina</td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:62%;background:#2980b9">62%</div></div></td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:58%;background:#c0392b">58%</div></div></td>
+                  <td class="var-neg">▼ −4pp</td></tr>
+                <tr><td>Otras</td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:60%;background:#2980b9">60%</div></div></td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:70%;background:#1a3a5c">70%</div></div></td>
+                  <td class="var-pos">▲ +10pp</td></tr>
+                <tr class="table-light fw-bold"><td>TOTAL</td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:65%;background:#5dade2">65%</div></div></td>
+                  <td><div class="calibre-bar-wrap"><div class="calibre-bar-inner" style="width:71%;background:#1a3a5c">71%</div></div></td>
+                  <td class="var-pos">▲ +6pp</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-content mercado -->
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  Exportadora Disfruta S.A. — Temporada 2025-2026 &nbsp;|&nbsp; Plataforma de Directorio
+</footer>
+
+<!-- ══════════════════════ SCRIPTS ══════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'default' });
+
+/* ══════════════════════════════════════════════════
+   KPI DATA
+   ══════════════════════════════════════════════════ */
+const kpiData = {
+  GG: [
+    { label: 'Crecimiento de exportaciones', peso: 30, real: 67,
+      s: { pct: '105%', cond: '>15% crecimiento' },
+      b: { pct: '100%', cond: '15% crecimiento' },
+      r: { pct: '95%',  cond: '<14% crecimiento' } },
+    { label: 'ROI de inversiones', peso: 25, real: 70,
+      s: { pct: '105%', cond: '>30% ROI' },
+      b: { pct: '100%', cond: '25% ROI' },
+      r: { pct: '95%',  cond: '<23% ROI' } },
+    { label: 'Satisfacción de stakeholders', peso: 20, real: 78,
+      s: { pct: '105%', cond: '>85% satisfacción' },
+      b: { pct: '100%', cond: '80% satisfacción' },
+      r: { pct: '95%',  cond: '<75% satisfacción' } },
+    { label: 'Reducción de riesgos operacionales', peso: 15, real: 65,
+      s: { pct: '105%', cond: '<5% incidentes' },
+      b: { pct: '100%', cond: '10% incidentes' },
+      r: { pct: '95%',  cond: '>12% incidentes' } },
+    { label: 'Innovación (proyectos implementados)', peso: 10, real: 50,
+      s: { pct: '105%', cond: '3+ proyectos' },
+      b: { pct: '100%', cond: '2 proyectos' },
+      r: { pct: '95%',  cond: '1 proyecto' } },
+  ],
+  GC: [
+    { label: 'Incremento de ventas', peso: 30, real: 50,
+      s: { pct: '105%', cond: '>25% incremento' },
+      b: { pct: '100%', cond: '20% incremento' },
+      r: { pct: '95%',  cond: '<18% incremento' } },
+    { label: 'Nuevos mercados abiertos', peso: 25, real: 50,
+      s: { pct: '105%', cond: '3+ mercados' },
+      b: { pct: '100%', cond: '2 mercados' },
+      r: { pct: '95%',  cond: '1 mercado' } },
+    { label: 'Tasa de conversión de clientes', peso: 20, real: 70,
+      s: { pct: '105%', cond: '>35% conversión' },
+      b: { pct: '100%', cond: '30% conversión' },
+      r: { pct: '95%',  cond: '<25% conversión' } },
+    { label: 'Retención de clientes', peso: 15, real: 82,
+      s: { pct: '105%', cond: '>90% retención' },
+      b: { pct: '100%', cond: '85% retención' },
+      r: { pct: '95%',  cond: '<80% retención' } },
+    { label: 'Eficiencia en marketing (ROI)', peso: 10, real: 60,
+      s: { pct: '105%', cond: 'ROI >150%' },
+      b: { pct: '100%', cond: 'ROI 120%' },
+      r: { pct: '95%',  cond: 'ROI <100%' } },
+  ],
+  JC: [
+    { label: 'Cumplimiento de embarques en plazo', peso: 35, real: 90,
+      s: { pct: '105%', cond: '>98% en plazo' },
+      b: { pct: '100%', cond: '95% en plazo' },
+      r: { pct: '95%',  cond: '<92% en plazo' } },
+    { label: 'Reducción de costos logísticos', peso: 25, real: 60,
+      s: { pct: '105%', cond: '>12% reducción' },
+      b: { pct: '100%', cond: '10% reducción' },
+      r: { pct: '95%',  cond: '<8% reducción' } },
+    { label: 'Documentación sin errores', peso: 20, real: 88,
+      s: { pct: '105%', cond: '100% sin errores' },
+      b: { pct: '100%', cond: '99% sin errores' },
+      r: { pct: '95%',  cond: '<97% sin errores' } },
+    { label: 'Tiempo promedio de despacho', peso: 20, real: 75,
+      s: { pct: '105%', cond: '<36 horas' },
+      b: { pct: '100%', cond: '<48 horas' },
+      r: { pct: '95%',  cond: '>48 horas' } },
+  ],
+  GP: [
+    { label: 'Calidad post-cosecha (% rechazo)', peso: 35, real: 80,
+      s: { pct: '105%', cond: '<1% rechazo' },
+      b: { pct: '100%', cond: '<2% rechazo' },
+      r: { pct: '95%',  cond: '>2.5% rechazo' } },
+    { label: 'Rendimiento por hectárea', peso: 25, real: 50,
+      s: { pct: '105%', cond: '>10% aumento' },
+      b: { pct: '100%', cond: '+8% aumento' },
+      r: { pct: '95%',  cond: '<6% aumento' } },
+    { label: 'Cumplimiento fitosanitario', peso: 20, real: 95,
+      s: { pct: '105%', cond: '100% protocolos' },
+      b: { pct: '100%', cond: '98% protocolos' },
+      r: { pct: '95%',  cond: '<95% protocolos' } },
+    { label: 'Eficiencia operacional', peso: 20, real: 75,
+      s: { pct: '105%', cond: '>92% eficiencia' },
+      b: { pct: '100%', cond: '90% eficiencia' },
+      r: { pct: '95%',  cond: '<85% eficiencia' } },
+  ],
+  JO: [
+    { label: 'Merma en operaciones de cosecha', peso: 30, real: 72,
+      s: { pct: '105%', cond: '<1.5% merma' },
+      b: { pct: '100%', cond: '<2.5% merma' },
+      r: { pct: '95%',  cond: '>3% merma' } },
+    { label: 'Cumplimiento de turnos y cuadrillas', peso: 25, real: 85,
+      s: { pct: '105%', cond: '>98% cumplimiento' },
+      b: { pct: '100%', cond: '95% cumplimiento' },
+      r: { pct: '95%',  cond: '<90% cumplimiento' } },
+    { label: 'Temperatura cadena de frío (°C)', peso: 25, real: 90,
+      s: { pct: '105%', cond: '0–2°C siempre' },
+      b: { pct: '100%', cond: '0–3°C mayoritario' },
+      r: { pct: '95%',  cond: '>4°C algún punto' } },
+    { label: 'Kilos procesados por jornada', peso: 20, real: 68,
+      s: { pct: '105%', cond: '>12,000 kg/día' },
+      b: { pct: '100%', cond: '10,000 kg/día' },
+      r: { pct: '95%',  cond: '<8,000 kg/día' } },
+  ],
+  EA: [
+    { label: 'Cumplimiento de abastecimiento oportuno', peso: 35, real: 80,
+      s: { pct: '105%', cond: '100% a tiempo' },
+      b: { pct: '100%', cond: '95% a tiempo' },
+      r: { pct: '95%',  cond: '<90% a tiempo' } },
+    { label: 'Reducción de costos de insumos', peso: 30, real: 55,
+      s: { pct: '105%', cond: '>8% reducción' },
+      b: { pct: '100%', cond: '5% reducción' },
+      r: { pct: '95%',  cond: '<3% reducción' } },
+    { label: 'Evaluación de proveedores (score)', peso: 20, real: 75,
+      s: { pct: '105%', cond: 'Score >90/100' },
+      b: { pct: '100%', cond: 'Score 80/100' },
+      r: { pct: '95%',  cond: 'Score <70/100' } },
+    { label: 'Stock de seguridad (cobertura días)', peso: 15, real: 70,
+      s: { pct: '105%', cond: '>15 días cobertura' },
+      b: { pct: '100%', cond: '10 días cobertura' },
+      r: { pct: '95%',  cond: '<7 días cobertura' } },
+  ],
+  AG: [
+    { label: 'Control fitosanitario (% cobertura)', peso: 35, real: 88,
+      s: { pct: '105%', cond: '100% predios revisados' },
+      b: { pct: '100%', cond: '95% predios revisados' },
+      r: { pct: '95%',  cond: '<90% predios revisados' } },
+    { label: 'Cuajado y calibre de fruta (categoría 1)', peso: 30, real: 73,
+      s: { pct: '105%', cond: '>75% cat. 1' },
+      b: { pct: '100%', cond: '65% cat. 1' },
+      r: { pct: '95%',  cond: '<55% cat. 1' } },
+    { label: 'Aplicación de protocolos agronómicos', peso: 20, real: 92,
+      s: { pct: '105%', cond: '100% cumplimiento' },
+      b: { pct: '100%', cond: '95% cumplimiento' },
+      r: { pct: '95%',  cond: '<90% cumplimiento' } },
+    { label: 'Reportes técnicos semanales entregados', peso: 15, real: 80,
+      s: { pct: '105%', cond: '100% reportes' },
+      b: { pct: '100%', cond: '90% reportes' },
+      r: { pct: '95%',  cond: '<80% reportes' } },
+  ],
+};
+
+/* ══════════════════════════════════════════════════
+   ORGANIGRAMA INTERACTIVO
+   ══════════════════════════════════════════════════ */
+const cargoInfo = {
+  GG: { title: '🎯 Gerente General',              desc: 'Lidera la asociación Lecaros/Cox, define la estrategia corporativa, supervisa la integración entre ambas familias y responde ante el directorio.' },
+  GC: { title: '💼 Gerente Comercial',             desc: 'Gestiona ventas internacionales, apertura de nuevos mercados y estrategias de pricing para maximizar el valor neto de la fruta exportada.' },
+  JC: { title: '📋 Jefa de Comex',                 desc: 'Gestiona toda la operación de comercio exterior: documentación aduanera, coordinación con agentes de aduana, navieras y certificaciones de origen.' },
+  GP: { title: '🏭 Gerente de Producción',         desc: 'Supervisa las operaciones agrícolas de campo, el proceso de post-cosecha, la cadena de frío y el abastecimiento de insumos críticos.' },
+  JO: { title: '🔧 Jefe de Operaciones y Post-Cosecha', desc: 'Coordina la logística de cosecha, cuadrillas, embalaje, cadena de frío y despacho hacia el packing. Responsable directo de la merma operacional.' },
+  EA: { title: '📦 Encargado de Abastecimiento',   desc: 'Gestiona compras estratégicas, negociación con proveedores, stock de insumos agrícolas y control de inventarios para asegurar continuidad operacional.' },
+  AG: { title: '🌱 Agrónomos (1 y 2)',             desc: 'Monitorean el estado fitosanitario de los predios, aplican protocolos agronómicos, realizan visitas técnicas semanales y emiten reportes de condición de fruta.' },
+};
+
+function mostrarCargo(cargo) {
+  document.querySelectorAll('.org-node').forEach(n => n.classList.remove('selected'));
+  const node = document.querySelector(`[data-cargo="${cargo}"]`);
+  if (node) node.classList.add('selected');
+
+  const info = cargoInfo[cargo];
+  const kpis = kpiData[cargo];
+
+  document.getElementById('detailTitle').textContent = info.title;
+  document.getElementById('detailDesc').textContent  = info.desc;
+
+  document.getElementById('detailKpis').innerHTML = kpis.map(k => {
+    const color = k.real >= 80 ? '#27ae60' : k.real >= 60 ? '#2980b9' : '#f39c12';
+    const estado = k.real >= 80 ? 'Sobresaliente' : k.real >= 60 ? 'En proceso' : 'Requiere atención';
+    return `
+      <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded" style="background:#fafbfc">
+        <span class="small fw-semibold">${k.label} <span class="kpi-badge">Peso: ${k.peso}%</span></span>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
+          <div style="width:70px;background:#e9ecef;border-radius:10px;height:7px">
+            <div style="width:${k.real}%;background:${color};height:100%;border-radius:10px"></div>
+          </div>
+          <span class="small fw-bold" style="color:${color};min-width:30px">${k.real}%</span>
+          <span class="small" style="color:${color};font-size:.7rem">${estado}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  const panel = document.getElementById('orgDetailPanel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function cerrarDetalle() {
+  document.getElementById('orgDetailPanel').style.display = 'none';
+  document.querySelectorAll('.org-node').forEach(n => n.classList.remove('selected'));
+}
+
+/* ══════════════════════════════════════════════════
+   MAPA MENTAL KPIs (Canvas)
+   ══════════════════════════════════════════════════ */
+function drawMapaMental() {
+  const canvas = document.getElementById('chartMapaMental');
+  if (!canvas) return;
+
+  const container = canvas.parentElement;
+  const W = Math.max(container.offsetWidth || 700, 520);
+  const H = 480;
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const nW1 = Math.min(200, W * 0.30);
+  const nW2 = Math.min(170, W * 0.24);
+  const nW3 = Math.min(148, W * 0.22);
+  const nH1 = 58, nH2 = 52, nH3 = 48;
+
+  const nodes = [
+    { id:'GG', x:W*0.50, y:70,  w:nW1, h:nH1, bg:'#1a3a5c', fg:'#fff',     bc:null,      title:'Gerente General',    kpi:'Export. +15%',    real:67 },
+    { id:'GC', x:W*0.25, y:220, w:nW2, h:nH2, bg:'#2980b9', fg:'#fff',     bc:null,      title:'Gte. Comercial',     kpi:'Ventas +20%',     real:50 },
+    { id:'GP', x:W*0.75, y:220, w:nW2, h:nH2, bg:'#2980b9', fg:'#fff',     bc:null,      title:'Gte. Producción',    kpi:'Rechazo <2%',     real:80 },
+    { id:'JC', x:W*0.14, y:380, w:nW3, h:nH3, bg:'#e8f4fd', fg:'#1a3a5c', bc:'#5dade2', title:'Jefa de Comex',      kpi:'Embarques ≥95%',  real:90 },
+    { id:'JO', x:W*0.54, y:380, w:nW3, h:nH3, bg:'#e8f4fd', fg:'#1a3a5c', bc:'#5dade2', title:'Jefe Operaciones',   kpi:'Merma <2.5%',     real:72 },
+    { id:'EA', x:W*0.71, y:380, w:nW3, h:nH3, bg:'#e8f4fd', fg:'#1a3a5c', bc:'#5dade2', title:'Abastecimiento',     kpi:'Entrega 95%',     real:80 },
+    { id:'AG', x:W*0.88, y:380, w:nW3, h:nH3, bg:'#e8f4fd', fg:'#1a3a5c', bc:'#5dade2', title:'Agrónomos',          kpi:'Cobertura 95%',   real:88 },
+  ];
+
+  const edges = [['GG','GC'],['GG','GP'],['GC','JC'],['GP','JO'],['GP','EA'],['GP','AG']];
+  const nodeMap = {};
+  nodes.forEach(n => nodeMap[n.id] = n);
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  /* edges */
+  ctx.strokeStyle = '#adb5bd';
+  ctx.lineWidth = 1.5;
+  edges.forEach(([fId, tId]) => {
+    const a = nodeMap[fId], b = nodeMap[tId];
+    const midY = (a.y + b.y) / 2;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y + a.h / 2);
+    ctx.bezierCurveTo(a.x, midY, b.x, midY, b.x, b.y - b.h / 2);
+    ctx.stroke();
+  });
+
+  /* nodes */
+  nodes.forEach(n => {
+    const x = n.x - n.w / 2, y = n.y - n.h / 2;
+
+    ctx.shadowColor = 'rgba(0,0,0,0.13)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = n.bg;
+    roundRect(x, y, n.w, n.h, 8);
+    ctx.fill();
+
+    if (n.bc) {
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = n.bc;
+      ctx.lineWidth = 2;
+      roundRect(x, y, n.w, n.h, 8);
+      ctx.stroke();
+    }
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    /* progress mini-bar */
+    const barColor = n.real >= 80 ? '#27ae60' : n.real >= 60 ? '#f39c12' : '#e74c3c';
+    const bx = x + 8, by = y + n.h - 9, bw = n.w - 16, bh = 4;
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    roundRect(bx, by, bw, bh, 2); ctx.fill();
+    ctx.fillStyle = barColor;
+    roundRect(bx, by, bw * n.real / 100, bh, 2); ctx.fill();
+
+    /* title */
+    ctx.fillStyle = n.fg;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${n.id === 'GG' ? 13 : 12}px 'Segoe UI',sans-serif`;
+    ctx.fillText(n.title, n.x, n.y - 9);
+
+    /* kpi label */
+    ctx.font = `10px 'Segoe UI',sans-serif`;
+    ctx.fillStyle = n.fg === '#fff' ? 'rgba(255,255,255,.82)' : '#2980b9';
+    ctx.fillText(`${n.kpi}  ·  ${n.real}%`, n.x, n.y + 7);
+  });
+
+  /* legend */
+  const legend = [
+    { color:'#27ae60', label:'≥80% Sobresaliente' },
+    { color:'#f39c12', label:'60–79% En proceso' },
+    { color:'#e74c3c', label:'<60% Requiere atención' },
+  ];
+  const legendEl = document.getElementById('mapaLeyenda');
+  if (legendEl && !legendEl.innerHTML.trim()) {
+    legendEl.innerHTML = legend.map(l =>
+      `<div class="d-flex align-items-center gap-2">
+         <div style="width:13px;height:13px;border-radius:3px;background:${l.color}"></div>
+         <span class="small">${l.label}</span>
+       </div>`
+    ).join('');
+  }
+}
+
+/* draw when tab becomes visible */
+document.querySelector('[data-bs-target="#tabMapa"]').addEventListener('shown.bs.tab', drawMapaMental);
+
+/* ══════════════════════════════════════════════════
+   KPI RENDER (accordion)
+   ══════════════════════════════════════════════════ */
+function renderKPIs(id, datos) {
+  const el = document.getElementById('kpi' + id);
+  if (!el) return;
+  el.innerHTML = datos.map(d => {
+    const color = d.real >= 80 ? 'bg-success' : d.real >= 60 ? '' : 'bg-warning';
+    const estado = d.real >= 80 ? 'Sobresaliente' : d.real >= 60 ? 'En proceso' : 'Requiere atención';
+    const estadoColor = d.real >= 80 ? '#1e8449' : d.real >= 60 ? '#1a3a5c' : '#856404';
+    return `
+    <div class="mb-4 p-3 border rounded" style="background:#fafbfc">
+      <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-1">
+        <span class="fw-semibold" style="font-size:.88rem">${d.label}
+          <span class="kpi-badge ms-1">Peso: ${d.peso}%</span>
+        </span>
+        <span style="font-size:.75rem;color:${estadoColor};font-weight:700">${estado}</span>
+      </div>
+      <div class="progress mb-1">
+        <div class="progress-bar ${color}" style="width:${d.real}%"></div>
+      </div>
+      <div class="d-flex justify-content-between small text-muted mb-2">
+        <span>Avance estimado: <strong>${d.real}%</strong></span>
+      </div>
+      <table class="kpi-threshold">
+        <thead>
+          <tr><th>Nivel</th><th>Factor</th><th>Condición</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="color:#1e8449;font-weight:700">✦ Sobresaliente</span></td>
+            <td class="lvl-s">${d.s.pct}</td><td class="lvl-s">${d.s.cond}</td>
+          </tr>
+          <tr>
+            <td><span style="color:#1a3a5c;font-weight:700">● Bueno</span></td>
+            <td class="lvl-b">${d.b.pct}</td><td class="lvl-b">${d.b.cond}</td>
+          </tr>
+          <tr>
+            <td><span style="color:#856404;font-weight:700">▲ Regular</span></td>
+            <td class="lvl-r">${d.r.pct}</td><td class="lvl-r">${d.r.cond}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+['GG','GC','JC','GP','JO','EA','AG'].forEach(id => renderKPIs(id, kpiData[id]));
+
+/* ══════════════════════════════════════════════════
+   CHARTS — DIVERSIFICACIÓN
+   ══════════════════════════════════════════════════ */
+
+/* Márgenes por especie */
+new Chart(document.getElementById('chartMargenes'), {
+  type: 'bar',
+  data: {
+    labels: ['Manzanas','Pera','Uvas','Kiwi'],
+    datasets: [{ label: 'Margen (%)',
+      data: [25, 20, 22, 18],
+      backgroundColor: ['#1a3a5c','#2980b9','#5dade2','#85c1e9'] }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { max: 35, ticks: { callback: v => v + '%' } } }
+  }
+});
+
+/* Crecimiento mercados emergentes */
+new Chart(document.getElementById('chartCrecimiento'), {
+  type: 'line',
+  data: {
+    labels: ['2022','2023','2024','2025','2026e'],
+    datasets: [
+      { label: 'India',   data: [100,112,128,147,169], borderColor: '#e67e22', tension: 0.4, fill: false },
+      { label: 'Vietnam', data: [100,115,132,152,175], borderColor: '#27ae60', tension: 0.4, fill: false },
+      { label: 'China',   data: [100,105,108,112,115], borderColor: '#1a3a5c', tension: 0.4, fill: false }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { title: { display: true, text: 'Índice de Crecimiento (base 100 = 2022)' } }
+  }
+});
+
+/* Progress bars especies */
+const especies = [
+  { nombre: 'Manzanas (Fuji/Gala)', margen: 25, mercado: 'Europa' },
+  { nombre: 'Uvas',                 margen: 22, mercado: 'India' },
+  { nombre: 'Pera',                 margen: 20, mercado: 'EE.UU.' },
+  { nombre: 'Kiwi',                 margen: 18, mercado: 'Nuevos mercados' },
+];
+const cont = document.getElementById('especiesProgress');
+especies.forEach(e => {
+  cont.innerHTML += `
+    <div class="mb-2">
+      <div class="d-flex justify-content-between small mb-1">
+        <span><strong>${e.nombre}</strong> <span class="text-muted">→ ${e.mercado}</span></span>
+        <span class="text-primary fw-bold">${e.margen}%</span>
+      </div>
+      <div class="progress"><div class="progress-bar" style="width:${e.margen * 4}%"></div></div>
+    </div>`;
+});
+
+/* Márgenes regionales comparativo */
+new Chart(document.getElementById('chartMargenesRegional'), {
+  type: 'bar',
+  data: {
+    labels: ['Uvas Mesa\n(Perú)','Paltas\n(Perú)','Arándanos\n(Perú)','Mango\n(Perú)','Duraz./Nect.\n(Chile)','Ciruelas\n(Chile)','Kiwi Gold\n(Chile)','Granadas\n(Chile)'],
+    datasets: [
+      { label: 'Margen mínimo (%)', data: [18,25,28,22,20,22,28,30], backgroundColor: 'rgba(231,76,60,.7)',   borderColor: '#e74c3c', borderWidth:1 },
+      { label: 'Margen máximo (%)', data: [22,30,35,28,25,27,32,35], backgroundColor: 'rgba(52,152,219,.7)',  borderColor: '#3498db', borderWidth:1 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position:'bottom' }, title: { display:true, text:'Márgenes Estimados por Producto y Origen (%)' } },
+    scales: { y: { min:0, max:45, ticks: { callback: v => v+'%' } } }
+  }
+});
+
+/* ══════════════════════════════════════════════════
+   CHARTS — TECNOLOGÍAS
+   ══════════════════════════════════════════════════ */
+new Chart(document.getElementById('chartInversion'), {
+  type: 'pie',
+  data: {
+    labels: ['Sensores IoT ($200K)','Drones ($150K)','Refrigeración ($300K)'],
+    datasets: [{ data: [200000, 150000, 300000],
+      backgroundColor: ['#1a3a5c','#2980b9','#85c1e9'],
+      borderWidth: 2, borderColor: '#fff' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+  }
+});
+
+/* ══════════════════════════════════════════════════
+   CHARTS — ORGANIGRAMA / RADAR
+   ══════════════════════════════════════════════════ */
+new Chart(document.getElementById('chartRadar'), {
+  type: 'radar',
+  data: {
+    labels: ['Exportaciones','ROI','Satisfacción','Nuevos Mercados','Calidad','Innovación'],
+    datasets: [
+      { label: 'Real 2025-26', data: [10,22,78,50,80,50],
+        backgroundColor: 'rgba(26,58,92,.2)', borderColor: '#1a3a5c', pointBackgroundColor: '#1a3a5c' },
+      { label: 'Meta', data: [15,25,80,100,95,66],
+        backgroundColor: 'rgba(192,57,43,.1)', borderColor: '#c0392b',
+        borderDash: [5,5], pointBackgroundColor: '#c0392b' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: { r: { min: 0, max: 100 } },
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+document.getElementById('radarLegend').innerHTML = [
+  { color: '#27ae60', label: '≥80% — Sobresaliente' },
+  { color: '#1a3a5c', label: '60–79% — En proceso' },
+  { color: '#f39c12', label: '<60% — Requiere atención' },
+].map(l => `<div class="d-flex align-items-center gap-2 mb-2">
+    <div style="width:14px;height:14px;border-radius:3px;background:${l.color}"></div>
+    <span class="small">${l.label}</span>
+  </div>`).join('');
+
+/* ══════════════════════════════════════════════════
+   CHARTS — MERCADO CHILE
+   ══════════════════════════════════════════════════ */
+
+/* Proyección exportación */
+new Chart(document.getElementById('chartProyeccion'), {
+  type: 'bar',
+  data: {
+    labels: ['2023','2024','2025','2026 Est','2027 Est'],
+    datasets: [
+      { label: 'Santina',         data: [86537,194265,177824,232382,256072], backgroundColor: '#1a3a5c' },
+      { label: 'Lapins',          data: [176878,230016,212563,215825,219594], backgroundColor: '#2980b9' },
+      { label: 'Regina',          data: [79222,89710,101441,100068,101246],  backgroundColor: '#5dade2' },
+      { label: 'Nuevas tempranas',data: [755,5360,9063,15672,20766],         backgroundColor: '#27ae60' },
+      { label: 'Otras',           data: [70589,106662,68390,100460,97859],   backgroundColor: '#85c1e9' },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 10 } } },
+      title:  { display: true, text: 'Proyección Exportación Chile (Tons)' }
+    },
+    scales: {
+      x: { stacked: true },
+      y: { stacked: true, ticks: { callback: v => (v/1000).toFixed(0)+'K' } }
+    }
+  }
+});
+
+/* Exportación por variedad */
+const varData = [
+  { v:'Santina',    d23:86537,  d24:194265, d25:177824, pct:-8  },
+  { v:'Lapins',     d23:176878, d24:230016, d25:212563, pct:-8  },
+  { v:'Regina',     d23:79222,  d24:89710,  d25:101441, pct:13  },
+  { v:'Bing',       d23:15995,  d24:22428,  d25:14213,  pct:-37 },
+  { v:'Sweetheart', d23:18567,  d24:16994,  d25:11967,  pct:-30 },
+  { v:'Royal Dawn', d23:4519,   d24:13881,  d25:7916,   pct:-43 },
+  { v:'Skeena',     d23:9470,   d24:13466,  d25:10344,  pct:-23 },
+  { v:'Kordia',     d23:12201,  d24:23188,  d25:13167,  pct:-43 },
+  { v:'Rainier',    d23:2554,   d24:4857,   d25:3183,   pct:-34 },
+  { v:'Otras',      d23:8038,   d24:17208,  d25:16664,  pct:-3  },
+];
+
+const tvBody = document.getElementById('tablaVarExport');
+varData.forEach(r => {
+  const cls    = r.pct > 0 ? 'var-pos' : r.pct < -20 ? 'var-neg' : 'var-neu';
+  const salida = r.pct <= -30 ? ' <span class="badge-salida">salida</span>' : '';
+  const lider  = r.pct >= 10  ? ' <span class="badge-lider">↑ líder</span>'  : '';
+  tvBody.innerHTML += `<tr>
+    <td>${r.v}${salida}${lider}</td>
+    <td>${r.d23.toLocaleString()}</td>
+    <td>${r.d24.toLocaleString()}</td>
+    <td>${r.d25.toLocaleString()}</td>
+    <td class="${cls}">${r.pct > 0 ? '+' : ''}${r.pct}%</td>
+  </tr>`;
+});
+tvBody.innerHTML += `<tr class="table-dark fw-bold">
+  <td>Total</td><td>413.981</td><td>626.013</td><td>569.280</td><td class="var-neg">−9%</td></tr>`;
+
+new Chart(document.getElementById('chartVarExport'), {
+  type: 'bar',
+  data: {
+    labels: varData.map(r => r.v),
+    datasets: [
+      { label: '2023/24', data: varData.map(r => r.d23), backgroundColor: 'rgba(85,170,221,.75)' },
+      { label: '2024/25', data: varData.map(r => r.d24), backgroundColor: 'rgba(26,58,92,.85)' },
+      { label: '2025/26', data: varData.map(r => r.d25), backgroundColor: 'rgba(192,57,43,.85)' },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Exportación por Variedad (Tons)' } },
+    scales: { y: { ticks: { callback: v => (v/1000).toFixed(0)+'K' } } }
+  }
+});
+
+/* Productividad / há */
+new Chart(document.getElementById('chartProductividad'), {
+  type: 'bar',
+  data: {
+    labels: ['Santina','Lapins','Regina','Nuevas tempranas','Otras'],
+    datasets: [
+      { label: '2021/22', data: [10.5,12.0,13.0,9.3, 8.5], backgroundColor: 'rgba(41,128,185,.8)' },
+      { label: '2022/23', data: [10.5,12.0,10.0,8.5, 9.0], backgroundColor: 'rgba(230,126,34,.8)'  },
+      { label: '2023/24', data: [6.0, 12.5,10.0,4.2, 7.0], backgroundColor: 'rgba(149,165,166,.8)' },
+      { label: '2024/25', data: [10.5,13.8,10.5,9.5, 8.7], backgroundColor: 'rgba(192,57,43,.9)'   },
+      { label: '2025/26', data: [8.5, 12.0,10.5,7.5, 6.5], backgroundColor: 'rgba(93,173,226,.9)'  },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom' },
+      title: { display: true, text: 'Productividad huertos cerezas (Tons exportadas / há en producción)' }
+    },
+    scales: { y: { max: 16, title: { display: true, text: 't/há' } } }
+  }
+});
+
+/* Calibres 2J+ */
+new Chart(document.getElementById('chartCalibres'), {
+  type: 'bar',
+  data: {
+    labels: ['Santina','Lapins','Regina','Otras','TOTAL'],
+    datasets: [
+      { label: '2024-25', data: [61,72,62,60,65], backgroundColor: 'rgba(41,128,185,.8)',  borderRadius: 4 },
+      { label: '2025-26', data: [70,80,58,70,71], backgroundColor: 'rgba(26,58,92,.85)',   borderRadius: 4 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Composición calibres exportados (% 2J up)' } },
+    scales: { y: { min: 40, max: 90, ticks: { callback: v => v + '%' } } }
+  }
+});
+
+/* ══════════════════════════════════════════════════
+   SCROLL SPY
+   ══════════════════════════════════════════════════ */
+const sections = ['mercado','diversificacion','tecnologias','organigrama'];
+window.addEventListener('scroll', () => {
+  const y = window.scrollY + 120;
+  sections.forEach(id => {
+    const el   = document.getElementById(id);
+    const link = document.querySelector(`a[href="#${id}"]`);
+    if (!el || !link) return;
+    if (y >= el.offsetTop && y < el.offsetTop + el.offsetHeight) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+});
+</script>
+</body>
+</html>
