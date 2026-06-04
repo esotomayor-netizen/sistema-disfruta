@@ -1,25 +1,26 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import Sidebar from '@/components/Sidebar'
+import ConditionalLayout from '@/components/ConditionalLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Disfruta × Lecaros Cox — Gestión de Temporada',
-  description: 'Planificación de cosecha, exportación y compromisos comerciales. Temporada 2026-2027.',
+  title: 'DLC Export - Gestión Agrícola',
+  description: 'Plataforma de gestión agrícola de DLC Export — Disfruta · Lecaros · Cox · Chile',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
       <body className={inter.className}>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 overflow-auto">
-            <div className="max-w-7xl mx-auto p-8">{children}</div>
-          </main>
-        </div>
+        <ConditionalLayout>{children}</ConditionalLayout>
       </body>
     </html>
   )

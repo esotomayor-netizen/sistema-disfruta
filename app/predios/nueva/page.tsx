@@ -24,7 +24,26 @@ export default function NuevoPredioPage() {
     empresaId: '',
     encargadoId: '',
     variedades: '',
+    latitud: '',
+    longitud: '',
   })
+  const [gpsLoading, setGpsLoading] = useState(false)
+
+  const capturarGPS = () => {
+    if (!navigator.geolocation) return alert('GPS no disponible en este dispositivo')
+    setGpsLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm((f) => ({
+          ...f,
+          latitud: pos.coords.latitude.toFixed(6),
+          longitud: pos.coords.longitude.toFixed(6),
+        }))
+        setGpsLoading(false)
+      },
+      () => { alert('No se pudo obtener la ubicación'); setGpsLoading(false) }
+    )
+  }
 
   useEffect(() => {
     Promise.all([
@@ -204,6 +223,29 @@ export default function NuevoPredioPage() {
               onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
               placeholder="Ej: Sector Norte, Curicó"
             />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">Coordenadas GPS</label>
+              <button type="button" onClick={capturarGPS} disabled={gpsLoading}
+                className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 font-medium disabled:opacity-50">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {gpsLoading ? 'Obteniendo…' : 'Capturar desde dispositivo'}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input className="input font-mono text-sm" placeholder="Latitud (Ej: -34.123456)"
+                value={form.latitud} onChange={(e) => setForm({ ...form, latitud: e.target.value })} />
+              <input className="input font-mono text-sm" placeholder="Longitud (Ej: -70.654321)"
+                value={form.longitud} onChange={(e) => setForm({ ...form, longitud: e.target.value })} />
+            </div>
+            {form.latitud && form.longitud && (
+              <p className="text-xs text-primary-600 mt-1">✓ Coordenadas capturadas — {form.latitud}, {form.longitud}</p>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

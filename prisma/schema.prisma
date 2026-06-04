@@ -7,6 +7,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Recorrido {
+  id             Int      @id @default(autoincrement())
+  fecha          DateTime
+  kmInicio       Float
+  kmFin          Float
+  litrosCargados Float?
+  notas          String?
+  tecnico        Usuario  @relation("TecnicoRecorrido", fields: [tecnicoId], references: [id])
+  tecnicoId      Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model AgendaVisita {
+  id        Int       @id @default(autoincrement())
+  fecha     DateTime
+  notas     String?
+  predio    Predio    @relation(fields: [predioId], references: [id])
+  predioId  Int
+  tecnico   Usuario   @relation("TecnicoAgenda", fields: [tecnicoId], references: [id])
+  tecnicoId Int
+  checkins  CheckIn[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model CheckIn {
+  id        Int          @id @default(autoincrement())
+  fecha     DateTime     @default(now())
+  latitud   Float
+  longitud  Float
+  notas     String?
+  tecnico   Usuario      @relation("TecnicoCheckIn", fields: [tecnicoId], references: [id])
+  tecnicoId Int
+  predio    Predio?      @relation(fields: [predioId], references: [id])
+  predioId  Int?
+  agenda    AgendaVisita? @relation(fields: [agendaId], references: [id])
+  agendaId  Int?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
 model Empresa {
   id               Int      @id @default(autoincrement())
   razonSocial      String
@@ -28,12 +70,17 @@ model Predio {
   ubicacion    String
   activa       Boolean      @default(true)
   variedades   String?
+  latitud      Float?
+  longitud     Float?
   empresa      Empresa      @relation(fields: [empresaId], references: [id])
   empresaId    Int
   encargado    Usuario?     @relation("Encargado", fields: [encargadoId], references: [id])
   encargadoId  Int?
   labores      Labor[]
   aplicaciones Aplicacion[]
+  visitas      Visita[]
+  agendas      AgendaVisita[]
+  checkins     CheckIn[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -49,8 +96,27 @@ model Usuario {
   predios      Predio[]     @relation("Encargado")
   labores      Labor[]      @relation("Responsable")
   aplicaciones Aplicacion[] @relation("Tecnico")
+  visitas      Visita[]       @relation("TecnicoVisita")
+  agendas      AgendaVisita[] @relation("TecnicoAgenda")
+  recorridos   Recorrido[]    @relation("TecnicoRecorrido")
+  checkins     CheckIn[]      @relation("TecnicoCheckIn")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+}
+
+model Visita {
+  id            Int          @id @default(autoincrement())
+  fecha         DateTime
+  predio        Predio       @relation(fields: [predioId], references: [id])
+  predioId      Int
+  tecnico       Usuario      @relation("TecnicoVisita", fields: [tecnicoId], references: [id])
+  tecnicoId     Int
+  observaciones String?
+  estado        String       @default("EN_PROGRESO")
+  labores       Labor[]
+  aplicaciones  Aplicacion[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Labor {
@@ -61,10 +127,13 @@ model Labor {
   fechaFin      DateTime?
   estado        String    @default("PENDIENTE")
   observaciones String?
+  dibujo        String?
   predio        Predio    @relation(fields: [predioId], references: [id])
   predioId      Int
   responsable   Usuario   @relation("Responsable", fields: [responsableId], references: [id])
   responsableId Int
+  visita        Visita?   @relation(fields: [visitaId], references: [id])
+  visitaId      Int?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -114,6 +183,8 @@ model Aplicacion {
   predioId      Int
   tecnico       Usuario   @relation("Tecnico", fields: [tecnicoId], references: [id])
   tecnicoId     Int
+  visita        Visita?   @relation(fields: [visitaId], references: [id])
+  visitaId      Int?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

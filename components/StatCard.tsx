@@ -17,15 +17,15 @@ const colorMap = {
 export default function StatCard({ title, value, subtitle, icon, color }: StatCardProps) {
   const c = colorMap[color]
   return (
-    <div className={`${c.bg} rounded-xl p-5 border border-${color}-100`}>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <div className={`${c.icon} w-10 h-10 rounded-lg flex items-center justify-center`}>
+    <div className={`${c.bg} rounded-xl p-3 lg:p-5 border border-${color}-100`}>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs lg:text-sm font-medium text-gray-600 leading-tight">{title}</p>
+        <div className={`${c.icon} w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ml-1`}>
           {icon}
         </div>
       </div>
-      <p className={`text-3xl font-bold ${c.value}`}>{value}</p>
-      {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+      <p className={`text-2xl lg:text-3xl font-bold ${c.value}`}>{value}</p>
+      {subtitle && <p className="text-xs text-gray-500 mt-0.5 leading-tight">{subtitle}</p>}
     </div>
   )
 }

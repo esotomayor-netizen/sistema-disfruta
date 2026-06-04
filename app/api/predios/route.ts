@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -22,6 +23,8 @@ export async function POST(req: Request) {
       empresaId: parseInt(data.empresaId),
       encargadoId: data.encargadoId ? parseInt(data.encargadoId) : null,
       variedades: data.variedades || null,
+      latitud: data.latitud ? parseFloat(data.latitud) : null,
+      longitud: data.longitud ? parseFloat(data.longitud) : null,
     },
     include: { empresa: true, encargado: true },
   })
