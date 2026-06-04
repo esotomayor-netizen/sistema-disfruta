@@ -3,17 +3,35 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Empresa {
+  id               Int      @id @default(autoincrement())
+  razonSocial      String
+  rut              String   @unique
+  contactoNombre   String
+  contactoEmail    String?
+  contactoTelefono String?
+  predios          Predio[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Predio {
   id           Int          @id @default(autoincrement())
   nombre       String
+  csg          String       @unique
   superficie   Float
   cultivo      String
   ubicacion    String
   activa       Boolean      @default(true)
+  variedades   String?
+  empresa      Empresa      @relation(fields: [empresaId], references: [id])
+  empresaId    Int
+  encargado    Usuario?     @relation("Encargado", fields: [encargadoId], references: [id])
+  encargadoId  Int?
   labores      Labor[]
   aplicaciones Aplicacion[]
   createdAt    DateTime     @default(now())
@@ -28,6 +46,7 @@ model Usuario {
   rol          String
   telefono     String?
   activo       Boolean      @default(true)
+  predios      Predio[]     @relation("Encargado")
   labores      Labor[]      @relation("Responsable")
   aplicaciones Aplicacion[] @relation("Tecnico")
   createdAt    DateTime     @default(now())
@@ -48,6 +67,38 @@ model Labor {
   responsableId Int
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model ProgramaFitosanitario {
+  id                    Int      @id @default(autoincrement())
+  temporada             String
+  cultivo               String
+  estadoFenologico      String?
+  caracterAplicacion    String
+  tratamientoObjetivo   String?
+  fechaEstimada         String
+  producto              String
+  ingredienteActivo     String?
+  concentracion         String?
+  mojamiento            String?
+  dosisHa               String?
+  observaciones         String?
+  productosAlternativos String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model CatalogoLabor {
+  id             Int      @id @default(autoincrement())
+  grupo          String
+  especie        String
+  categoria      String
+  labor          String
+  descripcion    String
+  prioridad      String
+  mesesEjecucion String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Aplicacion {
