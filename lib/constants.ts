@@ -17,12 +17,14 @@ export const ESTADOS_LABOR = [
 ]
 
 export const TIPOS_PRODUCTO = [
-  { value: 'HERBICIDA', label: 'Herbicida' },
-  { value: 'FUNGICIDA', label: 'Fungicida' },
-  { value: 'INSECTICIDA', label: 'Insecticida' },
-  { value: 'FERTILIZANTE', label: 'Fertilizante' },
-  { value: 'BIOESTIMULANTE', label: 'Bioestimulante' },
-  { value: 'OTRO', label: 'Otro' },
+  { value: 'FUNGICIDA',          label: 'Fungicida' },
+  { value: 'INSECTICIDA',        label: 'Insecticida' },
+  { value: 'ACARICIDA',          label: 'Acaricida' },
+  { value: 'HERBICIDA',          label: 'Herbicida' },
+  { value: 'FERTILIZANTE_FOLIAR',label: 'Fertilizante Foliar' },
+  { value: 'BIOESTIMULANTE',     label: 'Bioestimulante' },
+  { value: 'FERTILIZANTE',       label: 'Fertilizante (suelo)' },
+  { value: 'OTRO',               label: 'Otro' },
 ]
 
 export const ESTADOS_APLICACION = [
@@ -75,12 +77,14 @@ export function estadoAplicacionColor(estado: string) {
 
 export function tipoProductoColor(tipo: string) {
   const map: Record<string, string> = {
-    HERBICIDA: 'bg-orange-100 text-orange-800',
-    FUNGICIDA: 'bg-purple-100 text-purple-800',
-    INSECTICIDA: 'bg-red-100 text-red-800',
-    FERTILIZANTE: 'bg-green-100 text-green-800',
-    BIOESTIMULANTE: 'bg-teal-100 text-teal-800',
-    OTRO: 'bg-gray-100 text-gray-800',
+    FUNGICIDA:          'bg-purple-100 text-purple-800',
+    INSECTICIDA:        'bg-red-100 text-red-800',
+    ACARICIDA:          'bg-orange-100 text-orange-800',
+    HERBICIDA:          'bg-yellow-100 text-yellow-800',
+    FERTILIZANTE_FOLIAR:'bg-green-100 text-green-800',
+    FERTILIZANTE:       'bg-lime-100 text-lime-800',
+    BIOESTIMULANTE:     'bg-teal-100 text-teal-800',
+    OTRO:               'bg-gray-100 text-gray-800',
   }
   return map[tipo] ?? 'bg-gray-100 text-gray-800'
 }

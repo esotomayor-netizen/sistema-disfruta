@@ -22,6 +22,35 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const data = await req.json()
+
+  // Bulk creation: array of productos in a single application session
+  if (Array.isArray(data.productos) && data.productos.length > 0) {
+    const base = {
+      fecha: new Date(data.fecha),
+      estado: data.estado || 'PENDIENTE',
+      observaciones: data.observaciones || null,
+      predioId: parseInt(data.predioId),
+      tecnicoId: parseInt(data.tecnicoId),
+      visitaId: data.visitaId ? parseInt(data.visitaId) : null,
+    }
+    const aplicaciones = await prisma.$transaction(
+      data.productos.map((p: { producto: string; tipoProducto: string; dosis: string; unidad: string }) =>
+        prisma.aplicacion.create({
+          data: {
+            ...base,
+            producto: p.producto,
+            tipoProducto: p.tipoProducto,
+            dosis: parseFloat(p.dosis) || 0,
+            unidad: p.unidad,
+          },
+          include: { predio: true, tecnico: true },
+        })
+      )
+    )
+    return NextResponse.json(aplicaciones, { status: 201 })
+  }
+
+  // Single product (backward compatible)
   const aplicacion = await prisma.aplicacion.create({
     data: {
       producto: data.producto,
