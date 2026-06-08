@@ -156,6 +156,10 @@ export default function NuevaAplicacionPage() {
   // Product list being built
   const [productos, setProductos] = useState<ProductoAgregado[]>([])
 
+  // Loading / error state for context data
+  const [cargandoContexto, setCargandoContexto] = useState(true)
+  const [errorEmpresas, setErrorEmpresas] = useState<string | null>(null)
+
   // Product adder state
   const [grupoSel, setGrupoSel] = useState<GrupoProducto>('FUNGICIDA')
   const [productoSagId, setProductoSagId] = useState('')
@@ -175,15 +179,29 @@ export default function NuevaAplicacionPage() {
   const productoSAG = PRODUCTOS_SAG.find((p) => p.id === productoSagId)
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/empresas').then((r) => r.json()),
-      fetch('/api/equipo').then((r) => r.json()),
-    ]).then(([emp, u]) => {
-      setEmpresas(emp as Empresa[])
-      const ua = (u as Usuario[]).filter((x) => x.activo)
-      setUsuarios(ua)
-      if (ua.length) setTecnicoId(String(ua[0].id))
-    })
+    fetch('/api/empresas')
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Error ${r.status} al cargar empresas: ${await r.text()}`)
+        return r.json()
+      })
+      .then((emp) => setEmpresas(emp as Empresa[]))
+      .catch((err) => {
+        console.error('Error cargando empresas', err)
+        setErrorEmpresas(err instanceof Error ? err.message : 'Error al cargar empresas')
+      })
+      .finally(() => setCargandoContexto(false))
+
+    fetch('/api/equipo')
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Error ${r.status} al cargar equipo: ${await r.text()}`)
+        return r.json()
+      })
+      .then((u) => {
+        const ua = (u as Usuario[]).filter((x) => x.activo)
+        setUsuarios(ua)
+        if (ua.length) setTecnicoId(String(ua[0].id))
+      })
+      .catch((err) => console.error('Error cargando equipo', err))
   }, [])
 
   // Reset predio when empresa changes
@@ -295,6 +313,24 @@ export default function NuevaAplicacionPage() {
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
             1. Selección del Predio
           </h2>
+
+          {errorEmpresas && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700 font-medium">No se pudo cargar el listado de empresas</p>
+              <p className="text-xs text-red-600 mt-0.5">{errorEmpresas}</p>
+            </div>
+          )}
+          {!errorEmpresas && !cargandoContexto && empresas.length === 0 && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-700">
+                No hay empresas registradas. <Link href="/empresas/nueva" className="underline font-medium">Crear una empresa</Link> antes de registrar una aplicación.
+              </p>
+            </div>
+          )}
+          {cargandoContexto && (
+            <p className="text-xs text-gray-400 mb-4">Cargando empresas y equipo técnico…</p>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="label">Empresa</label>
