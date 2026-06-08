@@ -4,7 +4,14 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   const empresas = await prisma.empresa.findMany({
-    include: { predios: true },
+    select: {
+      id: true,
+      razonSocial: true,
+      contactoNombre: true,
+      predios: {
+        select: { id: true, nombre: true, cultivo: true, variedades: true, activa: true },
+      },
+    },
     orderBy: { razonSocial: 'asc' },
   })
   return NextResponse.json(empresas)
