@@ -12,11 +12,10 @@ interface Labor { id: number; tipo: string; descripcion: string; observaciones: 
 interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; observaciones: string | null; estado: string; tecnico: Usuario }
 interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
 interface CatalogoItem { id: number; labor: string; categoria: string; descripcion: string; especie: string }
-interface ProgramaItem { id: number; producto: string; ingredienteActivo: string | null; dosisHa: string | null; tratamientoObjetivo: string | null }
+interface ProgramaItem { id: number; producto: string; ingredienteActivo: string | null; dosisHa: string | null; tratamientoObjetivo: string | null; grupo?: string }
 
 function normalizarCultivo(cultivo: string): string {
-  const map: Record<string, string> = { 'Cerezo': 'Cerezos', 'Ciruela': 'Ciruelas', 'Durazno': 'Duraznos', 'Nectarin': 'Nectarines', 'Kiwi': 'Kiwi', 'Uva de mesa': 'Uva de mesa' }
-  return map[cultivo] ?? cultivo
+  return cultivo
 }
 
 function parseDosisHa(dosisHa: string | null): { dosis: string; unidad: string } {
@@ -28,6 +27,14 @@ function parseDosisHa(dosisHa: string | null): { dosis: string; unidad: string }
 }
 
 function inferTipo(item: ProgramaItem): string {
+  if (item.grupo) {
+    const grupoMap: Record<string, string> = {
+      FUNGICIDA: 'FUNGICIDA', INSECTICIDA: 'INSECTICIDA', ACARICIDA: 'ACARICIDA',
+      HERBICIDA: 'HERBICIDA', FERTILIZANTE_FOLIAR: 'FERTILIZANTE_FOLIAR',
+      BIOESTIMULANTE: 'BIOESTIMULANTE', OTRO: 'OTRO',
+    }
+    return grupoMap[item.grupo] ?? 'OTRO'
+  }
   const t = (item.tratamientoObjetivo ?? '').toLowerCase()
   if (['pulgon', 'mosca', 'trips', 'drosophila'].some((k) => t.includes(k))) return 'INSECTICIDA'
   if (['monilia', 'oidio', 'botrytis', 'pudricion', 'chancro', 'bacteriano'].some((k) => t.includes(k))) return 'FUNGICIDA'
@@ -62,7 +69,7 @@ export default function VisitaDetailPage() {
   useEffect(() => {
     fetchVisita()
     fetch('/api/catalogo').then((r) => r.json()).then(setCatalogo)
-    fetch('/api/programa').then((r) => r.json()).then(setPrograma)
+    fetch('/api/productos-visita').then((r) => r.json()).then(setPrograma)
   }, [fetchVisita])
 
   const laboresDisponibles = visita
@@ -152,12 +159,20 @@ export default function VisitaDetailPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tipo: laborSeleccionada.categoria.toLowerCase().includes('poda') ? 'PODA'
-          : laborSeleccionada.categoria.toLowerCase().includes('riego') ? 'RIEGO'
-          : laborSeleccionada.categoria.toLowerCase().includes('cosecha') ? 'COSECHA'
-          : laborSeleccionada.categoria.toLowerCase().includes('nutri') ? 'FERTILIZACION'
-          : laborSeleccionada.categoria.toLowerCase().includes('sanidad') ? 'CONTROL_PLAGAS'
-          : 'MANTENIMIENTO',
+        tipo: (() => {
+          const c = laborSeleccionada.categoria.toLowerCase()
+          if (c.includes('cosecha')) return 'COSECHA'
+          if (c.includes('poda')) return 'PODA'
+          if (c.includes('riego')) return 'RIEGO'
+          if (c.includes('raleo')) return 'RALEO'
+          if (c.includes('monitoreo')) return 'MONITOREO'
+          if (c.includes('sanidad') || c.includes('plaga') || c.includes('enfermedad')) return 'CONTROL_PLAGAS'
+          if (c.includes('formac') || c.includes('ortopedia') || c.includes('tutoraje')) return 'FORMACION'
+          if (c.includes('plantac') || c.includes('infraestructura') || c.includes('preparac')) return 'ESTABLECIMIENTO'
+          if (c.includes('nutri') || c.includes('suelo') || c.includes('maleza') || c.includes('fertiliz')) return 'FERTILIZACION'
+          if (c.includes('fruto') || c.includes('florac') || c.includes('cuaje') || c.includes('calibre')) return 'MANEJO_FRUTO'
+          return 'MANTENIMIENTO'
+        })(),
         descripcion: `${laborSeleccionada.labor} — ${visita.predio.cultivo}`,
         fecha: visita.fecha,
         estado: 'COMPLETADA',
