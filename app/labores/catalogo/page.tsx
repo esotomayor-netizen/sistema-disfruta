@@ -25,8 +25,13 @@ function categoriaToTipo(cat: string): string {
   if (c.includes('cosecha')) return 'COSECHA'
   if (c.includes('poda')) return 'PODA'
   if (c.includes('riego')) return 'RIEGO'
-  if (c.includes('nutri') || c.includes('suelo')) return 'FERTILIZACION'
-  if (c.includes('sanidad') || c.includes('plaga')) return 'CONTROL_PLAGAS'
+  if (c.includes('raleo')) return 'RALEO'
+  if (c.includes('monitoreo')) return 'MONITOREO'
+  if (c.includes('sanidad') || c.includes('plaga') || c.includes('enfermedad')) return 'CONTROL_PLAGAS'
+  if (c.includes('formación') || c.includes('formacion') || c.includes('ortopedia') || c.includes('tutoraje') || c.includes('conducción')) return 'FORMACION'
+  if (c.includes('plantación') || c.includes('plantacion') || c.includes('infraestructura') || c.includes('preparación') || c.includes('preparacion')) return 'ESTABLECIMIENTO'
+  if (c.includes('nutri') || c.includes('suelo') || c.includes('maleza') || c.includes('cobertura') || c.includes('fertiliz')) return 'FERTILIZACION'
+  if (c.includes('fruto') || c.includes('floración') || c.includes('floración') || c.includes('cuaje') || c.includes('calibre')) return 'MANEJO_FRUTO'
   return 'MANTENIMIENTO'
 }
 

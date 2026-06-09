@@ -1,12 +1,16 @@
 export const LABOR_TIPOS = [
-  { value: 'SIEMBRA', label: 'Siembra' },
-  { value: 'COSECHA', label: 'Cosecha' },
-  { value: 'PODA', label: 'Poda' },
-  { value: 'FERTILIZACION', label: 'Fertilización' },
-  { value: 'RIEGO', label: 'Riego' },
-  { value: 'CONTROL_PLAGAS', label: 'Control de Plagas' },
-  { value: 'MANTENIMIENTO', label: 'Mantenimiento' },
-  { value: 'OTRO', label: 'Otro' },
+  { value: 'ESTABLECIMIENTO', label: 'Establecimiento del Huerto' },
+  { value: 'FORMACION',       label: 'Formación y Conducción' },
+  { value: 'PODA',            label: 'Poda' },
+  { value: 'FERTILIZACION',   label: 'Suelo y Nutrición' },
+  { value: 'RIEGO',           label: 'Gestión de Riego' },
+  { value: 'MONITOREO',       label: 'Monitoreo Sanitario' },
+  { value: 'CONTROL_PLAGAS',  label: 'Control de Plagas' },
+  { value: 'RALEO',           label: 'Raleo' },
+  { value: 'MANEJO_FRUTO',    label: 'Manejo de Fruto' },
+  { value: 'COSECHA',         label: 'Cosecha' },
+  { value: 'MANTENIMIENTO',   label: 'Mantenimiento' },
+  { value: 'OTRO',            label: 'Otro' },
 ]
 
 export const ESTADOS_LABOR = [
