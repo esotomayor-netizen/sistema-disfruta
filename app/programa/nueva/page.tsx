@@ -4,25 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
-import { CULTIVOS } from '@/lib/constants'
-
-const ESTADOS_FENOLOGICOS = [
-  'Dormición',
-  'Yema hinchada',
-  'Puntas verdes',
-  'Puntas rosadas',
-  'Botón blanco',
-  'Flor blanca',
-  'Plena flor',
-  'Caída de pétalos',
-  'Cuajado',
-  'Fruto raquítico',
-  'Fruto en desarrollo (I)',
-  'Fruto en desarrollo (II)',
-  'Pre-cosecha',
-  'Cosecha',
-  'Post-cosecha',
-]
+import { CULTIVOS, ESTADOS_FENOLOGICOS } from '@/lib/constants'
 
 const CARACTERES = [
   { value: 'FIJA', label: 'Fija (calendario)' },

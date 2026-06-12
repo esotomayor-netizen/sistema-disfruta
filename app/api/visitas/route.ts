@@ -23,6 +23,10 @@ export async function POST(req: Request) {
       tecnicoId: parseInt(data.tecnicoId),
       observaciones: data.observaciones || null,
       estado: 'EN_PROGRESO',
+      checkinLat: data.checkinLat != null ? parseFloat(data.checkinLat) : null,
+      checkinLng: data.checkinLng != null ? parseFloat(data.checkinLng) : null,
+      especie: data.especie || null,
+      variedades: data.variedades || null,
     },
     include: {
       predio: { include: { empresa: true } },

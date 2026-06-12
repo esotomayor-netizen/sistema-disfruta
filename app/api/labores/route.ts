@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       estado: data.estado || 'PENDIENTE',
       observaciones: data.observaciones || null,
       dibujo: data.dibujo || null,
+      fotos: Array.isArray(data.fotos) ? data.fotos : [],
       predioId: parseInt(data.predioId),
       responsableId: parseInt(data.responsableId),
       visitaId: data.visitaId ? parseInt(data.visitaId) : null,

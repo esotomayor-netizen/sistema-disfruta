@@ -49,6 +49,24 @@ export const ROLES_ENCARGADO = [
 
 export const UNIDADES = ['kg/ha', 'L/ha', 'g/ha', 'mL/ha', 'kg', 'L', 'unidades']
 
+export const ESTADOS_FENOLOGICOS = [
+  'Dormición',
+  'Yema hinchada',
+  'Puntas verdes',
+  'Puntas rosadas',
+  'Botón blanco',
+  'Flor blanca',
+  'Plena flor',
+  'Caída de pétalos',
+  'Cuajado',
+  'Fruto raquítico',
+  'Fruto en desarrollo (I)',
+  'Fruto en desarrollo (II)',
+  'Pre-cosecha',
+  'Cosecha',
+  'Post-cosecha',
+]
+
 export const CULTIVOS = ['Cerezo', 'Ciruela', 'Durazno', 'Nectarin', 'Kiwi', 'Uva de mesa']
 
 export const VARIEDADES_POR_CULTIVO: Record<string, string[]> = {

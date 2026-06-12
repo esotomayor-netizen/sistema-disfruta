@@ -113,6 +113,10 @@ model Visita {
   tecnicoId     Int
   observaciones String?
   estado        String       @default("EN_PROGRESO")
+  checkinLat    Float?
+  checkinLng    Float?
+  especie       String?
+  variedades    String?
   labores       Labor[]
   aplicaciones  Aplicacion[]
   createdAt     DateTime     @default(now())
@@ -128,6 +132,7 @@ model Labor {
   estado        String    @default("PENDIENTE")
   observaciones String?
   dibujo        String?
+  fotos         String[]  @default([])
   predio        Predio    @relation(fields: [predioId], references: [id])
   predioId      Int
   responsable   Usuario   @relation("Responsable", fields: [responsableId], references: [id])

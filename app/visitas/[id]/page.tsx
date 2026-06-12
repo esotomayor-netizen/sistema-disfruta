@@ -4,15 +4,16 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
-import { formatDate, TIPOS_PRODUCTO, UNIDADES, labelFromValue, tipoProductoColor } from '@/lib/constants'
+import { formatDate, TIPOS_PRODUCTO, UNIDADES, ESTADOS_FENOLOGICOS, labelFromValue, tipoProductoColor } from '@/lib/constants'
 
 interface Predio { id: number; nombre: string; csg: string; cultivo: string; variedades: string | null; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
-interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; estado: string; responsable: Usuario }
+interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; fotos: string[]; estado: string; responsable: Usuario }
 interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; observaciones: string | null; estado: string; tecnico: Usuario }
-interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
+interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; checkinLat: number | null; checkinLng: number | null; especie: string | null; variedades: string | null; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
 interface CatalogoItem { id: number; labor: string; categoria: string; descripcion: string; especie: string }
 interface ProgramaItem { id: number; producto: string; ingredienteActivo: string | null; dosisHa: string | null; tratamientoObjetivo: string | null; grupo?: string }
+interface ProgramaFitoItem { id: number; producto: string; ingredienteActivo: string | null; concentracion: string | null; dosisHa: string | null; tratamientoObjetivo: string | null; observaciones: string | null }
 
 function normalizarCultivo(cultivo: string): string {
   return cultivo
@@ -61,9 +62,23 @@ export default function VisitaDetailPage() {
   const [unidadOverride, setUnidadOverride] = useState('L/ha')
   const [tipoOverride, setTipoOverride] = useState('FUNGICIDA')
   const [modoEdicion, setModoEdicion] = useState(false)
+  const [fotosNuevas, setFotosNuevas] = useState<string[]>([])
+  const [observacionesEdit, setObservacionesEdit] = useState('')
+  const [guardandoObs, setGuardandoObs] = useState(false)
+  const [estadoFenologico, setEstadoFenologico] = useState('')
+  const [programaFito, setProgramaFito] = useState<ProgramaFitoItem[]>([])
+  const [mostrarManual, setMostrarManual] = useState(false)
+  const [manualProducto, setManualProducto] = useState('')
+  const [manualDosis, setManualDosis] = useState('')
+  const [manualUnidad, setManualUnidad] = useState('L/ha')
+  const [manualTipo, setManualTipo] = useState('OTRO')
+  const [manualObjetivo, setManualObjetivo] = useState('')
 
   const fetchVisita = useCallback(() => {
-    fetch(`/api/visitas/${id}`).then((r) => r.json()).then(setVisita)
+    fetch(`/api/visitas/${id}`).then((r) => r.json()).then((v) => {
+      setVisita(v)
+      setObservacionesEdit(v.observaciones ?? '')
+    })
   }, [id])
 
   useEffect(() => {
@@ -71,6 +86,13 @@ export default function VisitaDetailPage() {
     fetch('/api/catalogo').then((r) => r.json()).then(setCatalogo)
     fetch('/api/productos-visita').then((r) => r.json()).then(setPrograma)
   }, [fetchVisita])
+
+  useEffect(() => {
+    if (!estadoFenologico || !visita) { setProgramaFito([]); return }
+    fetch(`/api/programa?cultivo=${encodeURIComponent(visita.predio.cultivo)}&estadoFenologico=${encodeURIComponent(estadoFenologico)}`)
+      .then((r) => r.json())
+      .then(setProgramaFito)
+  }, [estadoFenologico, visita])
 
   const laboresDisponibles = visita
     ? catalogo
@@ -178,6 +200,7 @@ export default function VisitaDetailPage() {
         estado: 'COMPLETADA',
         observaciones: descripcionEditable,
         dibujo: bosquejo,
+        fotos: fotosNuevas,
         predioId: visita.predio.id,
         responsableId: visita.tecnico.id,
         visitaId: visita.id,
@@ -188,7 +211,24 @@ export default function VisitaDetailPage() {
     setLaborSeleccionada(null)
     setBusquedaLabor('')
     setBosquejo(null)
+    setFotosNuevas([])
     fetchVisita()
+  }
+
+  const handleAgregarFotos = (files: FileList | null) => {
+    if (!files) return
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result
+        if (typeof result === 'string') setFotosNuevas((prev) => [...prev, result])
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleEliminarFotoNueva = (index: number) => {
+    setFotosNuevas((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleAgregarAplicacion = async () => {
@@ -213,6 +253,71 @@ export default function VisitaDetailPage() {
     setSaving(false)
     setModal(null)
     setProductoSeleccionado(null)
+    fetchVisita()
+  }
+
+  const handleAgregarProductoPrograma = async (item: ProgramaFitoItem) => {
+    if (!visita) return
+    const { dosis, unidad } = parseDosisHa(item.dosisHa)
+    setSaving(true)
+    await fetch('/api/aplicaciones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        producto: item.producto,
+        tipoProducto: inferTipo({ id: item.id, producto: item.producto, ingredienteActivo: item.ingredienteActivo, dosisHa: item.dosisHa, tratamientoObjetivo: item.tratamientoObjetivo }),
+        dosis: dosis || '0',
+        unidad,
+        fecha: visita.fecha,
+        estado: 'COMPLETADA',
+        observaciones: item.tratamientoObjetivo,
+        predioId: visita.predio.id,
+        tecnicoId: visita.tecnico.id,
+        visitaId: visita.id,
+      }),
+    })
+    setSaving(false)
+    fetchVisita()
+  }
+
+  const handleAgregarProductoManual = async () => {
+    if (!visita || !manualProducto.trim()) return
+    setSaving(true)
+    await fetch('/api/aplicaciones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        producto: manualProducto.trim(),
+        tipoProducto: manualTipo,
+        dosis: manualDosis || '0',
+        unidad: manualUnidad,
+        fecha: visita.fecha,
+        estado: 'COMPLETADA',
+        observaciones: manualObjetivo ? `${manualObjetivo} (agregado manualmente)` : 'Agregado manualmente',
+        predioId: visita.predio.id,
+        tecnicoId: visita.tecnico.id,
+        visitaId: visita.id,
+      }),
+    })
+    setSaving(false)
+    setManualProducto('')
+    setManualDosis('')
+    setManualUnidad('L/ha')
+    setManualTipo('OTRO')
+    setManualObjetivo('')
+    setMostrarManual(false)
+    fetchVisita()
+  }
+
+  const handleGuardarObservaciones = async () => {
+    if (!visita) return
+    setGuardandoObs(true)
+    await fetch(`/api/visitas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado: visita.estado, observaciones: observacionesEdit }),
+    })
+    setGuardandoObs(false)
     fetchVisita()
   }
 
@@ -285,8 +390,29 @@ export default function VisitaDetailPage() {
             <p className="text-gray-900">{visita.predio.cultivo}</p>
           </div>
           <div>
-            <p className="text-gray-400 text-xs mb-1">Variedades</p>
-            <p className="text-gray-900">{visita.predio.variedades ?? '—'}</p>
+            <p className="text-gray-400 text-xs mb-1">Variedades de la visita</p>
+            <p className="text-gray-900">{visita.variedades || visita.predio.variedades || '—'}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4 pt-4 border-t border-gray-100">
+          <div>
+            <p className="text-gray-400 text-xs mb-1">Especie (visita)</p>
+            <p className="text-gray-900">{visita.especie || visita.predio.cultivo}</p>
+          </div>
+          <div>
+            <p className="text-gray-400 text-xs mb-1">Check-in GPS</p>
+            {visita.checkinLat != null && visita.checkinLng != null ? (
+              <a
+                className="text-primary-600 underline"
+                href={`https://www.google.com/maps?q=${visita.checkinLat},${visita.checkinLng}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {visita.checkinLat.toFixed(5)}, {visita.checkinLng.toFixed(5)} ↗
+              </a>
+            ) : (
+              <p className="text-gray-400">Sin registro</p>
+            )}
           </div>
         </div>
         {visita.estado === 'COMPLETADA' && (
@@ -294,6 +420,23 @@ export default function VisitaDetailPage() {
             <span className="badge bg-green-100 text-green-800">Visita completada</span>
           </div>
         )}
+      </div>
+
+      {/* Observaciones */}
+      <div className="card mb-6">
+        <h2 className="font-semibold text-gray-800 mb-2">Observaciones</h2>
+        <textarea
+          className="input"
+          rows={4}
+          value={observacionesEdit}
+          onChange={(e) => setObservacionesEdit(e.target.value)}
+          placeholder="Observaciones generales de la visita…"
+        />
+        <div className="flex justify-end mt-2">
+          <button onClick={handleGuardarObservaciones} disabled={guardandoObs} className="btn-secondary text-xs py-1.5 px-3">
+            {guardandoObs ? 'Guardando…' : 'Guardar observaciones'}
+          </button>
+        </div>
       </div>
 
       {/* Banner modo edición */}
@@ -312,7 +455,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Labores ({visita.labores.length})</h2>
             {(visita.estado === 'EN_PROGRESO' || modoEdicion) && (
-              <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null); setBosquejo(null) }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
+              <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null); setBosquejo(null); setFotosNuevas([]) }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
             )}
           </div>
           <div className="space-y-2">
@@ -347,6 +490,13 @@ export default function VisitaDetailPage() {
                     <div className="p-1" dangerouslySetInnerHTML={{ __html: l.dibujo }} />
                   </div>
                 )}
+                {l.fotos && l.fotos.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {l.fotos.map((src, i) => (
+                      <img key={i} src={src} className="w-16 h-16 object-cover rounded-lg border border-gray-200" alt="Foto de la labor" />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -357,7 +507,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Aplicaciones ({visita.aplicaciones.length})</h2>
             {(visita.estado === 'EN_PROGRESO' || modoEdicion) && (
-              <button onClick={() => { setModal('aplicacion'); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); }} className="btn-primary text-xs py-1.5 px-3">+ Agregar aplicación</button>
+              <button onClick={() => { setModal('aplicacion'); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setEstadoFenologico(''); setMostrarManual(false); }} className="btn-primary text-xs py-1.5 px-3">+ Agregar aplicación</button>
             )}
           </div>
           <div className="space-y-2">
@@ -502,6 +652,34 @@ export default function VisitaDetailPage() {
                     />
                   </div>
                 )}
+
+                <div>
+                  <label className="label">Fotos adjuntas</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    capture="environment"
+                    onChange={(e) => handleAgregarFotos(e.target.files)}
+                    className="input text-sm"
+                  />
+                  {fotosNuevas.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {fotosNuevas.map((src, i) => (
+                        <div key={i} className="relative">
+                          <img src={src} className="w-16 h-16 object-cover rounded-lg border border-gray-200" alt="Foto adjunta" />
+                          <button
+                            type="button"
+                            onClick={() => handleEliminarFotoNueva(i)}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -509,7 +687,7 @@ export default function VisitaDetailPage() {
               <button onClick={handleAgregarLabor} disabled={!laborSeleccionada || saving} className="btn-primary flex-1">
                 {saving ? 'Guardando…' : 'Agregar labor'}
               </button>
-              <button onClick={() => setModal(null)} className="btn-secondary">Cancelar</button>
+              <button onClick={() => { setModal(null); setFotosNuevas([]) }} className="btn-secondary">Cancelar</button>
             </div>
           </div>
         </div>
@@ -521,17 +699,49 @@ export default function VisitaDetailPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Agregar aplicación</h3>
-              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={() => { setModal(null); setEstadoFenologico(''); setMostrarManual(false) }} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+
+            {/* Estado fenológico + Programa Fitosanitario */}
+            <div className="px-4 pt-4 pb-2">
+              <label className="label">Estado fenológico</label>
+              <select className="input" value={estadoFenologico} onChange={(e) => setEstadoFenologico(e.target.value)}>
+                <option value="">Seleccionar estado fenológico…</option>
+                {ESTADOS_FENOLOGICOS.map((e) => <option key={e} value={e}>{e}</option>)}
+              </select>
+              {estadoFenologico && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500 font-medium mb-1">Productos del programa fitosanitario para &quot;{estadoFenologico}&quot;</p>
+                  {programaFito.length === 0 ? (
+                    <p className="text-xs text-gray-400">No hay productos del programa para este estado fenológico. Busca en el catálogo abajo o agrega un producto manualmente.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {programaFito.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-blue-50/40">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm text-gray-900">{p.producto}</p>
+                            {p.tratamientoObjetivo && <p className="text-xs text-gray-500 italic">{p.tratamientoObjetivo}</p>}
+                            {p.dosisHa && <p className="text-xs text-gray-400">Dosis sugerida: {p.dosisHa}</p>}
+                          </div>
+                          <button onClick={() => handleAgregarProductoPrograma(p)} disabled={saving} className="btn-primary text-xs py-1 px-2.5 flex-shrink-0">
+                            + Agregar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Buscador de producto */}
-            <div className="px-4 pt-4 pb-2">
+            <div className="px-4 pt-2 pb-2 border-t border-gray-100">
+              <p className="text-xs text-gray-500 font-medium mb-1">Catálogo SAG (fuera del programa)</p>
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
-                  autoFocus
                   type="text"
                   placeholder="Buscar producto, ingrediente activo u objetivo…"
                   value={busquedaProducto}
@@ -592,11 +802,52 @@ export default function VisitaDetailPage() {
               </div>
             )}
 
+            {/* Agregar producto manualmente */}
+            <div className="px-4 pb-2 border-t border-gray-100 pt-3">
+              <button
+                type="button"
+                onClick={() => setMostrarManual(!mostrarManual)}
+                className="text-xs text-primary-600 hover:text-primary-800 font-medium"
+              >
+                {mostrarManual ? '− Ocultar' : '+ Agregar producto manualmente (no está en el listado)'}
+              </button>
+              {mostrarManual && (
+                <div className="mt-2 space-y-2">
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Nombre del producto"
+                    value={manualProducto}
+                    onChange={(e) => setManualProducto(e.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Objetivo / observación"
+                    value={manualObjetivo}
+                    onChange={(e) => setManualObjetivo(e.target.value)}
+                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <select className="input" value={manualTipo} onChange={(e) => setManualTipo(e.target.value)}>
+                      {TIPOS_PRODUCTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                    <input className="input" type="number" step="0.01" placeholder="Dosis" value={manualDosis} onChange={(e) => setManualDosis(e.target.value)} />
+                    <select className="input" value={manualUnidad} onChange={(e) => setManualUnidad(e.target.value)}>
+                      {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  </div>
+                  <button onClick={handleAgregarProductoManual} disabled={!manualProducto.trim() || saving} className="btn-primary w-full text-sm">
+                    {saving ? 'Guardando…' : 'Agregar producto manual'}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
               <button onClick={handleAgregarAplicacion} disabled={!productoSeleccionado || !dosisOverride || saving} className="btn-primary flex-1">
                 {saving ? 'Guardando…' : 'Agregar aplicación'}
               </button>
-              <button onClick={() => setModal(null)} className="btn-secondary">Cancelar</button>
+              <button onClick={() => { setModal(null); setEstadoFenologico(''); setMostrarManual(false) }} className="btn-secondary">Cancelar</button>
             </div>
           </div>
         </div>
