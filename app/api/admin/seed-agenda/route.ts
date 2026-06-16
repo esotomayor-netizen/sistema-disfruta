@@ -59,11 +59,10 @@ function similarity(a: string, b: string): number {
   const na = normalize(a), nb = normalize(b)
   if (na === nb) return 1
   if (na.includes(nb) || nb.includes(na)) return 0.9
-  const wa = new Set(na.split(' ').filter(w => w.length > 2))
+  const wa = na.split(' ').filter(w => w.length > 2)
   const wb = new Set(nb.split(' ').filter(w => w.length > 2))
-  let common = 0
-  for (const w of wa) if (wb.has(w)) common++
-  return common / Math.max(wa.size, wb.size, 1)
+  const common = wa.filter(w => wb.has(w)).length
+  return common / Math.max(wa.length, wb.size, 1)
 }
 
 function getWeekdays(year: number, month: number, holidays: string[] = []): Date[] {
@@ -117,11 +116,9 @@ function buildSchedule(
   }
 
   const result: { predioId: number; date: Date }[] = []
-  for (const [idx, predioIds] of buckets.entries()) {
-    for (const predioId of predioIds) {
-      result.push({ predioId, date: days[idx] })
-    }
-  }
+  buckets.forEach((predioIds, idx) => {
+    predioIds.forEach(predioId => result.push({ predioId, date: days[idx] }))
+  })
   return result
 }
 
