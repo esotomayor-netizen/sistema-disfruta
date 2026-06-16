@@ -11,7 +11,7 @@ const ASSIGNMENTS: { email: string; label: string; predios: { name: string; visi
     predios: [
       { name: 'CORCOLEN',            visitsPerMonth: 1 },
       { name: 'CREMASCHI',           visitsPerMonth: 2 },
-      { name: 'JLECAROS',            visitsPerMonth: 4 },
+      { name: 'J LECAROS',            visitsPerMonth: 4 },
       { name: 'MARIA RITA GONZALEZ', visitsPerMonth: 2 },
       { name: 'SAN ALBERTO',         visitsPerMonth: 2 },
       { name: 'SANTA ADELAIDA',      visitsPerMonth: 1 },
