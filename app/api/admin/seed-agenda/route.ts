@@ -287,9 +287,10 @@ export async function POST(req: Request) {
   if (!dryRun) {
     if (clearExisting) {
       const tecnicoIds = (Object.values(report) as any[]).filter(r => r.tecnicoId).map(r => r.tecnicoId as number)
+      // Borrar TODOS los registros de jun+jul para estos técnicos (incluyendo corridas anteriores)
       await prisma.agendaVisita.deleteMany({
         where: {
-          fecha: { gte: new Date(2026, 5, 18), lt: new Date(2026, 7, 1) },
+          fecha: { gte: new Date(2026, 5, 1), lt: new Date(2026, 7, 1) },
           tecnicoId: { in: tecnicoIds },
         },
       })
