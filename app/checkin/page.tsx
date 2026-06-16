@@ -60,7 +60,7 @@ export default function CheckInPage() {
   const [kmDia, setKmDia] = useState(0)
 
   useEffect(() => {
-    fetch('/api/equipo?encargados=true')
+    fetch('/api/equipo')
       .then((r) => r.json())
       .then((u: Usuario[]) => setTecnicos(u.filter((x) => x.activo)))
   }, [])
