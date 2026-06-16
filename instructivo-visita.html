@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instructivo — Cómo registrar una visita</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f3ee;
+      color: #1a1a1a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* ---- PORTADA ---- */
+    .cover {
+      background: #3c5430;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 48px;
+      page-break-after: always;
+    }
+    .cover-logo {
+      width: 80px;
+      height: 80px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+    .cover h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+    .cover p {
+      font-size: 16px;
+      opacity: 0.75;
+      max-width: 400px;
+      line-height: 1.7;
+    }
+    .cover-meta {
+      margin-top: 48px;
+      font-size: 12px;
+      opacity: 0.5;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .cover-url {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ---- LAYOUT PÁGINAS ---- */
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px 48px 32px;
+      page-break-after: always;
+    }
+
+    /* ---- CABECERA PÁGINA ---- */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #3c5430;
+      padding-bottom: 12px;
+      margin-bottom: 28px;
+    }
+    .page-header .brand {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #3c5430;
+    }
+    .page-header .doc-title {
+      font-size: 11px;
+      color: #9a9a8a;
+    }
+
+    /* ---- SECCIÓN ---- */
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #3c5430;
+      margin-bottom: 6px;
+    }
+    .section-subtitle {
+      font-size: 13px;
+      color: #6b6b5a;
+      margin-bottom: 24px;
+    }
+
+    /* ---- PASO ---- */
+    .step {
+      display: flex;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+    .step-number {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      background: #3c5430;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .step-content { flex: 1; }
+    .step-content h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      color: #4a4a3a;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* ---- SCREENSHOT BOX ---- */
+    .screenshot {
+      background: #e8e4d8;
+      border: 1.5px dashed #c5bfa5;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #8a8570;
+      font-size: 12px;
+    }
+    .screenshot-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .screenshot-label { font-weight: 500; }
+    .screenshot-desc { font-size: 11px; margin-top: 2px; color: #aaa090; }
+
+    /* ---- MOCK UI ---- */
+    .mock-screen {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #ddd8c8;
+      overflow: hidden;
+      margin-top: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .mock-topbar {
+      background: #3c5430;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mock-topbar-dot {
+      width: 8px; height: 8px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 50%;
+    }
+    .mock-topbar-url {
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px;
+      padding: 3px 10px;
+      color: rgba(255,255,255,0.8);
+      font-size: 10px;
+      flex: 1;
+    }
+    .mock-body {
+      padding: 20px;
+    }
+    .mock-login-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+    .mock-login-sub {
+      font-size: 11px;
+      color: #9a9a8a;
+      margin-bottom: 16px;
+    }
+    .mock-field {
+      background: #f5f3ee;
+      border: 1px solid #ddd8c8;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #6b6b5a;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    .mock-btn {
+      background: #3c5430;
+      color: white;
+      border-radius: 6px;
+      padding: 9px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      width: 100%;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .mock-sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #4a4a3a;
+      margin-bottom: 3px;
+    }
+    .mock-sidebar-item.active {
+      background: #3c5430;
+      color: white;
+    }
+    .mock-sidebar-dot {
+      width: 6px; height: 6px;
+      background: currentColor;
+      border-radius: 50%;
+      opacity: 0.6;
+    }
+    .mock-layout {
+      display: flex;
+      gap: 0;
+    }
+    .mock-sidebar {
+      width: 140px;
+      background: #2d3f24;
+      padding: 12px 8px;
+      flex-shrink: 0;
+    }
+    .mock-main {
+      flex: 1;
+      padding: 16px;
+      background: #f9f8f4;
+    }
+    .mock-badge {
+      display: inline-block;
+      background: #dcf5d0;
+      color: #2d5a1e;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .mock-card {
+      background: white;
+      border: 1px solid #e8e4d8;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .mock-card-title {
+      font-weight: 600;
+      font-size: 12px;
+      color: #1a1a1a;
+      margin-bottom: 3px;
+    }
+    .mock-card-sub {
+      font-size: 10px;
+      color: #9a9a8a;
+    }
+    .mock-gps-box {
+      background: #f0f9eb;
+      border: 1px solid #c8e6b8;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      margin: 8px 0;
+    }
+    .mock-gps-icon { font-size: 20px; }
+    .mock-gps-text { font-size: 11px; color: #3c5430; font-weight: 600; margin-top: 4px; }
+    .mock-gps-coords { font-size: 9px; color: #8ab878; margin-top: 2px; }
+
+    /* ---- ALERTA / TIP ---- */
+    .tip {
+      background: #f0f9eb;
+      border-left: 3px solid #3c5430;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      margin: 16px 0;
+      font-size: 12px;
+      color: #3c5430;
+    }
+    .tip strong { font-weight: 700; }
+
+    .warning {
+      background: #fff8e6;
+      border-left: 3px solid #d4860a;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      margin: 16px 0;
+      font-size: 12px;
+      color: #92683e;
+    }
+
+    /* ---- DIVIDER ---- */
+    .divider {
+      border: none;
+      border-top: 1px solid #e0dcd0;
+      margin: 24px 0;
+    }
+
+    /* ---- CHECKLIST ---- */
+    .checklist {
+      list-style: none;
+      margin: 12px 0;
+    }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #3a3a2a;
+    }
+    .checklist li::before {
+      content: '✓';
+      color: #3c5430;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ---- RESUMEN FINAL ---- */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .summary-card {
+      background: white;
+      border: 1px solid #e0dcd0;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .summary-card .num {
+      font-size: 28px;
+      font-weight: 800;
+      color: #3c5430;
+      line-height: 1;
+    }
+    .summary-card .label {
+      font-size: 11px;
+      color: #9a9a8a;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ---- PRINT ---- */
+    @media print {
+      body { background: white; }
+      .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .mock-topbar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .mock-sidebar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .mock-sidebar-item.active { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .step-number { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .mock-btn { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .mock-gps-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .tip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .warning { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     PORTADA
+     ============================================================ -->
+<div class="cover">
+  <div class="cover-logo">🌿</div>
+  <h1>Cómo registrar<br>una visita técnica</h1>
+  <p>Instructivo paso a paso para técnicos de campo.<br>
+  Plataforma de gestión DLC Export — Exportadora Disfruta.</p>
+  <div class="cover-url">sistema-disfruta-lecaros.vercel.app</div>
+  <div class="cover-meta">Versión Junio 2026 · Uso interno</div>
+</div>
+
+
+<!-- ============================================================
+     PÁGINA 1 — INGRESO AL SISTEMA
+     ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">DLC Export · Disfruta</span>
+    <span class="doc-title">Instructivo de visitas técnicas</span>
+  </div>
+
+  <div class="section-title">Paso 1 — Ingresar al sistema</div>
+  <div class="section-subtitle">Abre el navegador de tu celular (Chrome o Safari) y accede a la plataforma.</div>
+
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <h3>Abre el navegador en tu celular</h3>
+      <p>Ingresa la siguiente dirección en la barra de búsqueda:</p>
+      <div style="background:#3c5430;color:white;border-radius:6px;padding:8px 14px;margin-top:8px;font-size:13px;font-weight:600;letter-spacing:0.3px;">
+        sistema-disfruta-lecaros.vercel.app
+      </div>
+      <div class="tip" style="margin-top:10px;">
+        <strong>Consejo:</strong> Guarda el link en tu pantalla de inicio. En Chrome: menú (⋮) → "Agregar a pantalla de inicio". Así lo abres como una app.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <h3>Ingresa tu correo y contraseña</h3>
+      <p>Escribe tu correo @lcfruit.com y la contraseña que te asignaron. Luego toca <strong>"Ingresar"</strong>.</p>
+      <div class="mock-screen" style="max-width:300px;margin-top:10px;">
+        <div class="mock-topbar">
+          <div class="mock-topbar-dot"></div>
+          <div class="mock-topbar-dot"></div>
+          <div class="mock-topbar-url">sistema-disfruta-lecaros.vercel.app/login</div>
+        </div>
+        <div class="mock-body" style="padding:20px 20px 16px;">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div style="font-size:28px;">🌿</div>
+            <div style="font-weight:800;font-size:15px;color:#1a1a1a;margin-top:4px;">Bienvenido</div>
+            <div style="font-size:11px;color:#9a9a8a;">DLC Export · Exportadora Disfruta</div>
+          </div>
+          <div class="mock-field">✉ j.lecaros@lcfruit.com</div>
+          <div class="mock-field">🔒 ••••••••••</div>
+          <div class="mock-btn">Ingresar →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <h3>Ya estás dentro del sistema</h3>
+      <p>Verás el menú lateral con las opciones de la plataforma. En la parte superior aparecen los accesos rápidos más usados.</p>
+      <div class="mock-screen" style="margin-top:10px;">
+        <div class="mock-topbar">
+          <div class="mock-topbar-url">sistema-disfruta-lecaros.vercel.app/visitas</div>
+        </div>
+        <div class="mock-layout">
+          <div class="mock-sidebar">
+            <div style="color:rgba(255,255,255,0.45);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 6px 6px;">Acceso rápido</div>
+            <div class="mock-sidebar-item active">📍 Check-In GPS</div>
+            <div class="mock-sidebar-item" style="color:rgba(255,255,255,0.55);">➕ Nueva Visita</div>
+            <div class="mock-sidebar-item" style="color:rgba(255,255,255,0.55);">📊 Cumplimiento</div>
+            <div style="border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;"></div>
+            <div class="mock-sidebar-item" style="color:rgba(255,255,255,0.55);">🏠 Dashboard</div>
+            <div class="mock-sidebar-item" style="color:rgba(255,255,255,0.55);">📅 Agenda</div>
+            <div class="mock-sidebar-item" style="color:rgba(255,255,255,0.55);">🗺 Visitas</div>
+            <div class="mock-sidebar-item" style="color:rgba(255,255,255,0.55);">🌾 Predios</div>
+          </div>
+          <div class="mock-main">
+            <div style="font-weight:700;font-size:14px;color:#1a1a1a;margin-bottom:2px;">Dashboard</div>
+            <div style="font-size:11px;color:#9a9a8a;margin-bottom:12px;">Resumen de actividad</div>
+            <div class="mock-card">
+              <div class="mock-card-title">Visitas del mes</div>
+              <div style="font-size:22px;font-weight:800;color:#3c5430;">8</div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-card-title">Labores registradas</div>
+              <div style="font-size:22px;font-weight:800;color:#3c5430;">24</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PÁGINA 2 — CHECK-IN GPS
+     ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">DLC Export · Disfruta</span>
+    <span class="doc-title">Instructivo de visitas técnicas</span>
+  </div>
+
+  <div class="section-title">Paso 2 — Registrar llegada al predio (Check-In GPS)</div>
+  <div class="section-subtitle">Cuando llegues al predio, lo primero que debes hacer es registrar tu ubicación. Esto valida que la visita fue realizada en terreno.</div>
+
+  <div class="warning">
+    <strong>Importante:</strong> El Check-In GPS debe hacerse <strong>dentro del predio</strong>, no desde el camino ni desde la oficina. La ubicación queda registrada en el sistema y es revisada por el supervisor.
+  </div>
+
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <h3>Toca "Check-In GPS" en el menú lateral</h3>
+      <p>Es el primer acceso rápido en la parte superior del menú.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <h3>Permite el acceso a tu ubicación</h3>
+      <p>El celular te pedirá permiso para usar el GPS. Toca <strong>"Permitir"</strong>. Sin este permiso no podrás registrar la visita.</p>
+      <div class="tip">
+        <strong>¿No aparece el permiso?</strong> Ve a Configuración del celular → Aplicaciones → Chrome/Safari → Permisos → Ubicación → "Mientras se usa la app".
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <h3>Espera que aparezcan tus coordenadas</h3>
+      <p>En pocos segundos aparecerá tu latitud y longitud. Verás un recuadro verde confirmando la ubicación.</p>
+      <div class="mock-screen" style="max-width:320px;margin-top:10px;">
+        <div class="mock-topbar">
+          <div class="mock-topbar-url">sistema-disfruta-lecaros.vercel.app/checkin</div>
+        </div>
+        <div class="mock-body">
+          <div style="font-weight:700;font-size:14px;margin-bottom:2px;">Check-In GPS</div>
+          <div style="font-size:11px;color:#9a9a8a;margin-bottom:14px;">Registra tu llegada al predio</div>
+          <div class="mock-gps-box">
+            <div class="mock-gps-icon">📍</div>
+            <div class="mock-gps-text">Ubicación detectada</div>
+            <div class="mock-gps-coords">Lat: -33.4567 · Lng: -70.8234</div>
+            <div style="font-size:9px;color:#8ab878;margin-top:4px;">Precisión: 8 metros</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <h3>Selecciona el predio que estás visitando</h3>
+      <p>Elige el predio desde la lista desplegable. Solo aparecen los predios activos asignados a tu zona.</p>
+      <div class="mock-screen" style="max-width:320px;margin-top:10px;">
+        <div class="mock-body">
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Predio a visitar</div>
+            <div class="mock-field">▼  Predio El Álamo — Exportadora Disfruta</div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Especie</div>
+            <div class="mock-field">Uva de mesa</div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Variedades</div>
+            <div class="mock-field">Thompson, Crimson</div>
+          </div>
+          <div class="mock-btn">✓ Registrar Check-In</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <h3>Confirma el registro</h3>
+      <p>Al tocar <strong>"Registrar Check-In"</strong>, la visita queda creada en el sistema con tu ubicación GPS, la fecha y hora exacta. Ahora debes completar el informe.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PÁGINA 3 — LABORES
+     ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">DLC Export · Disfruta</span>
+    <span class="doc-title">Instructivo de visitas técnicas</span>
+  </div>
+
+  <div class="section-title">Paso 3 — Registrar labores realizadas</div>
+  <div class="section-subtitle">Documenta las actividades técnicas realizadas en el predio. Cada labor debe incluir al menos una foto como respaldo.</div>
+
+  <div class="warning">
+    <strong>Obligatorio:</strong> Una visita solo se considera CUMPLIDA si tiene al menos una labor con fotos registradas. Sin fotos, la visita no cuenta para el cumplimiento.
+  </div>
+
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <h3>Ve a "Nueva Labor" dentro de la visita</h3>
+      <p>Desde el resumen de la visita recién creada, toca el botón <strong>"+ Labor"</strong> o ve al menú <strong>Labores → Nueva Labor</strong>.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <h3>Completa los datos de la labor</h3>
+      <p>Elige el tipo de labor, escribe una descripción breve y selecciona la fecha.</p>
+      <div class="mock-screen" style="max-width:320px;margin-top:10px;">
+        <div class="mock-body">
+          <div style="font-weight:700;font-size:14px;margin-bottom:14px;">Nueva Labor</div>
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Tipo de labor</div>
+            <div class="mock-field">▼  Poda</div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Descripción</div>
+            <div class="mock-field" style="height:50px;padding-top:8px;">Poda de formación en cuartel 3...</div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Fecha</div>
+            <div class="mock-field">16 de junio de 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <h3>Agrega fotos de la labor</h3>
+      <p>Toca el botón de cámara para sacar una foto directamente o seleccionar desde tu galería. Puedes agregar más de una foto por labor.</p>
+      <div class="tip">
+        <strong>¿Qué fotografiar?</strong> El trabajo realizado, el estado del cultivo, o cualquier evidencia relevante de la labor. Las fotos quedan guardadas en el informe.
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <div style="width:70px;height:70px;background:#e8e4d8;border-radius:8px;border:1.5px dashed #c5bfa5;display:flex;align-items:center;justify-content:center;font-size:22px;">📷</div>
+        <div style="width:70px;height:70px;background:#e8e4d8;border-radius:8px;border:1.5px dashed #c5bfa5;display:flex;align-items:center;justify-content:center;font-size:22px;">📷</div>
+        <div style="width:70px;height:70px;background:#3c5430;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">✅</div>
+        <div style="flex:1;display:flex;align-items:center;padding-left:4px;">
+          <span style="font-size:11px;color:#6b6b5a;">Mínimo<br>1 foto<br>requerida</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <h3>Guarda la labor</h3>
+      <p>Toca <strong>"Guardar labor"</strong>. Puedes agregar tantas labores como actividades hayas realizado durante la visita.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PÁGINA 4 — APLICACIONES
+     ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">DLC Export · Disfruta</span>
+    <span class="doc-title">Instructivo de visitas técnicas</span>
+  </div>
+
+  <div class="section-title">Paso 4 — Registrar aplicaciones de productos</div>
+  <div class="section-subtitle">Si se aplicaron productos fitosanitarios, fertilizantes u otros, debes registrarlos. La visita también requiere al menos una aplicación para ser considerada cumplida.</div>
+
+  <div class="warning">
+    <strong>Obligatorio:</strong> Debes registrar al menos una aplicación de producto durante la visita para que sea marcada como CUMPLIDA.
+  </div>
+
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <h3>Toca "+ Aplicación" en la visita</h3>
+      <p>Desde el resumen de la visita o desde el menú <strong>Aplicaciones → Nueva Aplicación</strong>.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <h3>Ingresa los datos del producto</h3>
+      <p>Completa el nombre del producto, tipo, dosis y unidad de medida. Puedes agregar varios productos en la misma sesión.</p>
+      <div class="mock-screen" style="max-width:320px;margin-top:10px;">
+        <div class="mock-body">
+          <div style="font-weight:700;font-size:14px;margin-bottom:14px;">Nueva Aplicación</div>
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Producto aplicado</div>
+            <div class="mock-field">Captan 50 WP</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Tipo</div>
+              <div class="mock-field">▼ Fungicida</div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Dosis</div>
+              <div class="mock-field">200</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:600;color:#4a4a3a;margin-bottom:4px;">Unidad</div>
+            <div class="mock-field">▼ gr/100 lts</div>
+          </div>
+          <div style="font-size:11px;color:#9a9a8a;margin-bottom:8px;">Unidades disponibles: gr/100 lts · cc/100 lts · kg/ha · L/ha · kg · L</div>
+          <div class="mock-btn">+ Agregar producto</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <h3>¿Más de un producto? Agrégalos todos</h3>
+      <p>Puedes añadir múltiples productos en la misma aplicación. Cada uno se registra como una línea separada en el informe.</p>
+      <div class="tip">
+        <strong>Ejemplo:</strong> Si aplicaste fungicida + insecticida el mismo día, agrega ambos antes de guardar. Así queda todo en un solo registro de la visita.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <h3>Guarda la aplicación</h3>
+      <p>Toca <strong>"Guardar aplicación"</strong>. La información queda registrada y disponible en el informe de la visita.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PÁGINA 5 — CIERRE Y RESUMEN
+     ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">DLC Export · Disfruta</span>
+    <span class="doc-title">Instructivo de visitas técnicas</span>
+  </div>
+
+  <div class="section-title">Paso 5 — Visita completada</div>
+  <div class="section-subtitle">Cuando hayas registrado el Check-In, las labores con fotos y las aplicaciones, la visita queda marcada automáticamente como CUMPLIDA en el sistema.</div>
+
+  <hr class="divider" />
+
+  <div style="margin-bottom:24px;">
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Resumen de lo que necesita cada visita para ser válida:</h3>
+    <ul class="checklist">
+      <li>Check-In GPS registrado estando dentro del predio</li>
+      <li>Al menos una labor documentada con mínimo una foto</li>
+      <li>Al menos una aplicación de producto registrada</li>
+    </ul>
+  </div>
+
+  <div class="mock-screen" style="margin-bottom:24px;">
+    <div class="mock-body">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="font-size:28px;">✅</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#2d5a1e;">Visita CUMPLIDA</div>
+          <div style="font-size:11px;color:#9a9a8a;">Predio El Álamo · 16 de junio, 2026</div>
+        </div>
+        <div class="mock-badge">CUMPLIDA</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+        <div style="background:#f0f9eb;border-radius:6px;padding:8px;">
+          <div style="font-size:18px;font-weight:800;color:#3c5430;">📍</div>
+          <div style="font-size:10px;color:#4a8a34;font-weight:600;margin-top:2px;">GPS OK</div>
+        </div>
+        <div style="background:#f0f9eb;border-radius:6px;padding:8px;">
+          <div style="font-size:18px;font-weight:800;color:#3c5430;">2</div>
+          <div style="font-size:10px;color:#4a8a34;font-weight:600;margin-top:2px;">Labores + fotos</div>
+        </div>
+        <div style="background:#f0f9eb;border-radius:6px;padding:8px;">
+          <div style="font-size:18px;font-weight:800;color:#3c5430;">3</div>
+          <div style="font-size:10px;color:#4a8a34;font-weight:600;margin-top:2px;">Aplicaciones</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <div style="margin-bottom:20px;">
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Ver mis cumplimientos</h3>
+    <p style="font-size:13px;color:#4a4a3a;margin-bottom:10px;">Desde el menú lateral puedes ver tu historial de cumplimiento mensual: cuántas visitas tenías agendadas versus cuántas completaste correctamente.</p>
+    <p style="font-size:13px;color:#4a4a3a;">Ve a <strong>Acceso rápido → Mi Cumplimiento</strong> en el menú lateral.</p>
+  </div>
+
+  <hr class="divider" />
+
+  <div style="background:#f5f3ee;border-radius:10px;padding:16px;">
+    <h3 style="font-size:13px;font-weight:700;color:#3c5430;margin-bottom:10px;">Preguntas frecuentes</h3>
+    <div style="margin-bottom:10px;">
+      <div style="font-weight:600;font-size:12px;color:#1a1a1a;">¿Qué pasa si no tengo señal en el predio?</div>
+      <div style="font-size:12px;color:#6b6b5a;margin-top:2px;">El GPS funciona aunque no haya internet. Espera que el celular detecte tu posición (puede tardar hasta 30 segundos) y luego registra. La conexión solo es necesaria para guardar.</div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-weight:600;font-size:12px;color:#1a1a1a;">¿Puedo registrar la visita después de salir del predio?</div>
+      <div style="font-size:12px;color:#6b6b5a;margin-top:2px;">No se recomienda. El Check-In debe hacerse en el predio porque registra tu ubicación real. Si lo haces desde otro lugar, la coordenada quedará incorrecta.</div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-weight:600;font-size:12px;color:#1a1a1a;">¿Puedo agregar más labores o aplicaciones después?</div>
+      <div style="font-size:12px;color:#6b6b5a;margin-top:2px;">Sí. Mientras la visita esté en estado "En Progreso" puedes seguir agregando registros. Cuando termines la visita, quedará cerrada.</div>
+    </div>
+    <div>
+      <div style="font-weight:600;font-size:12px;color:#1a1a1a;">¿Quién puede ver mis visitas?</div>
+      <div style="font-size:12px;color:#6b6b5a;margin-top:2px;">Tú y el supervisor Eduardo Sotomayor. Los otros técnicos solo pueden ver sus propios registros.</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #e0dcd0;">
+    <div style="font-size:11px;color:#bbb8a8;">DLC Export · Exportadora Disfruta · Uso interno · Junio 2026</div>
+    <div style="font-size:11px;color:#9a9a8a;margin-top:4px;">sistema-disfruta-lecaros.vercel.app</div>
+  </div>
+</div>
+
+</body>
+</html>
