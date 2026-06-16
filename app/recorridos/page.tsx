@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
@@ -10,6 +11,11 @@ interface Recorrido {
   litrosCargados: number | null; notas: string | null; tecnico: Usuario
 }
 interface Estimacion { kmEstimado: number | null; prediosConGPS: number; totalPredios: number; predios: string[] }
+interface Parada { orden: number; agendaId: number; predio: string; empresa: string; lat: number; lng: number }
+interface RutaDia {
+  fecha: string; totalVisitas: number; prediosConGPS: number
+  prediosSinGPS: string[]; paradas: Parada[]; mapsUrl: string | null
+}
 
 const today = new Date()
 const toYMD = (d: Date) => d.toISOString().split('T')[0]
@@ -20,6 +26,9 @@ function consumo100(km: number, litros: number) {
 }
 
 export default function RecorridosPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id
+
   const [tecnicos, setTecnicos] = useState<Usuario[]>([])
   const [recorridos, setRecorridos] = useState<Recorrido[]>([])
   const [filtroTecnico, setFiltroTecnico] = useState('')
@@ -37,6 +46,12 @@ export default function RecorridosPage() {
     notas: '',
   })
 
+  // Ruta del día (Google Maps)
+  const [rutaFecha, setRutaFecha] = useState(toYMD(today))
+  const [rutaTecnico, setRutaTecnico] = useState('')
+  const [ruta, setRuta] = useState<RutaDia | null>(null)
+  const [loadingRuta, setLoadingRuta] = useState(false)
+
   const fetchRecorridos = useCallback(() => {
     const p = new URLSearchParams({ mes })
     if (filtroTecnico) p.set('tecnicoId', filtroTecnico)
@@ -46,11 +61,26 @@ export default function RecorridosPage() {
   useEffect(() => {
     fetch('/api/equipo').then((r) => r.json()).then((t) => {
       setTecnicos(t)
-      if (t.length) setForm((f) => ({ ...f, tecnicoId: String(t[0].id) }))
+      if (t.length) {
+        setForm((f) => ({ ...f, tecnicoId: String(t[0].id) }))
+        const propio = userId ? t.find((x: Usuario) => String(x.id) === String(userId)) : null
+        setRutaTecnico(propio ? String(propio.id) : String(t[0].id))
+      }
     })
-  }, [])
+  }, [userId])
 
   useEffect(() => { fetchRecorridos() }, [fetchRecorridos])
+
+  const fetchRuta = useCallback(() => {
+    if (!rutaFecha || !rutaTecnico) return
+    setLoadingRuta(true)
+    fetch(`/api/recorridos/ruta-dia?fecha=${rutaFecha}&tecnicoId=${rutaTecnico}`)
+      .then((r) => r.json())
+      .then(setRuta)
+      .finally(() => setLoadingRuta(false))
+  }, [rutaFecha, rutaTecnico])
+
+  useEffect(() => { fetchRuta() }, [fetchRuta])
 
   const fetchEstimacion = useCallback(async () => {
     if (!form.fecha || !form.tecnicoId) return
@@ -129,6 +159,71 @@ export default function RecorridosPage() {
           </div>
         }
       />
+
+      {/* Ruta del día — Google Maps */}
+      <div className="card mb-6">
+        <h3 className="font-semibold text-gray-800 mb-1">Ruta del día (Google Maps)</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          Ordena las visitas agendadas del día por la ruta más cercana entre predios y abre la navegación directa en Google Maps.
+        </p>
+        <div className="flex flex-wrap gap-3 items-end mb-4">
+          <div>
+            <label className="label">Fecha</label>
+            <input type="date" className="input" value={rutaFecha} onChange={(e) => setRutaFecha(e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Técnico / Supervisor</label>
+            <select className="input w-56" value={rutaTecnico} onChange={(e) => setRutaTecnico(e.target.value)}>
+              {tecnicos.map((t) => <option key={t.id} value={t.id}>{t.nombre} {t.apellido}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {loadingRuta ? (
+          <p className="text-gray-400 text-sm animate-pulse">Calculando ruta…</p>
+        ) : !ruta || ruta.totalVisitas === 0 ? (
+          <p className="text-gray-400 text-sm">Sin visitas agendadas para esta fecha y técnico.</p>
+        ) : (
+          <>
+            <ol className="space-y-2 mb-4">
+              {ruta.paradas.map((p) => (
+                <li key={p.agendaId} className="flex items-center gap-3 text-sm">
+                  <span className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-primary-100 text-primary-800 font-semibold text-xs">
+                    {p.orden}
+                  </span>
+                  <div>
+                    <span className="font-medium text-gray-900">{p.predio}</span>
+                    <span className="text-gray-400"> — {p.empresa}</span>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            {ruta.prediosSinGPS.length > 0 && (
+              <p className="text-xs text-amber-600 mb-3">
+                Sin coordenadas GPS (no incluidos en la ruta): {ruta.prediosSinGPS.join(', ')}
+              </p>
+            )}
+
+            {ruta.mapsUrl ? (
+              <a
+                href={ruta.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Abrir ruta en Google Maps
+              </a>
+            ) : (
+              <p className="text-gray-400 text-sm">Ningún predio de este día tiene coordenadas GPS registradas.</p>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Formulario */}
       {showForm && (

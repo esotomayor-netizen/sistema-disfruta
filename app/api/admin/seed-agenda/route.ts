@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized, isSupervisor } from '@/lib/session'
+import { nearestNeighborOrder } from '@/lib/geo'
 
 // ── Planilla de asignaciones ──────────────────────────────────────────────────
 const ASSIGNMENTS: { email: string; label: string; predios: { name: string; visitsPerMonth: number }[] }[] = [
@@ -110,31 +111,11 @@ function similarity(a: string, b: string): number {
 type Predio = { id: number; lat: number | null; lng: number | null; visits: number; name: string }
 
 function nearestNeighborRoute(predios: Predio[]): Predio[] {
-  const withCoords = predios.filter(p => p.lat !== null && p.lng !== null)
+  const withCoords = predios.filter(p => p.lat !== null && p.lng !== null) as (Predio & { lat: number; lng: number })[]
   const noCoords   = predios.filter(p => p.lat === null  || p.lng === null)
   if (withCoords.length === 0) return predios
 
-  const avgLat = withCoords.reduce((s, p) => s + p.lat!, 0) / withCoords.length
-  const avgLng = withCoords.reduce((s, p) => s + p.lng!, 0) / withCoords.length
-
-  const remaining = [...withCoords]
-  const route: Predio[] = []
-  let curLat = avgLat, curLng = avgLng
-
-  while (remaining.length > 0) {
-    let bestIdx = 0, bestDist = Infinity
-    for (let i = 0; i < remaining.length; i++) {
-      const dlat = remaining[i].lat! - curLat
-      const dlng = remaining[i].lng! - curLng
-      const dist = dlat * dlat + dlng * dlng
-      if (dist < bestDist) { bestDist = dist; bestIdx = i }
-    }
-    route.push(remaining[bestIdx])
-    curLat = remaining[bestIdx].lat!
-    curLng = remaining[bestIdx].lng!
-    remaining.splice(bestIdx, 1)
-  }
-  return [...route, ...noCoords]
+  return [...nearestNeighborOrder(withCoords), ...noCoords]
 }
 
 /**
