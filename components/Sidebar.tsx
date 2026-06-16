@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 
 const navField = [
   {
@@ -149,6 +150,7 @@ const exactRoutes = ['/', '/checkin', '/visitas/nueva', '/agenda/cumplimiento']
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname()
+  const { data: session } = useSession()
 
   const isActive = (href: string) =>
     exactRoutes.includes(href) ? pathname === href : pathname.startsWith(href)
@@ -211,7 +213,26 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         ))}
       </nav>
 
-      <div className="px-6 py-4 border-t border-primary-800">
+      {session?.user && (
+        <div className="px-4 py-3 border-t border-primary-800">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+              {session.user.name?.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-primary-100 text-xs font-medium truncate">{session.user.name}</p>
+              <p className="text-primary-500 text-xs capitalize">{(session.user as any).rol?.toLowerCase()}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="w-full text-left text-xs text-primary-400 hover:text-red-400 transition-colors py-1"
+          >
+            Cerrar sesión →
+          </button>
+        </div>
+      )}
+      <div className="px-6 py-2 border-t border-primary-800">
         <p className="text-primary-500 text-xs">© 2026 DLC Export</p>
       </div>
     </aside>

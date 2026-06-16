@@ -1,14 +1,19 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession, unauthorized, isSupervisor } from '@/lib/session'
 
 export async function GET(req: Request) {
+  const session = await getSession()
+  if (!session) return unauthorized()
+
   const { searchParams } = new URL(req.url)
   const estado = searchParams.get('estado')
   const predioId = searchParams.get('predioId')
 
   const labores = await prisma.labor.findMany({
     where: {
+      ...(isSupervisor(session) ? {} : { responsableId: session.user.id }),
       ...(estado ? { estado } : {}),
       ...(predioId ? { predioId: parseInt(predioId) } : {}),
     },

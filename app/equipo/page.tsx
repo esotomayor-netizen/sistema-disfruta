@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import { labelFromValue, ROLES_USUARIO } from '@/lib/constants'
+import SetPasswordButton from '@/components/SetPasswordButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,9 +81,12 @@ export default async function EquipoPage() {
                 </div>
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
                   <span>{u._count.labores} labores · {u._count.aplicaciones} aplicaciones</span>
-                  <Link href={`/equipo/${u.id}/editar`} className="text-primary-600 hover:text-primary-700 font-medium">
-                    Editar →
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <SetPasswordButton userId={u.id} userName={u.nombre} />
+                    <Link href={`/equipo/${u.id}/editar`} className="text-primary-600 hover:text-primary-700 font-medium">
+                      Editar →
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}

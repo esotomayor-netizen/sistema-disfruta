@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import ConditionalLayout from '@/components/ConditionalLayout'
+import SessionProviderWrapper from '@/components/SessionProviderWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,7 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className={inter.className}>
-        <ConditionalLayout>{children}</ConditionalLayout>
+        <SessionProviderWrapper>
+          <ConditionalLayout>{children}</ConditionalLayout>
+        </SessionProviderWrapper>
       </body>
     </html>
   )

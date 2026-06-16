@@ -1,9 +1,14 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession, unauthorized, isSupervisor } from '@/lib/session'
 
 export async function GET() {
+  const session = await getSession()
+  if (!session) return unauthorized()
+
   const visitas = await prisma.visita.findMany({
+    where: isSupervisor(session) ? {} : { tecnicoId: session.user.id },
     orderBy: { fecha: 'desc' },
     include: {
       predio: { include: { empresa: true } },

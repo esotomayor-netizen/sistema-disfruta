@@ -15,15 +15,18 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
     "@prisma/client": "^5.10.0",
-    "next": "14.2.30",
-    "react": "^18",
-    "react-dom": "^18",
+    "bcryptjs": "^3.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
+    "next": "14.2.30",
+    "next-auth": "^4.24.14",
+    "react": "^18",
+    "react-dom": "^18",
     "recharts": "^3.8.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

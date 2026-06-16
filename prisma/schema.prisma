@@ -90,6 +90,7 @@ model Usuario {
   nombre       String
   apellido     String
   email        String       @unique
+  password     String?
   rol          String
   telefono     String?
   activo       Boolean      @default(true)
