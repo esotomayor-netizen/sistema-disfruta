@@ -309,6 +309,7 @@ export async function POST(req: Request) {
     diasHabilesJulio: JULY_DAYS.length,
     feriados: HOLIDAYS_CL,
     totalRegistros: toCreate.length,
+    usuariosEnBD: allUsers.map(u => ({ id: u.id, nombre: `${u.nombre} ${u.apellido}`, email: u.email, rol: u.rol, activo: u.activo })),
     report,
     mensaje: dryRun
       ? `Simulación: ${toCreate.length} visitas (${JUNE_DAYS.length} días jun + ${JULY_DAYS.length} días jul). Envía dryRun:false para crear.`
