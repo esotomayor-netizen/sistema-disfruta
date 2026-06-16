@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import {
@@ -24,6 +25,8 @@ function monthKey(date: Date) {
 }
 
 export default function AgendaPage() {
+  const { data: session } = useSession()
+  const esSupervisor = (session?.user as any)?.rol === 'SUPERVISOR'
   const today = new Date()
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [agendas, setAgendas] = useState<AgendaItem[]>([])
@@ -214,10 +217,12 @@ export default function AgendaPage() {
                           className="text-xs bg-primary-100 text-primary-800 rounded px-1 py-0.5 flex items-center gap-1"
                         >
                           <span className="truncate flex-1">{a.predio.nombre}</span>
-                          <button
-                            onClick={(e) => handleEliminar(a.id, e)}
-                            className="flex-shrink-0 text-primary-400 hover:text-red-600 transition-colors leading-none"
-                          >×</button>
+                          {esSupervisor && (
+                            <button
+                              onClick={(e) => handleEliminar(a.id, e)}
+                              className="flex-shrink-0 text-primary-400 hover:text-red-600 transition-colors leading-none"
+                            >×</button>
+                          )}
                         </div>
                       ))}
                       {dayAgendas.length > 3 && (
@@ -230,7 +235,9 @@ export default function AgendaPage() {
             </div>
 
             <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
-              Haz clic en un día para agendar · Haz clic en × para eliminar una visita
+              {esSupervisor
+                ? 'Haz clic en un día para agendar · Haz clic en × para eliminar una visita'
+                : 'Haz clic en un día para agendar una visita'}
             </div>
           </div>
         </div>
@@ -253,14 +260,16 @@ export default function AgendaPage() {
                     <p className="text-xs text-gray-500">{a.tecnico.nombre} {a.tecnico.apellido}</p>
                     {a.notas && <p className="text-xs text-gray-400 mt-0.5 italic">{a.notas}</p>}
                   </div>
-                  <button
-                    onClick={(e) => handleEliminar(a.id, e)}
-                    className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  {esSupervisor && (
+                    <button
+                      onClick={(e) => handleEliminar(a.id, e)}
+                      className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
