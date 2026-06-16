@@ -47,7 +47,7 @@ export const ROLES_ENCARGADO = [
   { value: 'ENCARGADO', label: 'Encargado de Predio' },
 ]
 
-export const UNIDADES = ['kg/ha', 'L/ha', 'g/ha', 'mL/ha', 'kg', 'L', 'unidades']
+export const UNIDADES = ['gr/100 lts', 'cc/100 lts', 'kg/ha', 'L/ha', 'kg', 'L']
 
 export const ESTADOS_FENOLOGICOS = [
   'Dormición',
