@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Header from '@/components/Header'
+import Link from 'next/link'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
 } from 'recharts'
@@ -118,16 +119,21 @@ export default function AgendaPage() {
         title="Agenda de Visitas"
         subtitle="Planificación mensual y seguimiento de cumplimiento"
         action={
-          <select
-            className="input w-48"
-            value={filtroTecnico}
-            onChange={(e) => setFiltroTecnico(e.target.value)}
-          >
-            <option value="">Todos los técnicos</option>
-            {tecnicos.map((t) => (
-              <option key={t.id} value={t.id}>{t.nombre} {t.apellido}</option>
-            ))}
-          </select>
+          <div className="flex gap-2 items-center">
+            <select
+              className="input w-48"
+              value={filtroTecnico}
+              onChange={(e) => setFiltroTecnico(e.target.value)}
+            >
+              <option value="">Todos los técnicos</option>
+              {tecnicos.map((t) => (
+                <option key={t.id} value={t.id}>{t.nombre} {t.apellido}</option>
+              ))}
+            </select>
+            <Link href="/agenda/cumplimiento" className="btn-primary text-sm whitespace-nowrap">
+              Ver cumplimiento
+            </Link>
+          </div>
         }
       />
 
