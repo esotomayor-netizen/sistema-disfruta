@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized, isSupervisor } from '@/lib/session'
 
-// ── Datos de la planilla ──────────────────────────────────────────────────────
+// ── Planilla de asignaciones ──────────────────────────────────────────────────
 const ASSIGNMENTS: { email: string; label: string; predios: { name: string; visitsPerMonth: number }[] }[] = [
   {
     email: 'j.lecaros@lcfruit.com',
@@ -60,13 +60,30 @@ const ASSIGNMENTS: { email: string; label: string; predios: { name: string; visi
   },
 ]
 
-// ── Feriados nacionales Chile Jun-Jul 2026 ────────────────────────────────────
-const HOLIDAYS_CL = [
-  '2026-06-29', // San Pedro y San Pablo (lunes)
-  '2026-07-16', // Virgen del Carmen (jueves)
-]
+// ── Período: 18 jun – 31 jul 2026 ────────────────────────────────────────────
+const PERIOD_START = new Date(2026, 5, 18)  // 18 junio
+const PERIOD_END   = new Date(2026, 6, 31)  // 31 julio
+const REF_WORKDAYS = 22                     // días hábiles en un mes completo
+const HOLIDAYS_CL  = ['2026-06-29', '2026-07-16'] // San Pedro, Virgen del Carmen
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+function isoDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+function getAllWorkdays(): Date[] {
+  const days: Date[] = []
+  const d = new Date(PERIOD_START)
+  while (d <= PERIOD_END) {
+    const dow = d.getDay()
+    if (dow !== 0 && dow !== 6 && !HOLIDAYS_CL.includes(isoDate(d))) {
+      days.push(new Date(d))
+    }
+    d.setDate(d.getDate() + 1)
+  }
+  return days
+}
+
+// ── Fuzzy matching ────────────────────────────────────────────────────────────
 function normalize(s: string) {
   return s
     .toUpperCase()
@@ -87,34 +104,19 @@ function similarity(a: string, b: string): number {
   return common / Math.max(wa.length, wb.size, 1)
 }
 
-/** Días hábiles de un mes, opcionalmente desde un día mínimo */
-function getWeekdays(year: number, month: number, fromDay = 1): Date[] {
-  const days: Date[] = []
-  const d = new Date(year, month - 1, Math.max(1, fromDay))
-  while (d.getMonth() === month - 1) {
-    const dow = d.getDay()
-    const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-    if (dow !== 0 && dow !== 6 && !HOLIDAYS_CL.includes(iso)) {
-      days.push(new Date(d))
-    }
-    d.setDate(d.getDate() + 1)
-  }
-  return days
-}
+// ── Nearest-neighbor TSP ──────────────────────────────────────────────────────
+type Predio = { id: number; lat: number | null; lng: number | null; visits: number; name: string }
 
-type PredioPlan = { id: number; lat: number | null; lng: number | null; visits: number; name: string }
-
-/** Nearest-neighbor TSP: ordena predios por proximidad geográfica */
-function nearestNeighborRoute(predios: PredioPlan[]): PredioPlan[] {
+function nearestNeighborRoute(predios: Predio[]): Predio[] {
   const withCoords = predios.filter(p => p.lat !== null && p.lng !== null)
-  const noCoords   = predios.filter(p => p.lat === null || p.lng === null)
+  const noCoords   = predios.filter(p => p.lat === null  || p.lng === null)
   if (withCoords.length === 0) return predios
 
   const avgLat = withCoords.reduce((s, p) => s + p.lat!, 0) / withCoords.length
   const avgLng = withCoords.reduce((s, p) => s + p.lng!, 0) / withCoords.length
 
   const remaining = [...withCoords]
-  const route: PredioPlan[] = []
+  const route: Predio[] = []
   let curLat = avgLat, curLng = avgLng
 
   while (remaining.length > 0) {
@@ -134,52 +136,69 @@ function nearestNeighborRoute(predios: PredioPlan[]): PredioPlan[] {
 }
 
 /**
- * Genera el schedule para un técnico dado un conjunto de días disponibles.
- * Usa la ruta nearest-neighbor para agrupar predios cercanos en el mismo día.
- * Distribuye las visitas con frecuencia uniforme a lo largo de los días.
+ * Genera la agenda del período completo (Jun 18 – Jul 31).
+ *
+ * Estrategia:
+ *  1. Calcula cuántas visitas total por predio en el período (proporcional a los días hábiles).
+ *  2. Ordena predios por ruta óptima (nearest-neighbor TSP).
+ *  3. Crea "pasadas": en la pasada 0 visita todos los predios una vez, en la
+ *     pasada 1 los que tienen ≥2 visitas, etc.  Dentro de cada pasada los
+ *     predios están en orden geográfico → predios cercanos quedan juntos.
+ *  4. Empaqueta en días de exactamente 3 visitas (el último día puede tener 1-2).
+ *  5. Distribuye los días de salida uniformemente en el período.
  */
-function buildSchedule(predios: PredioPlan[], days: Date[], maxPerDay = 3): { predioId: number; date: Date; predio: string }[] {
-  if (days.length === 0 || predios.length === 0) return []
+function buildSchedule(
+  predios: Predio[],
+  workdays: Date[],
+  maxPerDay = 3
+): { predioId: number; date: Date; predio: string }[] {
+  if (workdays.length === 0 || predios.length === 0) return []
 
-  // Ordenar por ruta óptima
-  const ordered = nearestNeighborRoute(predios)
+  // 1. Calcular visitas por predio en el período
+  const periodDays  = workdays.length          // días hábiles disponibles
+  const periodFactor = periodDays / REF_WORKDAYS // factor respecto a un mes
 
-  // Expandir en lista plana con día objetivo
-  const visitList: { predioId: number; predio: string; targetIdx: number }[] = []
-  for (let ri = 0; ri < ordered.length; ri++) {
-    const p = ordered[ri]
-    for (let vi = 0; vi < p.visits; vi++) {
-      // Espaciar visitas del mismo predio + desplazar por posición en ruta
-      const spacedDay = Math.round((vi / Math.max(p.visits, 1)) * (days.length - 1))
-      const routeOffset = Math.round((ri / Math.max(ordered.length, 1)) * (days.length / Math.max(p.visits, 1) - 1))
-      const targetIdx = Math.min(spacedDay + routeOffset, days.length - 1)
-      visitList.push({ predioId: p.id, predio: p.name, targetIdx })
-    }
-  }
+  const prediosWithVisits = predios.map(p => ({
+    ...p,
+    visits: Math.max(1, Math.round(p.visits * periodFactor)),
+  }))
 
-  // Ordenar por día objetivo
-  visitList.sort((a, b) => a.targetIdx - b.targetIdx)
+  // 2. Ruta óptima
+  const ordered = nearestNeighborRoute(prediosWithVisits)
 
-  // Asignar a días respetando máximo por día
-  const buckets = new Map<number, { predioId: number; predio: string }[]>()
-  for (const v of visitList) {
-    let idx = v.targetIdx
-    let attempts = 0
-    while (attempts < days.length) {
-      const bucket = buckets.get(idx) ?? []
-      if (bucket.length < maxPerDay) {
-        buckets.set(idx, [...bucket, { predioId: v.predioId, predio: v.predio }])
-        break
+  // 3. Construir pasadas (pass 0 = primera visita a cada predio, etc.)
+  const maxVisits = Math.max(...ordered.map(p => p.visits))
+  const allVisits: { predioId: number; predio: string; passIdx: number; routeIdx: number }[] = []
+
+  for (let pass = 0; pass < maxVisits; pass++) {
+    for (let ri = 0; ri < ordered.length; ri++) {
+      if (pass < ordered[ri].visits) {
+        allVisits.push({ predioId: ordered[ri].id, predio: ordered[ri].name, passIdx: pass, routeIdx: ri })
       }
-      idx = (idx + 1) % days.length
-      attempts++
     }
   }
 
+  // Ordenar: pasada primero (distribuye en el tiempo), luego posición en ruta (agrupa geográficamente)
+  allVisits.sort((a, b) => a.passIdx !== b.passIdx ? a.passIdx - b.passIdx : a.routeIdx - b.routeIdx)
+
+  // 4. Empaquetar en lotes de maxPerDay
+  const batches: { predioId: number; predio: string }[][] = []
+  for (let i = 0; i < allVisits.length; i += maxPerDay) {
+    batches.push(allVisits.slice(i, i + maxPerDay))
+  }
+
+  // 5. Asignar cada lote a un día de trabajo distribuido uniformemente
   const result: { predioId: number; date: Date; predio: string }[] = []
-  buckets.forEach((entries, idx) => {
-    entries.forEach(e => result.push({ predioId: e.predioId, date: days[idx], predio: e.predio }))
-  })
+  for (let bi = 0; bi < batches.length; bi++) {
+    const dayIdx = Math.min(
+      Math.round((bi / Math.max(batches.length - 1, 1)) * (workdays.length - 1)),
+      workdays.length - 1
+    )
+    for (const entry of batches[bi]) {
+      result.push({ predioId: entry.predioId, date: workdays[dayIdx], predio: entry.predio })
+    }
+  }
+
   return result
 }
 
@@ -192,15 +211,10 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}))
-  const dryRun: boolean = body.dryRun ?? true
+  const dryRun: boolean       = body.dryRun       ?? true
   const clearExisting: boolean = body.clearExisting ?? false
 
-  // Días hábiles disponibles
-  // Junio: solo desde el 18 (días pasados excluidos)
-  // Julio: mes completo
-  const JUNE_DAYS = getWeekdays(2026, 6, 18)  // 8 días hábiles
-  const JULY_DAYS = getWeekdays(2026, 7, 1)   // 22 días hábiles
-  const TOTAL_WORKDAYS = 22 // días hábiles de un mes completo (referencia)
+  const workdays = getAllWorkdays()
 
   const allPredios = await prisma.predio.findMany({
     where: { activa: true },
@@ -220,8 +234,8 @@ export async function POST(req: Request) {
       continue
     }
 
-    // Emparejar predios por nombre (fuzzy)
-    const matched: PredioPlan[] = []
+    // Emparejar predios con fuzzy matching
+    const matched: Predio[] = []
     const unmatched: string[] = []
 
     for (const item of predioList) {
@@ -232,65 +246,59 @@ export async function POST(req: Request) {
         if (score > bestScore) { bestScore = score; best = p }
       }
       if (best && bestScore >= 0.3) {
-        // Visitas proporcionales para junio (solo 8 días de 22 disponibles)
-        const juneVisits = Math.round(item.visitsPerMonth * JUNE_DAYS.length / TOTAL_WORKDAYS)
-        const julyVisits = item.visitsPerMonth
-        // Guardamos visits = julyVisits; para junio lo calculamos por separado
         matched.push({
-          id: best.id,
-          lat: best.latitud,
-          lng: best.longitud,
-          visits: julyVisits,       // usado para julio
-          name: `${best.nombre} (${best.empresa.razonSocial})`,
+          id:     best.id,
+          lat:    best.latitud,
+          lng:    best.longitud,
+          visits: item.visitsPerMonth, // el buildSchedule ajusta por período
+          name:   `${best.nombre} (${best.empresa.razonSocial})`,
         })
-        // Registrar visitas de junio aparte
-        const juneEntry = { ...matched[matched.length - 1], visits: juneVisits }
-        if (juneVisits > 0) {
-          const juneSchedule = buildSchedule([juneEntry], JUNE_DAYS)
-          for (const e of juneSchedule) {
-            toCreate.push({
-              fecha: new Date(e.date.getFullYear(), e.date.getMonth(), e.date.getDate(), 12, 0, 0),
-              predioId: e.predioId,
-              tecnicoId: tecnico.id,
-              notas: 'Propuesta de agenda',
-            })
-          }
-        }
       } else {
         unmatched.push(item.name)
       }
     }
 
-    // Julio: schedule completo con ruta óptima
-    const julySchedule = buildSchedule(matched, JULY_DAYS)
-    for (const e of julySchedule) {
+    // Generar agenda del período
+    const schedule = buildSchedule(matched, workdays)
+
+    for (const e of schedule) {
       toCreate.push({
-        fecha: new Date(e.date.getFullYear(), e.date.getMonth(), e.date.getDate(), 12, 0, 0),
-        predioId: e.predioId,
+        fecha:     new Date(e.date.getFullYear(), e.date.getMonth(), e.date.getDate(), 12, 0, 0),
+        predioId:  e.predioId,
         tecnicoId: tecnico.id,
-        notas: 'Propuesta de agenda',
+        notas:     'Propuesta de agenda',
       })
     }
 
-    const myRecords = toCreate.filter(r => r.tecnicoId === tecnico.id)
+    // Agrupar por día para el reporte
+    const byDay: Record<string, string[]> = {}
+    for (const e of schedule) {
+      const key = isoDate(e.date)
+      if (!byDay[key]) byDay[key] = []
+      byDay[key].push(e.predio.split('(')[0].trim())
+    }
+
     report[label] = {
-      tecnicoId: tecnico.id,
-      email: tecnico.email,
-      junioVisitas: myRecords.filter(r => r.fecha.getMonth() === 5).length,
-      julioVisitas: myRecords.filter(r => r.fecha.getMonth() === 6).length,
-      totalVisitas: myRecords.length,
-      matched: matched.map(p => p.name),
+      tecnicoId:    tecnico.id,
+      email:        tecnico.email,
+      totalVisitas: schedule.length,
+      diasDeSalida: Object.keys(byDay).length,
+      matched:      matched.map(p => p.name),
       unmatched,
+      muestra:      Object.entries(byDay).slice(0, 5).map(([d, ps]) => `${d}: ${ps.join(', ')}`),
     }
   }
 
   if (!dryRun) {
     if (clearExisting) {
-      const tecnicoIds = (Object.values(report) as any[]).filter(r => r.tecnicoId).map(r => r.tecnicoId as number)
-      // Borrar TODOS los registros de jun+jul para estos técnicos (incluyendo corridas anteriores)
+      const tecnicoIds = (Object.values(report) as any[])
+        .filter(r => r.tecnicoId)
+        .map(r => r.tecnicoId as number)
+
+      // Borrar TODA la agenda Jun+Jul para estos técnicos (incluyendo corridas anteriores)
       await prisma.agendaVisita.deleteMany({
         where: {
-          fecha: { gte: new Date(2026, 5, 1), lt: new Date(2026, 7, 1) },
+          fecha:     { gte: new Date(2026, 5, 1), lt: new Date(2026, 7, 1) },
           tecnicoId: { in: tecnicoIds },
         },
       })
@@ -300,12 +308,13 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     dryRun,
-    diasHabilesJunio: JUNE_DAYS.length,
-    diasHabilesJulio: JULY_DAYS.length,
+    periodo:        `18 jun – 31 jul 2026`,
+    diasHabiles:    workdays.length,
+    feriados:       HOLIDAYS_CL,
     totalRegistros: toCreate.length,
     report,
     mensaje: dryRun
-      ? `Simulación: ${toCreate.length} visitas se crearían. Envía dryRun:false para confirmar.`
-      : `✓ ${toCreate.length} visitas agendadas como propuesta (Jun 18 – Jul 31 2026)`,
+      ? `Simulación: ${toCreate.length} visitas en ${workdays.length} días hábiles. Envía dryRun:false para crear.`
+      : `✓ ${toCreate.length} visitas agendadas (18 jun – 31 jul 2026, máx 3/día, ruta óptima)`,
   })
 }
