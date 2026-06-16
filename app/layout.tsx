@@ -7,14 +7,21 @@ import SessionProviderWrapper from '@/components/SessionProviderWrapper'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'DLC Export - Gestión Agrícola',
-  description: 'Plataforma de gestión agrícola de DLC Export — Disfruta · Lecaros · Cox · Chile',
+  title: 'DLC Export — Gestión Agrícola',
+  description: 'Plataforma de gestión de visitas técnicas para Exportadora Disfruta',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'DLC Export',
+  },
+  formatDetection: { telephone: false },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  themeColor: '#3c5430',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
