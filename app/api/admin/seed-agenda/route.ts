@@ -47,7 +47,7 @@ const ASSIGNMENTS: { email: string; label: string; predios: { name: string; visi
     ],
   },
   {
-    email: 'j.varas@lcfruit.com',
+    email: 'jvaras@lcfruit.com',
     label: 'JOSE IGNACIO VARAS',
     predios: [
       { name: 'ALIRO CORNEJO',           visitsPerMonth: 2 },
