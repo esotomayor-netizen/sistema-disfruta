@@ -60,20 +60,17 @@ const ASSIGNMENTS: { email: string; label: string; predios: { name: string; visi
   },
 ]
 
-// ── Período: 18 jun – 31 jul 2026 ────────────────────────────────────────────
-const PERIOD_START = new Date(2026, 5, 18)  // 18 junio
-const PERIOD_END   = new Date(2026, 6, 31)  // 31 julio
-const REF_WORKDAYS = 22                     // días hábiles en un mes completo
-const HOLIDAYS_CL  = ['2026-06-29', '2026-07-16'] // San Pedro, Virgen del Carmen
+const HOLIDAYS_CL = ['2026-06-29', '2026-07-16'] // San Pedro, Virgen del Carmen
 
 function isoDate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-function getAllWorkdays(): Date[] {
+/** Días hábiles de un mes, opcionalmente desde un día mínimo. */
+function getWorkdays(year: number, month: number, fromDay = 1): Date[] {
   const days: Date[] = []
-  const d = new Date(PERIOD_START)
-  while (d <= PERIOD_END) {
+  const d = new Date(year, month - 1, Math.max(1, fromDay))
+  while (d.getMonth() === month - 1) {
     const dow = d.getDay()
     if (dow !== 0 && dow !== 6 && !HOLIDAYS_CL.includes(isoDate(d))) {
       days.push(new Date(d))
@@ -82,6 +79,11 @@ function getAllWorkdays(): Date[] {
   }
   return days
 }
+
+// Junio: desde el 18 (días restantes del mes) — 8 días hábiles
+// Julio: mes completo                           — 22 días hábiles
+const JUNE_DAYS = getWorkdays(2026, 6, 18)
+const JULY_DAYS = getWorkdays(2026, 7, 1)
 
 // ── Fuzzy matching ────────────────────────────────────────────────────────────
 function normalize(s: string) {
@@ -136,16 +138,15 @@ function nearestNeighborRoute(predios: Predio[]): Predio[] {
 }
 
 /**
- * Genera la agenda del período completo (Jun 18 – Jul 31).
+ * Genera la agenda para un conjunto de días hábiles (un mes).
+ * Usa la cuota mensual completa (visitsPerMonth) sin ajuste proporcional.
  *
  * Estrategia:
- *  1. Calcula cuántas visitas total por predio en el período (proporcional a los días hábiles).
- *  2. Ordena predios por ruta óptima (nearest-neighbor TSP).
- *  3. Crea "pasadas": en la pasada 0 visita todos los predios una vez, en la
- *     pasada 1 los que tienen ≥2 visitas, etc.  Dentro de cada pasada los
- *     predios están en orden geográfico → predios cercanos quedan juntos.
- *  4. Empaqueta en días de exactamente 3 visitas (el último día puede tener 1-2).
- *  5. Distribuye los días de salida uniformemente en el período.
+ *  1. Ordena predios por ruta óptima (nearest-neighbor TSP).
+ *  2. Crea "pasadas": pasada 0 = primera visita a todos, pasada 1 = segunda, etc.
+ *     Dentro de cada pasada los predios están en orden geográfico → cercanos juntos.
+ *  3. Empaqueta en lotes de exactamente 3 visitas por día de salida.
+ *  4. Distribuye los días de salida uniformemente entre los días hábiles disponibles.
  */
 function buildSchedule(
   predios: Predio[],
@@ -154,14 +155,8 @@ function buildSchedule(
 ): { predioId: number; date: Date; predio: string }[] {
   if (workdays.length === 0 || predios.length === 0) return []
 
-  // 1. Calcular visitas por predio en el período
-  const periodDays  = workdays.length          // días hábiles disponibles
-  const periodFactor = periodDays / REF_WORKDAYS // factor respecto a un mes
-
-  const prediosWithVisits = predios.map(p => ({
-    ...p,
-    visits: Math.max(1, Math.round(p.visits * periodFactor)),
-  }))
+  // Usa la cuota mensual tal cual (sin factor proporcional)
+  const prediosWithVisits = predios.map(p => ({ ...p, visits: Math.max(1, p.visits) }))
 
   // 2. Ruta óptima
   const ordered = nearestNeighborRoute(prediosWithVisits)
@@ -211,10 +206,8 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}))
-  const dryRun: boolean       = body.dryRun       ?? true
+  const dryRun: boolean        = body.dryRun        ?? true
   const clearExisting: boolean = body.clearExisting ?? false
-
-  const workdays = getAllWorkdays()
 
   const allPredios = await prisma.predio.findMany({
     where: { activa: true },
@@ -258,8 +251,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Generar agenda del período
-    const schedule = buildSchedule(matched, workdays)
+    // Generar agenda mes a mes con cuota mensual completa en cada uno
+    const juneSchedule = buildSchedule(matched, JUNE_DAYS)
+    const julySchedule = buildSchedule(matched, JULY_DAYS)
+    const schedule = [...juneSchedule, ...julySchedule]
 
     for (const e of schedule) {
       toCreate.push({
@@ -279,13 +274,15 @@ export async function POST(req: Request) {
     }
 
     report[label] = {
-      tecnicoId:    tecnico.id,
-      email:        tecnico.email,
-      totalVisitas: schedule.length,
-      diasDeSalida: Object.keys(byDay).length,
-      matched:      matched.map(p => p.name),
+      tecnicoId:      tecnico.id,
+      email:          tecnico.email,
+      junioVisitas:   juneSchedule.length,
+      julioVisitas:   julySchedule.length,
+      totalVisitas:   schedule.length,
+      diasDeSalida:   Object.keys(byDay).length,
+      matched:        matched.map(p => p.name),
       unmatched,
-      muestra:      Object.entries(byDay).slice(0, 5).map(([d, ps]) => `${d}: ${ps.join(', ')}`),
+      muestra:        Object.entries(byDay).slice(0, 6).map(([d, ps]) => `${d}: ${ps.join(', ')}`),
     }
   }
 
@@ -308,13 +305,13 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     dryRun,
-    periodo:        `18 jun – 31 jul 2026`,
-    diasHabiles:    workdays.length,
-    feriados:       HOLIDAYS_CL,
+    diasHabilesJunio: JUNE_DAYS.length,
+    diasHabilesJulio: JULY_DAYS.length,
+    feriados: HOLIDAYS_CL,
     totalRegistros: toCreate.length,
     report,
     mensaje: dryRun
-      ? `Simulación: ${toCreate.length} visitas en ${workdays.length} días hábiles. Envía dryRun:false para crear.`
+      ? `Simulación: ${toCreate.length} visitas (${JUNE_DAYS.length} días jun + ${JULY_DAYS.length} días jul). Envía dryRun:false para crear.`
       : `✓ ${toCreate.length} visitas agendadas (18 jun – 31 jul 2026, máx 3/día, ruta óptima)`,
   })
 }
