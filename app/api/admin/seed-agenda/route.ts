@@ -3,46 +3,62 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized, isSupervisor } from '@/lib/session'
 
-// ── Datos de la planilla ──────────────────────────────────────────────────────
-const ASSIGNMENTS: Record<string, { name: string; visits: number }[]> = {
-  'JORGE LECAROS': [
-    { name: 'CORCOLEN',           visits: 1 },
-    { name: 'CREMASCHI',          visits: 2 },
-    { name: 'JLECAROS',           visits: 4 },
-    { name: 'MARIA RITA GONZALEZ',visits: 2 },
-    { name: 'SAN ALBERTO',        visits: 2 },
-    { name: 'SANTA ADELAIDA',     visits: 1 },
-    { name: 'SANTA ROSARIO',      visits: 4 },
-  ],
-  'EDUARDO SOTOMAYOR': [
-    { name: 'JUAN DOMINGO RIVERA ARENAS',                    visits: 2 },
-    { name: 'SIRZO BALTAZAR CARO LIZANA',                   visits: 2 },
-    { name: 'SOC AGRICOLA GANADERA Y FORESTAL SAN RAMON',   visits: 2 },
-    { name: 'SOCIEDAD AGRICOLA EL RINCON B',                visits: 2 },
-    { name: 'SOCIEDAD AGRICOLA Y FORESTAL PINO',            visits: 2 },
-  ],
-  'JOSE MANUEL UGARTE': [
-    { name: 'AGROLIQUID',          visits: 2 },
-    { name: 'ANGEL MARTINEZ',      visits: 2 },
-    { name: 'CASAS VIEJAS',        visits: 3 },
-    { name: 'FUSION',              visits: 2 },
-    { name: 'INVERSIONES MAULE',   visits: 1 },
-    { name: 'JOSE DE LA JARA',     visits: 2 },
-    { name: 'LUIS DE LA JARA',     visits: 2 },
-    { name: 'RICARDO BRICKMANN',   visits: 2 },
-    { name: 'SANTA MARIA DE ODESSA', visits: 2 },
-    { name: 'TOTIHUE',             visits: 2 },
-    { name: 'JUAN EDUARDO COX',    visits: 1 },
-  ],
-  'JOSE IGNACIO VARAS': [
-    { name: 'ALIRO CORNEJO',              visits: 2 },
-    { name: 'ANDREA DEL PILAR FARIAS',    visits: 1 },
-    { name: 'ANDRES RISOPATRON',          visits: 2 },
-    { name: 'COPA DE AGUA',               visits: 2 },
-    { name: 'LAS RAICES',                 visits: 2 },
-    { name: 'TORREFRUT',                  visits: 2 },
-  ],
-}
+// ── Datos de la planilla (email para coincidencia exacta) ─────────────────────
+const ASSIGNMENTS: { email: string; label: string; predios: { name: string; visits: number }[] }[] = [
+  {
+    email: 'j.lecaros@lcfruit.com',
+    label: 'JORGE LECAROS',
+    predios: [
+      { name: 'CORCOLEN',            visits: 1 },
+      { name: 'CREMASCHI',           visits: 2 },
+      { name: 'JLECAROS',            visits: 4 },
+      { name: 'MARIA RITA GONZALEZ', visits: 2 },
+      { name: 'SAN ALBERTO',         visits: 2 },
+      { name: 'SANTA ADELAIDA',      visits: 1 },
+      { name: 'SANTA ROSARIO',       visits: 4 },
+    ],
+  },
+  {
+    email: 'e.sotomayor@exportadoradisfruta.cl',
+    label: 'EDUARDO SOTOMAYOR',
+    predios: [
+      { name: 'JUAN DOMINGO RIVERA ARENAS',                  visits: 2 },
+      { name: 'SIRZO BALTAZAR CARO LIZANA',                  visits: 2 },
+      { name: 'SOC AGRICOLA GANADERA Y FORESTAL SAN RAMON',  visits: 2 },
+      { name: 'SOCIEDAD AGRICOLA EL RINCON B',               visits: 2 },
+      { name: 'SOCIEDAD AGRICOLA Y FORESTAL PINO',           visits: 2 },
+    ],
+  },
+  {
+    email: 'j.ugarte@lcfruit.com',
+    label: 'JOSE MANUEL UGARTE',
+    predios: [
+      { name: 'AGROLIQUID',            visits: 2 },
+      { name: 'ANGEL MARTINEZ',        visits: 2 },
+      { name: 'CASAS VIEJAS',          visits: 3 },
+      { name: 'FUSION',                visits: 2 },
+      { name: 'INVERSIONES MAULE',     visits: 1 },
+      { name: 'JOSE DE LA JARA',       visits: 2 },
+      { name: 'LUIS DE LA JARA',       visits: 2 },
+      { name: 'RICARDO BRICKMANN',     visits: 2 },
+      { name: 'SANTA MARIA DE ODESSA', visits: 2 },
+      { name: 'TOTIHUE',               visits: 2 },
+      { name: 'JUAN EDUARDO COX',      visits: 1 },
+    ],
+  },
+  {
+    email: 'j.varas@lcfruit.com',
+    label: 'JOSE IGNACIO VARAS',
+    predios: [
+      { name: 'ALIRO CORNEJO',           visits: 2 },
+      { name: 'ANDREA DEL PILAR FARIAS', visits: 1 },
+      { name: 'ANDRES RISOPATRON',       visits: 2 },
+      { name: 'COPA DE AGUA',            visits: 2 },
+      { name: 'LAS RAICES',              visits: 2 },
+      { name: 'TORREFRUT',               visits: 2 },
+    ],
+  },
+]
 
 // ── Utilidades ────────────────────────────────────────────────────────────────
 function normalize(s: string) {
@@ -151,18 +167,14 @@ export async function POST(req: Request) {
   const report: Record<string, any> = {}
   const toCreate: { fecha: Date; predioId: number; tecnicoId: number; notas: string }[] = []
 
-  for (const [tecnicoName, predioList] of Object.entries(ASSIGNMENTS)) {
-    // Find technician
-    const [firstName, ...rest] = tecnicoName.split(' ')
-    const lastName = rest.join(' ')
-    const tecnico = allUsers.find(u =>
-      normalize(`${u.nombre} ${u.apellido}`) === normalize(tecnicoName) ||
-      (normalize(u.nombre).includes(normalize(firstName)) &&
-       normalize(u.apellido).includes(normalize(lastName.split(' ')[0])))
-    )
+  for (const assignment of ASSIGNMENTS) {
+    const { email, label, predios: predioList } = assignment
+
+    // Find technician by email (exact match)
+    const tecnico = allUsers.find(u => u.email === email)
 
     if (!tecnico) {
-      report[tecnicoName] = { error: `Técnico no encontrado en BD`, predios: [] }
+      report[label] = { error: `Técnico no encontrado en BD (email: ${email})`, predios: [] }
       continue
     }
 
@@ -215,8 +227,9 @@ export async function POST(req: Request) {
       })
     }
 
-    report[tecnicoName] = {
+    report[label] = {
       tecnicoId: tecnico.id,
+      email: tecnico.email,
       totalVisits: scheduleEntries.length,
       matched: matchedPredios.map(p => p.matchedName),
       unmatched,
@@ -226,7 +239,7 @@ export async function POST(req: Request) {
   if (!dryRun) {
     if (clearExisting) {
       // Remove existing agenda for these months and technicians
-      const tecnicoIds = Object.values(report)
+      const tecnicoIds = (Object.values(report) as any[])
         .filter(r => r.tecnicoId)
         .map(r => r.tecnicoId as number)
 
