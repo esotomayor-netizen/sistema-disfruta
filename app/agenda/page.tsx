@@ -210,11 +210,14 @@ export default function AgendaPage() {
                       {dayAgendas.slice(0, 3).map((a) => (
                         <div
                           key={a.id}
-                          onClick={(e) => handleEliminar(a.id, e)}
-                          title={`${a.predio.nombre} — clic para eliminar`}
-                          className="text-xs bg-primary-100 text-primary-800 rounded px-1 py-0.5 truncate cursor-pointer hover:bg-red-100 hover:text-red-700 transition-colors"
+                          title={a.predio.nombre}
+                          className="text-xs bg-primary-100 text-primary-800 rounded px-1 py-0.5 flex items-center gap-1"
                         >
-                          {a.predio.nombre}
+                          <span className="truncate flex-1">{a.predio.nombre}</span>
+                          <button
+                            onClick={(e) => handleEliminar(a.id, e)}
+                            className="flex-shrink-0 text-primary-400 hover:text-red-600 transition-colors leading-none"
+                          >×</button>
                         </div>
                       ))}
                       {dayAgendas.length > 3 && (
@@ -227,7 +230,7 @@ export default function AgendaPage() {
             </div>
 
             <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
-              Haz clic en un día para agendar · Haz clic en una visita para eliminarla
+              Haz clic en un día para agendar · Haz clic en × para eliminar una visita
             </div>
           </div>
         </div>

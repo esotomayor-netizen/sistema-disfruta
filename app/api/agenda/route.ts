@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   const data = await req.json()
   const agenda = await prisma.agendaVisita.create({
     data: {
-      fecha: new Date(data.fecha),
+      fecha: new Date(data.fecha + 'T12:00:00'),
       notas: data.notas || null,
       predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
