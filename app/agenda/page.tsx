@@ -195,13 +195,13 @@ export default function AgendaPage() {
                   <div
                     key={day}
                     onClick={() => handleDayClick(day)}
-                    className={`min-h-[80px] border-r border-b border-gray-100 p-1.5 cursor-pointer transition-colors hover:bg-primary-50/40 ${idx % 7 === 0 || idx % 7 === 6 ? 'bg-gray-50/30' : ''}`}
+                    className={`min-h-[100px] border-r border-b border-gray-100 p-1.5 cursor-pointer transition-colors hover:bg-primary-50/40 ${idx % 7 === 0 || idx % 7 === 6 ? 'bg-gray-50/30' : ''}`}
                   >
                     <div className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium mb-1 ${isToday ? 'bg-primary-700 text-white' : 'text-gray-600'}`}>
                       {day}
                     </div>
                     <div className="space-y-0.5">
-                      {dayAgendas.slice(0, 2).map((a) => (
+                      {dayAgendas.slice(0, 3).map((a) => (
                         <div
                           key={a.id}
                           onClick={(e) => handleEliminar(a.id, e)}
@@ -211,8 +211,8 @@ export default function AgendaPage() {
                           {a.predio.nombre}
                         </div>
                       ))}
-                      {dayAgendas.length > 2 && (
-                        <div className="text-xs text-gray-400">+{dayAgendas.length - 2} más</div>
+                      {dayAgendas.length > 3 && (
+                        <div className="text-xs text-gray-400">+{dayAgendas.length - 3} más</div>
                       )}
                     </div>
                   </div>
