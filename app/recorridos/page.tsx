@@ -14,11 +14,11 @@ interface Estimacion { kmEstimado: number | null; prediosConGPS: number; totalPr
 interface Parada { orden: number; agendaId: number; predio: string; empresa: string; lat: number; lng: number }
 interface RutaDia {
   fecha: string; totalVisitas: number; prediosConGPS: number
-  prediosSinGPS: string[]; paradas: Parada[]; mapsUrl: string | null
+  prediosSinGPS: string[]; paradas: Parada[]; mapsUrl: string | null; proximaFecha: string | null
 }
 
 const today = new Date()
-const toYMD = (d: Date) => d.toISOString().split('T')[0]
+const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const mesActual = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 
 function consumo100(km: number, litros: number) {
@@ -51,6 +51,7 @@ export default function RecorridosPage() {
   const [rutaTecnico, setRutaTecnico] = useState('')
   const [ruta, setRuta] = useState<RutaDia | null>(null)
   const [loadingRuta, setLoadingRuta] = useState(false)
+  const [autoJumpDone, setAutoJumpDone] = useState(false)
 
   const fetchRecorridos = useCallback(() => {
     const p = new URLSearchParams({ mes })
@@ -76,11 +77,19 @@ export default function RecorridosPage() {
     setLoadingRuta(true)
     fetch(`/api/recorridos/ruta-dia?fecha=${rutaFecha}&tecnicoId=${rutaTecnico}`)
       .then((r) => r.json())
-      .then(setRuta)
+      .then((d: RutaDia) => {
+        setRuta(d)
+        // Si la fecha actual no tiene visitas, salta una vez a la próxima fecha agendada.
+        if (!autoJumpDone) {
+          setAutoJumpDone(true)
+          if (d.totalVisitas === 0 && d.proximaFecha) setRutaFecha(d.proximaFecha)
+        }
+      })
       .finally(() => setLoadingRuta(false))
-  }, [rutaFecha, rutaTecnico])
+  }, [rutaFecha, rutaTecnico, autoJumpDone])
 
   useEffect(() => { fetchRuta() }, [fetchRuta])
+  useEffect(() => { setAutoJumpDone(false) }, [rutaTecnico])
 
   const fetchEstimacion = useCallback(async () => {
     if (!form.fecha || !form.tecnicoId) return
@@ -182,7 +191,18 @@ export default function RecorridosPage() {
         {loadingRuta ? (
           <p className="text-gray-400 text-sm animate-pulse">Calculando ruta…</p>
         ) : !ruta || ruta.totalVisitas === 0 ? (
-          <p className="text-gray-400 text-sm">Sin visitas agendadas para esta fecha y técnico.</p>
+          <div className="text-sm">
+            <p className="text-gray-400">Sin visitas agendadas para esta fecha y técnico.</p>
+            {ruta?.proximaFecha && (
+              <button
+                onClick={() => setRutaFecha(ruta.proximaFecha!)}
+                className="mt-2 text-primary-700 font-medium hover:underline"
+              >
+                Ver próxima visita agendada —{' '}
+                {new Date(ruta.proximaFecha + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </button>
+            )}
+          </div>
         ) : (
           <>
             <ol className="space-y-2 mb-4">

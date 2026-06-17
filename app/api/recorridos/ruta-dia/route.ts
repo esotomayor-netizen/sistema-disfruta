@@ -39,6 +39,18 @@ export async function GET(req: Request) {
 
   const mapsUrl = googleMapsRouteUrl(ordered.map(p => ({ lat: p.lat, lng: p.lng })))
 
+  let proximaFecha: string | null = null
+  if (agendas.length === 0) {
+    const next = await prisma.agendaVisita.findFirst({
+      where: { tecnicoId: parseInt(tecnicoId), fecha: { gt: end } },
+      orderBy: { fecha: 'asc' },
+    })
+    if (next) {
+      const d = next.fecha
+      proximaFecha = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    }
+  }
+
   return NextResponse.json({
     fecha,
     totalVisitas:  agendas.length,
@@ -46,5 +58,6 @@ export async function GET(req: Request) {
     prediosSinGPS: sinGPS.map(a => a.predio.nombre),
     paradas,
     mapsUrl,
+    proximaFecha,
   })
 }
