@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import { CULTIVOS, VARIEDADES_POR_CULTIVO } from '@/lib/constants'
+import { parseCoordinate } from '@/lib/geo'
 
 interface Empresa { id: number; razonSocial: string; contactoNombre: string }
 interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
@@ -44,6 +45,14 @@ export default function EditarPredioPage() {
       },
       () => { alert('No se pudo obtener la ubicación'); setGpsLoading(false) }
     )
+  }
+
+  /** Convierte automáticamente formato GMS (34°47'56.11"S) a grados decimales al salir del campo. */
+  const normalizarCoord = (field: 'latitud' | 'longitud') => {
+    const raw = form[field]
+    if (!raw) return
+    const parsed = parseCoordinate(raw)
+    if (parsed !== null) setForm((f) => ({ ...f, [field]: String(parsed) }))
   }
 
   useEffect(() => {
@@ -239,11 +248,16 @@ export default function EditarPredioPage() {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <input className="input font-mono text-sm" placeholder="Latitud (Ej: -34.123456)"
-                value={form.latitud} onChange={(e) => setForm({ ...form, latitud: e.target.value })} />
-              <input className="input font-mono text-sm" placeholder="Longitud (Ej: -70.654321)"
-                value={form.longitud} onChange={(e) => setForm({ ...form, longitud: e.target.value })} />
+              <input className="input font-mono text-sm" placeholder={'Latitud (Ej: -34.123456 o 34°47\'56.11"S)'}
+                value={form.latitud} onChange={(e) => setForm({ ...form, latitud: e.target.value })}
+                onBlur={() => normalizarCoord('latitud')} />
+              <input className="input font-mono text-sm" placeholder={'Longitud (Ej: -70.654321 o 70°39\'15.6"O)'}
+                value={form.longitud} onChange={(e) => setForm({ ...form, longitud: e.target.value })}
+                onBlur={() => normalizarCoord('longitud')} />
             </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Puedes pegar el formato del GPS tal cual (grados-minutos-segundos) — se convierte solo a decimal.
+            </p>
             {form.latitud && form.longitud && (
               <p className="text-xs text-primary-600 mt-1">✓ Coordenadas guardadas — {form.latitud}, {form.longitud}</p>
             )}

@@ -1,5 +1,30 @@
 export type GeoPoint = { lat: number; lng: number }
 
+/**
+ * Convierte una coordenada en formato grados-minutos-segundos (ej: 34°47'56.11"S)
+ * o grados decimales (ej: -34.798919) a un número decimal. Devuelve null si no
+ * se puede interpretar.
+ */
+export function parseCoordinate(input: string): number | null {
+  const trimmed = input.trim()
+  if (!trimmed) return null
+
+  // Ya viene en grados decimales
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return parseFloat(trimmed)
+
+  // Grados-minutos-segundos: 34°47'56.11"S / 71° 2' 2.35" O / 34 47 56.11 S
+  const m = trimmed.match(/(\d+(?:\.\d+)?)[°ºo\s]+(\d+(?:\.\d+)?)['′\s]+(\d+(?:\.\d+)?)["″]?\s*([NSEOWnseow])?/)
+  if (!m) return null
+
+  const [, gStr, minStr, secStr, hemisphere] = m
+  let value = parseFloat(gStr) + parseFloat(minStr) / 60 + parseFloat(secStr) / 3600
+
+  const h = hemisphere?.toUpperCase()
+  if (h === 'S' || h === 'O' || h === 'W') value = -value
+
+  return Math.round(value * 1e6) / 1e6
+}
+
 /** Ordena puntos por ruta más corta (heurística nearest-neighbor desde el centroide). */
 export function nearestNeighborOrder<T extends GeoPoint>(points: T[]): T[] {
   if (points.length <= 1) return points
