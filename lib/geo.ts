@@ -1,9 +1,9 @@
 export type GeoPoint = { lat: number; lng: number }
 
 /**
- * Convierte una coordenada en formato grados-minutos-segundos (ej: 34°47'56.11"S)
- * o grados decimales (ej: -34.798919) a un número decimal. Devuelve null si no
- * se puede interpretar.
+ * Convierte una coordenada en formato grados-minutos-segundos (ej: 34°47'56.11"S,
+ * con comillas rectas o tipográficas) o grados decimales (ej: -34.798919) a un
+ * número decimal. Devuelve null si no se puede interpretar.
  */
 export function parseCoordinate(input: string): number | null {
   const trimmed = input.trim()
@@ -12,15 +12,26 @@ export function parseCoordinate(input: string): number | null {
   // Ya viene en grados decimales
   if (/^-?\d+(\.\d+)?$/.test(trimmed)) return parseFloat(trimmed)
 
-  // Grados-minutos-segundos: 34°47'56.11"S / 71° 2' 2.35" O / 34 47 56.11 S
-  const m = trimmed.match(/(\d+(?:\.\d+)?)[°ºo\s]+(\d+(?:\.\d+)?)['′\s]+(\d+(?:\.\d+)?)["″]?\s*([NSEOWnseow])?/)
-  if (!m) return null
+  const normalized = trimmed.replace(',', '.')
+  const nums = normalized.match(/\d+(?:\.\d+)?/g)
+  if (!nums || nums.length === 0) return null
 
-  const [, gStr, minStr, secStr, hemisphere] = m
-  let value = parseFloat(gStr) + parseFloat(minStr) / 60 + parseFloat(secStr) / 3600
+  // Grados-minutos-segundos (o solo grados decimales con símbolo °/hemisferio).
+  // No depende del carácter exacto usado para separar (°, ', ", ′, ″, comillas
+  // tipográficas “ ’, espacios, etc.) — solo extrae los números en orden.
+  let value: number
+  if (nums.length === 1) {
+    value = parseFloat(nums[0])
+  } else {
+    const deg = parseFloat(nums[0])
+    const min = parseFloat(nums[1])
+    const sec = nums[2] !== undefined ? parseFloat(nums[2]) : 0
+    value = deg + min / 60 + sec / 3600
+  }
 
-  const h = hemisphere?.toUpperCase()
-  if (h === 'S' || h === 'O' || h === 'W') value = -value
+  const hemisferio = normalized.match(/[NSEOWnseow]/)?.[0].toUpperCase()
+  const negativo = hemisferio === 'S' || hemisferio === 'O' || hemisferio === 'W' || /^-/.test(normalized)
+  value = negativo ? -Math.abs(value) : value
 
   return Math.round(value * 1e6) / 1e6
 }
