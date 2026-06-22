@@ -16,6 +16,7 @@ export default function EditarPredioPage() {
   const [loading, setLoading] = useState(false)
   const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [tecnicos, setTecnicos] = useState<Usuario[]>([])
   const [form, setForm] = useState({
     nombre: '',
     csg: '',
@@ -25,6 +26,7 @@ export default function EditarPredioPage() {
     activa: true,
     empresaId: '',
     encargadoId: '',
+    tecnicoId: '',
     variedades: '',
     latitud: '',
     longitud: '',
@@ -59,10 +61,12 @@ export default function EditarPredioPage() {
     Promise.all([
       fetch('/api/empresas').then((r) => r.json()),
       fetch('/api/equipo?encargados=true').then((r) => r.json()),
+      fetch('/api/equipo').then((r) => r.json()),
       fetch(`/api/predios/${id}`).then((r) => r.json()),
-    ]).then(([e, u, predio]) => {
+    ]).then(([e, u, t, predio]) => {
       setEmpresas(e as Empresa[])
       setUsuarios((u as Usuario[]).filter((x) => x.activo))
+      setTecnicos((t as Usuario[]).filter((x) => x.activo))
       if (predio && !predio.error) {
         setForm({
           nombre: predio.nombre,
@@ -73,6 +77,7 @@ export default function EditarPredioPage() {
           activa: predio.activa,
           empresaId: String(predio.empresaId),
           encargadoId: predio.encargadoId ? String(predio.encargadoId) : '',
+          tecnicoId: predio.tecnicoId ? String(predio.tecnicoId) : '',
           variedades: predio.variedades ?? '',
           latitud: predio.latitud != null ? String(predio.latitud) : '',
           longitud: predio.longitud != null ? String(predio.longitud) : '',
@@ -160,18 +165,33 @@ export default function EditarPredioPage() {
             </div>
           </div>
 
-          <div>
-            <label className="label">Encargado / Responsable</label>
-            <select
-              className="input"
-              value={form.encargadoId}
-              onChange={(e) => setForm({ ...form, encargadoId: e.target.value })}
-            >
-              <option value="">Sin encargado asignado</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Encargado / Responsable</label>
+              <select
+                className="input"
+                value={form.encargadoId}
+                onChange={(e) => setForm({ ...form, encargadoId: e.target.value })}
+              >
+                <option value="">Sin encargado asignado</option>
+                {usuarios.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Técnico / Supervisor asignado</label>
+              <select
+                className="input"
+                value={form.tecnicoId}
+                onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+              >
+                <option value="">Sin técnico asignado</option>
+                {tecnicos.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

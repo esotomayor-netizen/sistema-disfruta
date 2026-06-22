@@ -8,6 +8,7 @@ export default async function EmpresasPage() {
   const empresas = await prisma.empresa.findMany({
     orderBy: { razonSocial: 'asc' },
     include: {
+      tecnico: true,
       _count: { select: { predios: true } },
     },
   })
@@ -34,6 +35,7 @@ export default async function EmpresasPage() {
               <th className="table-th">Razón Social</th>
               <th className="table-th">RUT</th>
               <th className="table-th">Contacto</th>
+              <th className="table-th">Técnico</th>
               <th className="table-th">Email</th>
               <th className="table-th">Teléfono</th>
               <th className="table-th">Predios</th>
@@ -43,7 +45,7 @@ export default async function EmpresasPage() {
           <tbody className="divide-y divide-gray-100">
             {empresas.length === 0 && (
               <tr>
-                <td colSpan={7} className="table-td text-center text-gray-400 py-10">
+                <td colSpan={8} className="table-td text-center text-gray-400 py-10">
                   No hay empresas registradas aún.
                 </td>
               </tr>
@@ -58,6 +60,11 @@ export default async function EmpresasPage() {
                 </td>
                 <td className="table-td">
                   <p className="text-sm text-gray-900">{empresa.contactoNombre}</p>
+                </td>
+                <td className="table-td">
+                  <p className="text-sm text-gray-700">
+                    {empresa.tecnico ? `${empresa.tecnico.nombre} ${empresa.tecnico.apellido}` : <span className="text-gray-400">—</span>}
+                  </p>
                 </td>
                 <td className="table-td">
                   {empresa.contactoEmail ? (

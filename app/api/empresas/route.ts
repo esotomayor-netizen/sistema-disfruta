@@ -8,6 +8,7 @@ export async function GET() {
       id: true,
       razonSocial: true,
       contactoNombre: true,
+      tecnico: { select: { id: true, nombre: true, apellido: true } },
       predios: {
         select: { id: true, nombre: true, cultivo: true, variedades: true, activa: true },
       },
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
       contactoNombre: data.contactoNombre,
       contactoEmail: data.contactoEmail || null,
       contactoTelefono: data.contactoTelefono || null,
+      tecnicoId: data.tecnicoId ? parseInt(data.tecnicoId) : null,
     },
   })
   return NextResponse.json(empresa)

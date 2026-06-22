@@ -56,6 +56,8 @@ model Empresa {
   contactoNombre   String
   contactoEmail    String?
   contactoTelefono String?
+  tecnico          Usuario? @relation("TecnicoEmpresa", fields: [tecnicoId], references: [id])
+  tecnicoId        Int?
   predios          Predio[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -76,6 +78,8 @@ model Predio {
   empresaId    Int
   encargado    Usuario?     @relation("Encargado", fields: [encargadoId], references: [id])
   encargadoId  Int?
+  tecnico      Usuario?     @relation("TecnicoPredio", fields: [tecnicoId], references: [id])
+  tecnicoId    Int?
   labores      Labor[]
   aplicaciones Aplicacion[]
   visitas      Visita[]
@@ -95,6 +99,8 @@ model Usuario {
   telefono     String?
   activo       Boolean      @default(true)
   predios      Predio[]     @relation("Encargado")
+  prediosTecnico  Predio[]  @relation("TecnicoPredio")
+  empresasTecnico Empresa[] @relation("TecnicoEmpresa")
   labores      Labor[]      @relation("Responsable")
   aplicaciones Aplicacion[] @relation("Tecnico")
   visitas      Visita[]       @relation("TecnicoVisita")

@@ -5,32 +5,39 @@ import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
 
+interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
+
 export default function EditarEmpresaPage() {
   const { id } = useParams()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [tecnicos, setTecnicos] = useState<Usuario[]>([])
   const [form, setForm] = useState({
     razonSocial: '',
     rut: '',
     contactoNombre: '',
     contactoEmail: '',
     contactoTelefono: '',
+    tecnicoId: '',
   })
 
   useEffect(() => {
-    fetch(`/api/empresas/${id}`)
-      .then((r) => r.json())
-      .then((empresa: { razonSocial: string; rut: string; contactoNombre: string; contactoEmail: string | null; contactoTelefono: string | null }) => {
-        if (empresa) {
-          setForm({
-            razonSocial: empresa.razonSocial,
-            rut: empresa.rut,
-            contactoNombre: empresa.contactoNombre,
-            contactoEmail: empresa.contactoEmail ?? '',
-            contactoTelefono: empresa.contactoTelefono ?? '',
-          })
-        }
-      })
+    Promise.all([
+      fetch('/api/equipo').then((r) => r.json()),
+      fetch(`/api/empresas/${id}`).then((r) => r.json()),
+    ]).then(([t, empresa]: [Usuario[], { razonSocial: string; rut: string; contactoNombre: string; contactoEmail: string | null; contactoTelefono: string | null; tecnicoId: number | null }]) => {
+      setTecnicos(t.filter((x) => x.activo))
+      if (empresa) {
+        setForm({
+          razonSocial: empresa.razonSocial,
+          rut: empresa.rut,
+          contactoNombre: empresa.contactoNombre,
+          contactoEmail: empresa.contactoEmail ?? '',
+          contactoTelefono: empresa.contactoTelefono ?? '',
+          tecnicoId: empresa.tecnicoId ? String(empresa.tecnicoId) : '',
+        })
+      }
+    })
   }, [id])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,6 +113,19 @@ export default function EditarEmpresaPage() {
               value={form.contactoTelefono}
               onChange={(e) => setForm({ ...form, contactoTelefono: e.target.value })}
             />
+          </div>
+          <div>
+            <label className="label">Técnico / Supervisor asignado</label>
+            <select
+              className="input"
+              value={form.tecnicoId}
+              onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+            >
+              <option value="">Sin técnico asignado</option>
+              {tecnicos.map((u) => (
+                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+              ))}
+            </select>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="btn-primary" disabled={loading}>

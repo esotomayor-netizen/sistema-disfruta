@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const predio = await prisma.predio.findUnique({
     where: { id: parseInt(params.id) },
-    include: { empresa: true, encargado: true },
+    include: { empresa: true, encargado: true, tecnico: true },
   })
   if (!predio) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(predio)
@@ -24,11 +24,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       activa: data.activa,
       empresaId: parseInt(data.empresaId),
       encargadoId: data.encargadoId ? parseInt(data.encargadoId) : null,
+      tecnicoId: data.tecnicoId ? parseInt(data.tecnicoId) : null,
       variedades: data.variedades || null,
       latitud: data.latitud ? parseFloat(data.latitud) : null,
       longitud: data.longitud ? parseFloat(data.longitud) : null,
     },
-    include: { empresa: true, encargado: true },
+    include: { empresa: true, encargado: true, tecnico: true },
   })
   return NextResponse.json(predio)
 }

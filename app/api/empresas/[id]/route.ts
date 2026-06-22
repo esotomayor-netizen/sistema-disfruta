@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const empresa = await prisma.empresa.findUnique({
     where: { id: parseInt(params.id) },
-    include: { predios: true },
+    include: { predios: true, tecnico: true },
   })
   return NextResponse.json(empresa)
 }
@@ -20,6 +20,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       contactoNombre: data.contactoNombre,
       contactoEmail: data.contactoEmail || null,
       contactoTelefono: data.contactoTelefono || null,
+      tecnicoId: data.tecnicoId ? parseInt(data.tecnicoId) : null,
     },
   })
   return NextResponse.json(empresa)

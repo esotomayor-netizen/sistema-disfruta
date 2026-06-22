@@ -15,6 +15,7 @@ export default function NuevoPredioPage() {
   const [loading, setLoading] = useState(false)
   const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [tecnicos, setTecnicos] = useState<Usuario[]>([])
   const [form, setForm] = useState({
     nombre: '',
     csg: '',
@@ -24,6 +25,7 @@ export default function NuevoPredioPage() {
     activa: true,
     empresaId: '',
     encargadoId: '',
+    tecnicoId: '',
     variedades: '',
     latitud: '',
     longitud: '',
@@ -58,9 +60,11 @@ export default function NuevoPredioPage() {
     Promise.all([
       fetch('/api/empresas').then((r) => r.json()),
       fetch('/api/equipo?encargados=true').then((r) => r.json()),
-    ]).then(([e, u]) => {
+      fetch('/api/equipo').then((r) => r.json()),
+    ]).then(([e, u, t]) => {
       setEmpresas(e as Empresa[])
       setUsuarios((u as Usuario[]).filter((x) => x.activo))
+      setTecnicos((t as Usuario[]).filter((x) => x.activo))
     })
   }, [])
 
@@ -157,18 +161,33 @@ export default function NuevoPredioPage() {
             </div>
           </div>
 
-          <div>
-            <label className="label">Encargado / Responsable</label>
-            <select
-              className="input"
-              value={form.encargadoId}
-              onChange={(e) => setForm({ ...form, encargadoId: e.target.value })}
-            >
-              <option value="">Sin encargado asignado</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Encargado / Responsable</label>
+              <select
+                className="input"
+                value={form.encargadoId}
+                onChange={(e) => setForm({ ...form, encargadoId: e.target.value })}
+              >
+                <option value="">Sin encargado asignado</option>
+                {usuarios.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Técnico / Supervisor asignado</label>
+              <select
+                className="input"
+                value={form.tecnicoId}
+                onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+              >
+                <option value="">Sin técnico asignado</option>
+                {tecnicos.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

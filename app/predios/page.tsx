@@ -9,6 +9,7 @@ export default async function PrediosPage() {
     orderBy: { nombre: 'asc' },
     include: {
       empresa: true,
+      tecnico: true,
       _count: { select: { labores: true, aplicaciones: true } },
     },
   })
@@ -35,6 +36,7 @@ export default async function PrediosPage() {
               <th className="table-th">Nombre</th>
               <th className="table-th">CSG</th>
               <th className="table-th">Empresa</th>
+              <th className="table-th">Técnico</th>
               <th className="table-th">Cultivo / Variedades</th>
               <th className="table-th text-center">Estado</th>
               <th className="table-th">Actividad</th>
@@ -44,7 +46,7 @@ export default async function PrediosPage() {
           <tbody className="divide-y divide-gray-100">
             {predios.length === 0 && (
               <tr>
-                <td colSpan={7} className="table-td text-center text-gray-400 py-10">
+                <td colSpan={8} className="table-td text-center text-gray-400 py-10">
                   No hay predios registrados aún.
                 </td>
               </tr>
@@ -60,6 +62,11 @@ export default async function PrediosPage() {
                 </td>
                 <td className="table-td">
                   <p className="text-sm text-gray-900">{p.empresa?.razonSocial ?? '—'}</p>
+                </td>
+                <td className="table-td">
+                  <p className="text-sm text-gray-700">
+                    {p.tecnico ? `${p.tecnico.nombre} ${p.tecnico.apellido}` : <span className="text-gray-400">—</span>}
+                  </p>
                 </td>
                 <td className="table-td">
                   <p className="text-sm font-medium text-gray-900">{p.cultivo}</p>

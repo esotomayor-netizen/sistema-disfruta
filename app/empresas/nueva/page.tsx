@@ -1,20 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
 
+interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
+
 export default function NuevaEmpresaPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [tecnicos, setTecnicos] = useState<Usuario[]>([])
   const [form, setForm] = useState({
     razonSocial: '',
     rut: '',
     contactoNombre: '',
     contactoEmail: '',
     contactoTelefono: '',
+    tecnicoId: '',
   })
+
+  useEffect(() => {
+    fetch('/api/equipo')
+      .then((r) => r.json())
+      .then((t: Usuario[]) => setTecnicos(t.filter((x) => x.activo)))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,6 +98,19 @@ export default function NuevaEmpresaPage() {
               onChange={(e) => setForm({ ...form, contactoTelefono: e.target.value })}
               placeholder="+56912345678"
             />
+          </div>
+          <div>
+            <label className="label">Técnico / Supervisor asignado</label>
+            <select
+              className="input"
+              value={form.tecnicoId}
+              onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+            >
+              <option value="">Sin técnico asignado</option>
+              {tecnicos.map((u) => (
+                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+              ))}
+            </select>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="btn-primary" disabled={loading}>
