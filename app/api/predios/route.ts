@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession, isSupervisor } from '@/lib/session'
 
 export async function GET() {
   const predios = await prisma.predio.findMany({
@@ -12,6 +13,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const data = await req.json()
+  const session = await getSession()
   const predio = await prisma.predio.create({
     data: {
       nombre: data.nombre,
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
       activa: data.activa ?? true,
       empresaId: parseInt(data.empresaId),
       encargadoId: data.encargadoId ? parseInt(data.encargadoId) : null,
-      tecnicoId: data.tecnicoId ? parseInt(data.tecnicoId) : null,
+      tecnicoId: isSupervisor(session) && data.tecnicoId ? parseInt(data.tecnicoId) : null,
       variedades: data.variedades || null,
       latitud: data.latitud ? parseFloat(data.latitud) : null,
       longitud: data.longitud ? parseFloat(data.longitud) : null,

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession, isSupervisor } from '@/lib/session'
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const empresa = await prisma.empresa.findUnique({
@@ -12,6 +13,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const data = await req.json()
+  const session = await getSession()
   const empresa = await prisma.empresa.update({
     where: { id: parseInt(params.id) },
     data: {
@@ -20,7 +22,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       contactoNombre: data.contactoNombre,
       contactoEmail: data.contactoEmail || null,
       contactoTelefono: data.contactoTelefono || null,
-      tecnicoId: data.tecnicoId ? parseInt(data.tecnicoId) : null,
+      ...(isSupervisor(session) ? { tecnicoId: data.tecnicoId ? parseInt(data.tecnicoId) : null } : {}),
     },
   })
   return NextResponse.json(empresa)

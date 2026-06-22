@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import { CULTIVOS, VARIEDADES_POR_CULTIVO } from '@/lib/constants'
@@ -12,6 +13,8 @@ interface Usuario { id: number; nombre: string; apellido: string; activo: boolea
 
 export default function NuevoPredioPage() {
   const router = useRouter()
+  const { data: session } = useSession()
+  const esSupervisor = (session?.user as any)?.rol === 'SUPERVISOR'
   const [loading, setLoading] = useState(false)
   const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -175,19 +178,21 @@ export default function NuevoPredioPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="label">Técnico / Supervisor asignado</label>
-              <select
-                className="input"
-                value={form.tecnicoId}
-                onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
-              >
-                <option value="">Sin técnico asignado</option>
-                {tecnicos.map((u) => (
-                  <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
-                ))}
-              </select>
-            </div>
+            {esSupervisor && (
+              <div>
+                <label className="label">Técnico / Supervisor asignado</label>
+                <select
+                  className="input"
+                  value={form.tecnicoId}
+                  onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+                >
+                  <option value="">Sin técnico asignado</option>
+                  {tecnicos.map((u) => (
+                    <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

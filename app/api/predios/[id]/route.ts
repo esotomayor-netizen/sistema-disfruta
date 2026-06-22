@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession, isSupervisor } from '@/lib/session'
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const predio = await prisma.predio.findUnique({
@@ -13,6 +14,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const data = await req.json()
+  const session = await getSession()
   const predio = await prisma.predio.update({
     where: { id: parseInt(params.id) },
     data: {
@@ -24,7 +26,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       activa: data.activa,
       empresaId: parseInt(data.empresaId),
       encargadoId: data.encargadoId ? parseInt(data.encargadoId) : null,
-      tecnicoId: data.tecnicoId ? parseInt(data.tecnicoId) : null,
+      ...(isSupervisor(session) ? { tecnicoId: data.tecnicoId ? parseInt(data.tecnicoId) : null } : {}),
       variedades: data.variedades || null,
       latitud: data.latitud ? parseFloat(data.latitud) : null,
       longitud: data.longitud ? parseFloat(data.longitud) : null,

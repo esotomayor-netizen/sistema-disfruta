@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import { CULTIVOS, VARIEDADES_POR_CULTIVO } from '@/lib/constants'
@@ -13,10 +14,13 @@ interface Usuario { id: number; nombre: string; apellido: string; activo: boolea
 export default function EditarPredioPage() {
   const { id } = useParams()
   const router = useRouter()
+  const { data: session } = useSession()
+  const esSupervisor = (session?.user as any)?.rol === 'SUPERVISOR'
   const [loading, setLoading] = useState(false)
   const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [tecnicos, setTecnicos] = useState<Usuario[]>([])
+  const [tecnicoActual, setTecnicoActual] = useState<string>('')
   const [form, setForm] = useState({
     nombre: '',
     csg: '',
@@ -82,6 +86,7 @@ export default function EditarPredioPage() {
           latitud: predio.latitud != null ? String(predio.latitud) : '',
           longitud: predio.longitud != null ? String(predio.longitud) : '',
         })
+        setTecnicoActual(predio.tecnico ? `${predio.tecnico.nombre} ${predio.tecnico.apellido}` : 'Sin técnico asignado')
       }
     })
   }, [id])
@@ -181,16 +186,20 @@ export default function EditarPredioPage() {
             </div>
             <div>
               <label className="label">Técnico / Supervisor asignado</label>
-              <select
-                className="input"
-                value={form.tecnicoId}
-                onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
-              >
-                <option value="">Sin técnico asignado</option>
-                {tecnicos.map((u) => (
-                  <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
-                ))}
-              </select>
+              {esSupervisor ? (
+                <select
+                  className="input"
+                  value={form.tecnicoId}
+                  onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+                >
+                  <option value="">Sin técnico asignado</option>
+                  {tecnicos.map((u) => (
+                    <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-gray-600 py-2">{tecnicoActual} <span className="text-xs text-gray-400">(solo un supervisor puede editar esta asignación)</span></p>
+              )}
             </div>
           </div>
 

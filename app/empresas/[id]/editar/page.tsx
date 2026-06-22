@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import Link from 'next/link'
 
@@ -10,8 +11,11 @@ interface Usuario { id: number; nombre: string; apellido: string; activo: boolea
 export default function EditarEmpresaPage() {
   const { id } = useParams()
   const router = useRouter()
+  const { data: session } = useSession()
+  const esSupervisor = (session?.user as any)?.rol === 'SUPERVISOR'
   const [loading, setLoading] = useState(false)
   const [tecnicos, setTecnicos] = useState<Usuario[]>([])
+  const [tecnicoActual, setTecnicoActual] = useState<string>('')
   const [form, setForm] = useState({
     razonSocial: '',
     rut: '',
@@ -25,7 +29,7 @@ export default function EditarEmpresaPage() {
     Promise.all([
       fetch('/api/equipo').then((r) => r.json()),
       fetch(`/api/empresas/${id}`).then((r) => r.json()),
-    ]).then(([t, empresa]: [Usuario[], { razonSocial: string; rut: string; contactoNombre: string; contactoEmail: string | null; contactoTelefono: string | null; tecnicoId: number | null }]) => {
+    ]).then(([t, empresa]: [Usuario[], { razonSocial: string; rut: string; contactoNombre: string; contactoEmail: string | null; contactoTelefono: string | null; tecnicoId: number | null; tecnico: { nombre: string; apellido: string } | null }]) => {
       setTecnicos(t.filter((x) => x.activo))
       if (empresa) {
         setForm({
@@ -36,6 +40,7 @@ export default function EditarEmpresaPage() {
           contactoTelefono: empresa.contactoTelefono ?? '',
           tecnicoId: empresa.tecnicoId ? String(empresa.tecnicoId) : '',
         })
+        setTecnicoActual(empresa.tecnico ? `${empresa.tecnico.nombre} ${empresa.tecnico.apellido}` : 'Sin técnico asignado')
       }
     })
   }, [id])
@@ -116,16 +121,20 @@ export default function EditarEmpresaPage() {
           </div>
           <div>
             <label className="label">Técnico / Supervisor asignado</label>
-            <select
-              className="input"
-              value={form.tecnicoId}
-              onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
-            >
-              <option value="">Sin técnico asignado</option>
-              {tecnicos.map((u) => (
-                <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
-              ))}
-            </select>
+            {esSupervisor ? (
+              <select
+                className="input"
+                value={form.tecnicoId}
+                onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+              >
+                <option value="">Sin técnico asignado</option>
+                {tecnicos.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-gray-600 py-2">{tecnicoActual} <span className="text-xs text-gray-400">(solo un supervisor puede editar esta asignación)</span></p>
+            )}
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="btn-primary" disabled={loading}>
