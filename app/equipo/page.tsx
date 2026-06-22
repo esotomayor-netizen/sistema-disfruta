@@ -3,6 +3,7 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { labelFromValue, ROLES_USUARIO } from '@/lib/constants'
 import SetPasswordButton from '@/components/SetPasswordButton'
+import DeleteUsuarioButton from '@/components/DeleteUsuarioButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,7 +109,8 @@ export default async function EquipoPage() {
                     <p className="font-medium text-gray-700">{u.nombre} {u.apellido}</p>
                     <p className="text-xs text-gray-400">{labelFromValue(ROLES_USUARIO, u.rol)}</p>
                   </div>
-                  <Link href={`/equipo/${u.id}/editar`} className="ml-auto text-xs text-primary-600 hover:text-primary-700">Editar</Link>
+                  <Link href={`/equipo/${u.id}/editar`} className="text-xs text-primary-600 hover:text-primary-700">Editar</Link>
+                  <DeleteUsuarioButton userId={u.id} userName={`${u.nombre} ${u.apellido}`} />
                 </div>
               </div>
             ))}

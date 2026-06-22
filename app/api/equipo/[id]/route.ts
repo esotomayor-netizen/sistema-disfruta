@@ -19,9 +19,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  await prisma.usuario.update({
-    where: { id: parseInt(params.id) },
-    data: { activo: false },
-  })
-  return NextResponse.json({ ok: true })
+  try {
+    await prisma.usuario.delete({ where: { id: parseInt(params.id) } })
+    return NextResponse.json({ ok: true })
+  } catch {
+    return NextResponse.json(
+      { error: 'No se puede eliminar: tiene labores, visitas u otros registros asociados. Desactívalo en su lugar.' },
+      { status: 409 }
+    )
+  }
 }
