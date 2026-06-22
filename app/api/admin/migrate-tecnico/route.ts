@@ -17,32 +17,36 @@ export async function GET() {
   }
 
   const steps: string[] = []
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "tecnicoId" INTEGER`)
-    steps.push('Empresa.tecnicoId: columna OK')
-    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Empresa_tecnicoId_idx" ON "Empresa"("tecnicoId")`)
-    steps.push('Empresa.tecnicoId: índice OK')
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        ALTER TABLE "Empresa" ADD CONSTRAINT "Empresa_tecnicoId_fkey"
-          FOREIGN KEY ("tecnicoId") REFERENCES "Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-      EXCEPTION WHEN duplicate_object THEN NULL;
-      END $$;
-    `)
-    steps.push('Empresa.tecnicoId: foreign key OK')
 
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Predio" ADD COLUMN IF NOT EXISTS "tecnicoId" INTEGER`)
-    steps.push('Predio.tecnicoId: columna OK')
-    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Predio_tecnicoId_idx" ON "Predio"("tecnicoId")`)
-    steps.push('Predio.tecnicoId: índice OK')
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        ALTER TABLE "Predio" ADD CONSTRAINT "Predio_tecnicoId_fkey"
-          FOREIGN KEY ("tecnicoId") REFERENCES "Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-      EXCEPTION WHEN duplicate_object THEN NULL;
-      END $$;
-    `)
-    steps.push('Predio.tecnicoId: foreign key OK')
+  async function run(label: string, sql: string) {
+    try {
+      await prisma.$executeRawUnsafe(sql)
+      steps.push(`${label}: OK`)
+    } catch (err: any) {
+      const msg = String(err?.message ?? err)
+      if (msg.includes('already exists')) {
+        steps.push(`${label}: ya existía, sin cambios`)
+      } else {
+        steps.push(`${label}: ERROR — ${msg}`)
+        throw err
+      }
+    }
+  }
+
+  try {
+    await run('Empresa.tecnicoId columna', `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "tecnicoId" INTEGER`)
+    await run('Empresa.tecnicoId índice', `CREATE INDEX IF NOT EXISTS "Empresa_tecnicoId_idx" ON "Empresa"("tecnicoId")`)
+    await run(
+      'Empresa.tecnicoId foreign key',
+      `ALTER TABLE "Empresa" ADD CONSTRAINT "Empresa_tecnicoId_fkey" FOREIGN KEY ("tecnicoId") REFERENCES "Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE`
+    )
+
+    await run('Predio.tecnicoId columna', `ALTER TABLE "Predio" ADD COLUMN IF NOT EXISTS "tecnicoId" INTEGER`)
+    await run('Predio.tecnicoId índice', `CREATE INDEX IF NOT EXISTS "Predio_tecnicoId_idx" ON "Predio"("tecnicoId")`)
+    await run(
+      'Predio.tecnicoId foreign key',
+      `ALTER TABLE "Predio" ADD CONSTRAINT "Predio_tecnicoId_fkey" FOREIGN KEY ("tecnicoId") REFERENCES "Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE`
+    )
 
     return NextResponse.json({
       ok: true,
@@ -50,6 +54,6 @@ export async function GET() {
       mensaje: 'Migración aplicada correctamente. Ya puedes asignar técnicos a empresas y predios.',
     })
   } catch (err: any) {
-    return NextResponse.json({ ok: false, steps, error: err.message }, { status: 500 })
+    return NextResponse.json({ ok: false, steps, error: err?.message ?? String(err) }, { status: 500 })
   }
 }
