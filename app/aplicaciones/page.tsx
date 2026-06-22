@@ -23,7 +23,7 @@ export default async function AplicacionesPage({ searchParams }: { searchParams:
       ...(tipoProducto ? { tipoProducto } : {}),
     },
     orderBy: { fecha: 'desc' },
-    include: { predio: true, tecnico: true },
+    include: { predio: { include: { cultivos: true } }, tecnico: true },
   })
 
   return (
@@ -96,7 +96,7 @@ export default async function AplicacionesPage({ searchParams }: { searchParams:
                 </td>
                 <td className="table-td">
                   <p>{ap.predio.nombre}</p>
-                  <p className="text-xs text-gray-400">{ap.predio.cultivo}</p>
+                  <p className="text-xs text-gray-400">{ap.predio.cultivos.map((c) => c.cultivo).join(', ') || '—'}</p>
                 </td>
                 <td className="table-td">
                   {ap.tecnico.nombre} {ap.tecnico.apellido}

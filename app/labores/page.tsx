@@ -27,7 +27,7 @@ export default async function LaborePage({ searchParams }: { searchParams: Searc
         ...(predioId ? { predioId: parseInt(predioId) } : {}),
       },
       orderBy: { fecha: 'desc' },
-      include: { predio: true, responsable: true },
+      include: { predio: { include: { cultivos: true } }, responsable: true },
     }),
     prisma.aplicacion.findMany({
       where: {
@@ -35,7 +35,7 @@ export default async function LaborePage({ searchParams }: { searchParams: Searc
         ...(predioId ? { predioId: parseInt(predioId) } : {}),
       },
       orderBy: { fecha: 'asc' },
-      include: { predio: true, tecnico: true },
+      include: { predio: { include: { cultivos: true } }, tecnico: true },
     }),
     prisma.predio.findMany({ where: { activa: true }, orderBy: { nombre: 'asc' } }),
   ])
@@ -118,7 +118,7 @@ export default async function LaborePage({ searchParams }: { searchParams: Searc
                   </td>
                   <td className="table-td">
                     <p className="text-sm text-gray-900">{ap.predio.nombre}</p>
-                    <p className="text-xs text-gray-400">{ap.predio.cultivo}</p>
+                    <p className="text-xs text-gray-400">{ap.predio.cultivos.map((c) => c.cultivo).join(', ') || '—'}</p>
                   </td>
                   <td className="table-td">
                     {ap.tecnico.nombre} {ap.tecnico.apellido}
@@ -204,7 +204,7 @@ export default async function LaborePage({ searchParams }: { searchParams: Searc
                   </td>
                   <td className="table-td">
                     <p className="text-sm text-gray-900">{labor.predio.nombre}</p>
-                    <p className="text-xs text-gray-400">{labor.predio.cultivo}</p>
+                    <p className="text-xs text-gray-400">{labor.predio.cultivos.map((c) => c.cultivo).join(', ') || '—'}</p>
                   </td>
                   <td className="table-td">
                     {labor.responsable.nombre} {labor.responsable.apellido}

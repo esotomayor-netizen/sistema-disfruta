@@ -6,7 +6,7 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { TIPOS_PRODUCTO, ESTADOS_APLICACION, UNIDADES } from '@/lib/constants'
 
-interface Predio { id: number; nombre: string; cultivo: string; activa: boolean }
+interface Predio { id: number; nombre: string; activa: boolean; cultivos: { cultivo: string }[] }
 interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
 
 export default function EditarAplicacionPage() {
@@ -110,7 +110,7 @@ export default function EditarAplicacionPage() {
             <div>
               <label className="label">Predio</label>
               <select className="input" required value={form.predioId} onChange={(e) => setForm({ ...form, predioId: e.target.value })}>
-                {predios.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>)}
+                {predios.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivos.map((c) => c.cultivo).join(', ') || '—'})</option>)}
               </select>
             </div>
             <div>

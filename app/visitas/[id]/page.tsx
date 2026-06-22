@@ -6,7 +6,7 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { formatDate, TIPOS_PRODUCTO, UNIDADES, ESTADOS_FENOLOGICOS, labelFromValue, tipoProductoColor } from '@/lib/constants'
 
-interface Predio { id: number; nombre: string; csg: string; cultivo: string; variedades: string | null; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
+interface Predio { id: number; nombre: string; csg: string; cultivos: { cultivo: string; variedades: string | null }[]; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
 interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; fotos: string[]; estado: string; responsable: Usuario }
 interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; observaciones: string | null; estado: string; tecnico: Usuario }
@@ -17,6 +17,10 @@ interface ProgramaFitoItem { id: number; producto: string; ingredienteActivo: st
 
 function normalizarCultivo(cultivo: string): string {
   return cultivo
+}
+
+function especieDeVisita(visita: Visita): string {
+  return visita.especie || visita.predio.cultivos[0]?.cultivo || ''
 }
 
 function parseDosisHa(dosisHa: string | null): { dosis: string; unidad: string } {
@@ -89,14 +93,14 @@ export default function VisitaDetailPage() {
 
   useEffect(() => {
     if (!estadoFenologico || !visita) { setProgramaFito([]); return }
-    fetch(`/api/programa?cultivo=${encodeURIComponent(visita.predio.cultivo)}&estadoFenologico=${encodeURIComponent(estadoFenologico)}`)
+    fetch(`/api/programa?cultivo=${encodeURIComponent(especieDeVisita(visita))}&estadoFenologico=${encodeURIComponent(estadoFenologico)}`)
       .then((r) => r.json())
       .then(setProgramaFito)
   }, [estadoFenologico, visita])
 
   const laboresDisponibles = visita
     ? catalogo
-        .filter((c) => c.especie === normalizarCultivo(visita.predio.cultivo))
+        .filter((c) => c.especie === normalizarCultivo(especieDeVisita(visita)))
         .reduce<CatalogoItem[]>((acc, c) => {
           if (!acc.find((x) => x.labor === c.labor)) acc.push(c)
           return acc
@@ -195,7 +199,7 @@ export default function VisitaDetailPage() {
           if (c.includes('fruto') || c.includes('florac') || c.includes('cuaje') || c.includes('calibre')) return 'MANEJO_FRUTO'
           return 'MANTENIMIENTO'
         })(),
-        descripcion: `${laborSeleccionada.labor} — ${visita.predio.cultivo}`,
+        descripcion: `${laborSeleccionada.labor} — ${especieDeVisita(visita)}`,
         fecha: visita.fecha,
         estado: 'COMPLETADA',
         observaciones: descripcionEditable,
@@ -386,18 +390,20 @@ export default function VisitaDetailPage() {
             <p className="font-mono text-gray-900">{visita.predio.csg}</p>
           </div>
           <div>
-            <p className="text-gray-400 text-xs mb-1">Cultivo</p>
-            <p className="text-gray-900">{visita.predio.cultivo}</p>
+            <p className="text-gray-400 text-xs mb-1">Cultivos del predio</p>
+            <p className="text-gray-900">{visita.predio.cultivos.map((c) => c.cultivo).join(', ') || '—'}</p>
           </div>
           <div>
             <p className="text-gray-400 text-xs mb-1">Variedades de la visita</p>
-            <p className="text-gray-900">{visita.variedades || visita.predio.variedades || '—'}</p>
+            <p className="text-gray-900">
+              {visita.variedades || visita.predio.cultivos.find((c) => c.cultivo === especieDeVisita(visita))?.variedades || '—'}
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4 pt-4 border-t border-gray-100">
           <div>
             <p className="text-gray-400 text-xs mb-1">Especie (visita)</p>
-            <p className="text-gray-900">{visita.especie || visita.predio.cultivo}</p>
+            <p className="text-gray-900">{especieDeVisita(visita)}</p>
           </div>
           <div>
             <p className="text-gray-400 text-xs mb-1">Check-in GPS</p>
@@ -575,7 +581,7 @@ export default function VisitaDetailPage() {
             <div className="overflow-y-auto px-4 pb-2 space-y-2" style={{ maxHeight: laborSeleccionada ? 200 : 340 }}>
               {laboresFiltradas.length === 0 && (
                 <p className="text-gray-400 text-sm text-center py-4">
-                  {busquedaLabor ? `Sin resultados para "${busquedaLabor}"` : `No hay labores en el catálogo para ${visita.predio.cultivo}`}
+                  {busquedaLabor ? `Sin resultados para "${busquedaLabor}"` : `No hay labores en el catálogo para ${especieDeVisita(visita)}`}
                 </p>
               )}
               {laboresFiltradas.map((item) => (

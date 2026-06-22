@@ -100,12 +100,12 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
             <span style={{ fontFamily: 'monospace' }}>{visita.predio.csg}</span>
           </div>
           <div className="info-item">
-            <label>Cultivo</label>
-            <span>{visita.predio.cultivo}</span>
+            <label>Especie (visita)</label>
+            <span>{visita.especie ?? '—'}</span>
           </div>
           <div className="info-item">
             <label>Variedades</label>
-            <span>{visita.predio.variedades ?? '—'}</span>
+            <span>{visita.variedades ?? '—'}</span>
           </div>
           <div className="info-item">
             <label>Técnico</label>

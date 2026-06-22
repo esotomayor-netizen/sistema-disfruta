@@ -20,8 +20,7 @@ interface Empresa { id: number; razonSocial: string; predios: Predio[] }
 interface Predio {
   id: number
   nombre: string
-  cultivo: string
-  variedades: string | null
+  cultivos: { cultivo: string; variedades: string | null }[]
   activa: boolean
   empresa: { id: number; razonSocial: string }
 }
@@ -146,6 +145,7 @@ export default function NuevaAplicacionPage() {
   // Context selectors
   const [empresaId, setEmpresaId] = useState('')
   const [predioId, setPredioId] = useState('')
+  const [especieSel, setEspecieSel] = useState('')
   const [variedad, setVariedad] = useState('')
   const [etapaId, setEtapaId] = useState('')
   const [tecnicoId, setTecnicoId] = useState('')
@@ -172,8 +172,9 @@ export default function NuevaAplicacionPage() {
   // Derived
   const prediosFiltrados = empresas.find((e) => String(e.id) === empresaId)?.predios.filter((p) => p.activa) ?? []
   const predio = prediosFiltrados.find((p) => String(p.id) === predioId)
-  const variedadesDisponibles = predio?.variedades
-    ? predio.variedades.split(',').map((v) => v.trim()).filter(Boolean)
+  const cultivoSel = predio?.cultivos.find((c) => c.cultivo === especieSel)
+  const variedadesDisponibles = cultivoSel?.variedades
+    ? cultivoSel.variedades.split(',').map((v) => v.trim()).filter(Boolean)
     : []
   const productosSAGFiltrados = getProductosByGrupo(grupoSel)
   const productoSAG = PRODUCTOS_SAG.find((p) => p.id === productoSagId)
@@ -207,13 +208,20 @@ export default function NuevaAplicacionPage() {
   // Reset predio when empresa changes
   useEffect(() => {
     setPredioId('')
+    setEspecieSel('')
     setVariedad('')
   }, [empresaId])
 
-  // Reset variedad when predio changes
+  // Reset especie/variedad when predio changes
   useEffect(() => {
+    setEspecieSel(predio?.cultivos[0]?.cultivo ?? '')
     setVariedad('')
   }, [predioId])
+
+  // Reset variedad when especie changes
+  useEffect(() => {
+    setVariedad('')
+  }, [especieSel])
 
   // Reset producto SAG when grupo changes
   useEffect(() => {
@@ -363,9 +371,21 @@ export default function NuevaAplicacionPage() {
             </div>
             <div>
               <label className="label">Especie</label>
-              <div className="input bg-gray-50 text-gray-600 flex items-center">
-                {predio?.cultivo ?? <span className="text-gray-400">Auto desde predio</span>}
-              </div>
+              {predio && predio.cultivos.length > 1 ? (
+                <select
+                  className="input"
+                  value={especieSel}
+                  onChange={(e) => setEspecieSel(e.target.value)}
+                >
+                  {predio.cultivos.map((c) => (
+                    <option key={c.cultivo} value={c.cultivo}>{c.cultivo}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="input bg-gray-50 text-gray-600 flex items-center">
+                  {especieSel || <span className="text-gray-400">Auto desde predio</span>}
+                </div>
+              )}
             </div>
             <div>
               <label className="label">Variedad</label>

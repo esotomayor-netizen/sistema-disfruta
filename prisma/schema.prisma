@@ -68,10 +68,8 @@ model Predio {
   nombre       String
   csg          String       @unique
   superficie   Float
-  cultivo      String
   ubicacion    String
   activa       Boolean      @default(true)
-  variedades   String?
   latitud      Float?
   longitud     Float?
   empresa      Empresa      @relation(fields: [empresaId], references: [id])
@@ -80,6 +78,7 @@ model Predio {
   encargadoId  Int?
   tecnico      Usuario?     @relation("TecnicoPredio", fields: [tecnicoId], references: [id])
   tecnicoId    Int?
+  cultivos     PredioCultivo[]
   labores      Labor[]
   aplicaciones Aplicacion[]
   visitas      Visita[]
@@ -87,6 +86,18 @@ model Predio {
   checkins     CheckIn[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+}
+
+model PredioCultivo {
+  id         Int      @id @default(autoincrement())
+  predio     Predio   @relation(fields: [predioId], references: [id], onDelete: Cascade)
+  predioId   Int
+  cultivo    String
+  variedades String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([predioId, cultivo])
 }
 
 model Usuario {

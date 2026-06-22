@@ -11,7 +11,12 @@ export async function GET() {
       contactoNombre: true,
       tecnico: { select: { id: true, nombre: true, apellido: true } },
       predios: {
-        select: { id: true, nombre: true, cultivo: true, variedades: true, activa: true },
+        select: {
+          id: true,
+          nombre: true,
+          activa: true,
+          cultivos: { select: { cultivo: true, variedades: true } },
+        },
       },
     },
     orderBy: { razonSocial: 'asc' },

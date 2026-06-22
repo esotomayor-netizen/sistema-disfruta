@@ -36,16 +36,16 @@ async function main() {
 
   const [p1, p2, p3, p4] = await Promise.all([
     prisma.predio.create({
-      data: { nombre: 'Fundo Norte', csg: 'CSG-001', superficie: 12.5, cultivo: 'Cerezo', ubicacion: 'Sector Norte', activa: true, empresaId: empresa.id, encargadoId: u1.id },
+      data: { nombre: 'Fundo Norte', csg: 'CSG-001', superficie: 12.5, ubicacion: 'Sector Norte', activa: true, empresaId: empresa.id, encargadoId: u1.id, cultivos: { create: [{ cultivo: 'Cerezo' }] } },
     }),
     prisma.predio.create({
-      data: { nombre: 'Fundo Sur', csg: 'CSG-002', superficie: 8.0, cultivo: 'Manzano', ubicacion: 'Sector Sur', activa: true, empresaId: empresa.id, encargadoId: u2.id },
+      data: { nombre: 'Fundo Sur', csg: 'CSG-002', superficie: 8.0, ubicacion: 'Sector Sur', activa: true, empresaId: empresa.id, encargadoId: u2.id, cultivos: { create: [{ cultivo: 'Manzano' }] } },
     }),
     prisma.predio.create({
-      data: { nombre: 'Fundo Este', csg: 'CSG-003', superficie: 15.3, cultivo: 'Cerezo', ubicacion: 'Sector Este', activa: true, empresaId: empresa.id, encargadoId: u3.id },
+      data: { nombre: 'Fundo Este', csg: 'CSG-003', superficie: 15.3, ubicacion: 'Sector Este', activa: true, empresaId: empresa.id, encargadoId: u3.id, cultivos: { create: [{ cultivo: 'Cerezo' }, { cultivo: 'Uva de mesa' }] } },
     }),
     prisma.predio.create({
-      data: { nombre: 'Fundo Oeste', csg: 'CSG-004', superficie: 6.0, cultivo: 'Pera', ubicacion: 'Sector Oeste', activa: false, empresaId: empresa.id },
+      data: { nombre: 'Fundo Oeste', csg: 'CSG-004', superficie: 6.0, ubicacion: 'Sector Oeste', activa: false, empresaId: empresa.id, cultivos: { create: [{ cultivo: 'Pera' }] } },
     }),
   ])
 

@@ -6,7 +6,7 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { LABOR_TIPOS, ESTADOS_LABOR } from '@/lib/constants'
 
-interface Predio { id: number; nombre: string; cultivo: string }
+interface Predio { id: number; nombre: string; cultivos: { cultivo: string }[] }
 interface Usuario { id: number; nombre: string; apellido: string; rol: string }
 
 export default function NuevaLaborPage() {
@@ -88,7 +88,7 @@ export default function NuevaLaborPage() {
               <label className="label">Predio</label>
               <select className="input" required value={form.predioId} onChange={(e) => setForm({ ...form, predioId: e.target.value })}>
                 <option value="">Seleccionar predio…</option>
-                {predios.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>)}
+                {predios.map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.cultivos.map((c) => c.cultivo).join(', ') || '—'})</option>)}
               </select>
             </div>
             <div>

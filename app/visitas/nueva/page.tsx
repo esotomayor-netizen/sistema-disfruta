@@ -6,7 +6,7 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { CULTIVOS, VARIEDADES_POR_CULTIVO } from '@/lib/constants'
 
-interface Predio { id: number; nombre: string; cultivo: string; csg: string; activa: boolean; variedades: string | null; empresa: { razonSocial: string } }
+interface Predio { id: number; nombre: string; csg: string; activa: boolean; cultivos: { cultivo: string; variedades: string | null }[]; empresa: { razonSocial: string } }
 interface Usuario { id: number; nombre: string; apellido: string }
 
 function datetimeLocalNow() {
@@ -42,11 +42,12 @@ export default function NuevaVisitaPage() {
       setTecnicos(u as Usuario[])
       if (activos.length) {
         const predio = activos[0]
+        const primerCultivo = predio.cultivos[0]
         setForm((f) => ({
           ...f,
           predioId: String(predio.id),
-          especie: predio.cultivo,
-          variedades: predio.variedades ? predio.variedades.split(',').map((v) => v.trim()).filter(Boolean) : [],
+          especie: primerCultivo?.cultivo || '',
+          variedades: primerCultivo?.variedades ? primerCultivo.variedades.split(',').map((v) => v.trim()).filter(Boolean) : [],
         }))
       }
       if ((u as Usuario[]).length) setForm((f) => ({ ...f, tecnicoId: String((u as Usuario[])[0].id) }))
@@ -55,11 +56,12 @@ export default function NuevaVisitaPage() {
 
   const handlePredioChange = (predioId: string) => {
     const predio = predios.find((p) => String(p.id) === predioId)
+    const primerCultivo = predio?.cultivos[0]
     setForm((f) => ({
       ...f,
       predioId,
-      especie: predio?.cultivo || f.especie,
-      variedades: predio?.variedades ? predio.variedades.split(',').map((v) => v.trim()).filter(Boolean) : [],
+      especie: primerCultivo?.cultivo || f.especie,
+      variedades: primerCultivo?.variedades ? primerCultivo.variedades.split(',').map((v) => v.trim()).filter(Boolean) : [],
     }))
   }
 

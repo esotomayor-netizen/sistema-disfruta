@@ -17,7 +17,7 @@ interface CatalogoItem {
   mesesEjecucion: string
 }
 
-interface Predio { id: number; nombre: string; cultivo: string; activa: boolean }
+interface Predio { id: number; nombre: string; activa: boolean; cultivos: { cultivo: string }[] }
 interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
 
 function categoriaToTipo(cat: string): string {
@@ -246,7 +246,7 @@ export default function CatalogoPage() {
                 >
                   <option value="">Seleccionar predio…</option>
                   {predios.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre} ({p.cultivo})</option>
+                    <option key={p.id} value={p.id}>{p.nombre} ({p.cultivos.map((c) => c.cultivo).join(', ') || '—'})</option>
                   ))}
                 </select>
               </div>

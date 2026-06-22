@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       return {
         id: a.id,
         fecha: a.fecha,
-        predio: { id: a.predio.id, nombre: a.predio.nombre, cultivo: a.predio.cultivo },
+        predio: { id: a.predio.id, nombre: a.predio.nombre },
         tecnico: { id: a.tecnico.id, nombre: a.tecnico.nombre, apellido: a.tecnico.apellido },
         notas: a.notas,
         cumplida: !!visita,

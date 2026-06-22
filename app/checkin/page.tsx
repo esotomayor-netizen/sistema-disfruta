@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Usuario { id: number; nombre: string; apellido: string; activo: boolean }
-interface Predio { id: number; nombre: string; cultivo: string; latitud: number | null; longitud: number | null }
+interface Predio { id: number; nombre: string; cultivos: { cultivo: string }[]; latitud: number | null; longitud: number | null }
 interface AgendaVisita {
   id: number
   fecha: string
@@ -215,7 +215,7 @@ export default function CheckInPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-gray-900 truncate">{a.predio.nombre}</p>
-                        <p className="text-xs text-gray-500">{a.predio.cultivo}</p>
+                        <p className="text-xs text-gray-500">{a.predio.cultivos.map((c) => c.cultivo).join(', ') || '—'}</p>
                         {a.notas && <p className="text-xs text-gray-400 truncate">{a.notas}</p>}
                       </div>
                       {!done && (

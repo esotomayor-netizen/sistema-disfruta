@@ -8,7 +8,7 @@ interface Usuario { id: number; nombre: string; apellido: string; rol: string; a
 interface CumplimientoItem {
   id: number
   fecha: string
-  predio: { id: number; nombre: string; cultivo: string }
+  predio: { id: number; nombre: string }
   tecnico: { id: number; nombre: string; apellido: string }
   notas: string | null
   cumplida: boolean

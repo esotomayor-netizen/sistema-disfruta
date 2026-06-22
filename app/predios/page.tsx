@@ -10,6 +10,7 @@ export default async function PrediosPage() {
     include: {
       empresa: true,
       tecnico: true,
+      cultivos: true,
       _count: { select: { labores: true, aplicaciones: true } },
     },
   })
@@ -69,16 +70,21 @@ export default async function PrediosPage() {
                   </p>
                 </td>
                 <td className="table-td">
-                  <p className="text-sm font-medium text-gray-900">{p.cultivo}</p>
-                  {p.variedades && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {p.variedades.split(',').map((v) => (
-                        <span key={v} className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
-                          {v.trim()}
-                        </span>
-                      ))}
+                  {p.cultivos.length === 0 && <span className="text-sm text-gray-400">—</span>}
+                  {p.cultivos.map((c) => (
+                    <div key={c.id} className="mb-1.5 last:mb-0">
+                      <p className="text-sm font-medium text-gray-900">{c.cultivo}</p>
+                      {c.variedades && (
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {c.variedades.split(',').map((v) => (
+                            <span key={v} className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                              {v.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </td>
                 <td className="table-td text-center">
                   <div className="flex items-center justify-center gap-1.5">

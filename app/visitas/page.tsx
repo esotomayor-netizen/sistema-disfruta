@@ -63,7 +63,7 @@ export default async function VisitasPage() {
                 </td>
                 <td className="table-td">
                   <p className="font-medium text-gray-900">{v.predio.nombre}</p>
-                  <p className="text-xs text-gray-400">{v.predio.cultivo} · CSG {v.predio.csg}</p>
+                  <p className="text-xs text-gray-400">{v.especie ?? '—'} · CSG {v.predio.csg}</p>
                 </td>
                 <td className="table-td text-sm text-gray-700">
                   {v.predio.empresa.razonSocial}

@@ -23,13 +23,12 @@ export default function NuevoPredioPage() {
     nombre: '',
     csg: '',
     superficie: '',
-    cultivo: '',
     ubicacion: '',
     activa: true,
     empresaId: '',
     encargadoId: '',
     tecnicoId: '',
-    variedades: '',
+    cultivos: [] as { cultivo: string; variedades: string }[],
     latitud: '',
     longitud: '',
   })
@@ -89,21 +88,33 @@ export default function NuevoPredioPage() {
     }
   }
 
-  const handleCultivoChange = (cultivo: string) => {
-    setForm((f) => ({ ...f, cultivo, variedades: '' }))
+  const toggleCultivo = (cultivo: string) => {
+    setForm((f) => {
+      const existe = f.cultivos.some((c) => c.cultivo === cultivo)
+      return {
+        ...f,
+        cultivos: existe
+          ? f.cultivos.filter((c) => c.cultivo !== cultivo)
+          : [...f.cultivos, { cultivo, variedades: '' }],
+      }
+    })
   }
 
-  const toggleVariedad = (v: string) => {
-    const current = form.variedades ? form.variedades.split(',') : []
-    const updated = current.includes(v) ? current.filter((x) => x !== v) : [...current, v]
-    setForm((f) => ({ ...f, variedades: updated.filter(Boolean).join(',') }))
+  const toggleVariedad = (cultivo: string, v: string) => {
+    setForm((f) => ({
+      ...f,
+      cultivos: f.cultivos.map((c) => {
+        if (c.cultivo !== cultivo) return c
+        const current = c.variedades ? c.variedades.split(',') : []
+        const updated = current.includes(v) ? current.filter((x) => x !== v) : [...current, v]
+        return { ...c, variedades: updated.filter(Boolean).join(',') }
+      }),
+    }))
   }
-
-  const variedadesDisponibles = VARIEDADES_POR_CULTIVO[form.cultivo] ?? []
-  const variedadesSeleccionadas = form.variedades ? form.variedades.split(',') : []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (form.cultivos.length === 0) return alert('Selecciona al menos una especie / cultivo')
     setLoading(true)
     try {
       const res = await fetch('/api/predios', {
@@ -197,16 +208,21 @@ export default function NuevoPredioPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Especie / Cultivo</label>
-              <select
-                className="input"
-                required
-                value={form.cultivo}
-                onChange={(e) => handleCultivoChange(e.target.value)}
-              >
-                <option value="">Seleccionar cultivo…</option>
-                {CULTIVOS.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <label className="label">Especies / Cultivos</label>
+              <div className="grid grid-cols-2 gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                {CULTIVOS.map((c) => (
+                  <label key={c} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.cultivos.some((x) => x.cultivo === c)}
+                      onChange={() => toggleCultivo(c)}
+                      className="w-4 h-4 text-primary-600 rounded"
+                    />
+                    <span className="text-sm text-gray-700">{c}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Un predio puede tener más de una especie (ej: cerezas y uvas).</p>
             </div>
             <div>
               <label className="label">Superficie (ha)</label>
@@ -223,29 +239,34 @@ export default function NuevoPredioPage() {
             </div>
           </div>
 
-          {variedadesDisponibles.length > 0 && (
-            <div>
-              <label className="label">Variedades</label>
-              <div className="grid grid-cols-3 gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                {variedadesDisponibles.map((v) => (
-                  <label key={v} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={variedadesSeleccionadas.includes(v)}
-                      onChange={() => toggleVariedad(v)}
-                      className="w-4 h-4 text-primary-600 rounded"
-                    />
-                    <span className="text-sm text-gray-700">{v}</span>
-                  </label>
-                ))}
+          {form.cultivos.map((cv) => {
+            const disponibles = VARIEDADES_POR_CULTIVO[cv.cultivo] ?? []
+            if (disponibles.length === 0) return null
+            const seleccionadas = cv.variedades ? cv.variedades.split(',') : []
+            return (
+              <div key={cv.cultivo}>
+                <label className="label">Variedades de {cv.cultivo}</label>
+                <div className="grid grid-cols-3 gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                  {disponibles.map((v) => (
+                    <label key={v} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={seleccionadas.includes(v)}
+                        onChange={() => toggleVariedad(cv.cultivo, v)}
+                        className="w-4 h-4 text-primary-600 rounded"
+                      />
+                      <span className="text-sm text-gray-700">{v}</span>
+                    </label>
+                  ))}
+                </div>
+                {seleccionadas.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Seleccionadas: {seleccionadas.join(', ')}
+                  </p>
+                )}
               </div>
-              {variedadesSeleccionadas.length > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Seleccionadas: {variedadesSeleccionadas.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
+            )
+          })}
 
           <div>
             <label className="label">Ubicación</label>

@@ -6,7 +6,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const visita = await prisma.visita.findUnique({
     where: { id: parseInt(params.id) },
     include: {
-      predio: { include: { empresa: true, encargado: true } },
+      predio: { include: { empresa: true, encargado: true, cultivos: true } },
       tecnico: true,
       labores: { include: { responsable: true }, orderBy: { createdAt: 'asc' } },
       aplicaciones: { include: { tecnico: true }, orderBy: { createdAt: 'asc' } },

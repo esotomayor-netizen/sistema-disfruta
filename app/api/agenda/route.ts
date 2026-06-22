@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       ...(tecnicoId ? { tecnicoId: parseInt(tecnicoId) } : {}),
     },
     orderBy: { fecha: 'asc' },
-    include: { predio: true, tecnico: true },
+    include: { predio: { include: { cultivos: true } }, tecnico: true },
   })
   return NextResponse.json(agendas)
 }
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
     },
-    include: { predio: true, tecnico: true },
+    include: { predio: { include: { cultivos: true } }, tecnico: true },
   })
   return NextResponse.json(agenda, { status: 201 })
 }
