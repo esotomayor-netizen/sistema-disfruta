@@ -81,6 +81,7 @@ model Predio {
   visitas      Visita[]
   agendas      AgendaVisita[]
   checkins     CheckIn[]
+  arboles      Arbol[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -101,6 +102,7 @@ model Usuario {
   agendas      AgendaVisita[] @relation("TecnicoAgenda")
   recorridos   Recorrido[]    @relation("TecnicoRecorrido")
   checkins     CheckIn[]      @relation("TecnicoCheckIn")
+  conteos      Conteo[]       @relation("TecnicoConteo")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -120,6 +122,7 @@ model Visita {
   variedades    String?
   labores       Labor[]
   aplicaciones  Aplicacion[]
+  conteos       Conteo[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
@@ -290,4 +293,57 @@ model PrecioCalibres {
   descripcion String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// ── Módulo Conteos (dardos / carozos) ────────────────────────────────────────
+// Jerarquía: Predio (existente) → Arbol → Rama → Conteo
+
+model Arbol {
+  id        Int      @id @default(autoincrement())
+  predio    Predio   @relation(fields: [predioId], references: [id])
+  predioId  Int
+  codigo    String
+  variedad  String?
+  ramas     Rama[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([predioId, codigo])
+}
+
+model Rama {
+  id         Int      @id @default(autoincrement())
+  arbol      Arbol    @relation(fields: [arbolId], references: [id])
+  arbolId    Int
+  codigo     String
+  longitudCm Float?
+  conteos    Conteo[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([arbolId, codigo])
+}
+
+model Conteo {
+  id             Int            @id @default(autoincrement())
+  rama           Rama           @relation(fields: [ramaId], references: [id])
+  ramaId         Int
+  tipoEstructura TipoEstructura
+  cantidad       Int
+  fecha          DateTime       @default(now())
+  notas          String?
+  visita         Visita?        @relation(fields: [visitaId], references: [id])
+  visitaId       Int?
+  tecnico        Usuario?       @relation("TecnicoConteo", fields: [tecnicoId], references: [id])
+  tecnicoId      Int?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum TipoEstructura {
+  DARDO
+  CAROZO
+  BROTE
+  FLOR
+  VEGETATIVO
 }
