@@ -122,3 +122,22 @@ export function formatDate(date: string | Date) {
 export function labelFromValue(list: { value: string; label: string }[], value: string) {
   return list.find((i) => i.value === value)?.label ?? value
 }
+
+export const TIPOS_ESTRUCTURA = [
+  { value: 'DARDO', label: 'Dardo' },
+  { value: 'CAROZO', label: 'Carozo' },
+  { value: 'BROTE', label: 'Brote' },
+  { value: 'FLOR', label: 'Flor' },
+  { value: 'VEGETATIVO', label: 'Vegetativo' },
+]
+
+export function tipoEstructuraColor(tipo: string) {
+  const map: Record<string, string> = {
+    DARDO: 'bg-amber-100 text-amber-800',
+    CAROZO: 'bg-orange-100 text-orange-800',
+    BROTE: 'bg-lime-100 text-lime-800',
+    FLOR: 'bg-pink-100 text-pink-800',
+    VEGETATIVO: 'bg-green-100 text-green-800',
+  }
+  return map[tipo] ?? 'bg-gray-100 text-gray-800'
+}
