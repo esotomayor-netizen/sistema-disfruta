@@ -4,11 +4,9 @@ import { prisma } from '@/lib/prisma'
 
 const ROLES_TECNICOS = ['SUPERVISOR', 'TECNICO', 'APLICADOR']
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const encargados = searchParams.get('encargados') === 'true'
+export async function GET() {
   const usuarios = await prisma.usuario.findMany({
-    where: { rol: encargados ? 'ENCARGADO' : { in: ROLES_TECNICOS } },
+    where: { rol: { in: ROLES_TECNICOS } },
     orderBy: { apellido: 'asc' },
   })
   return NextResponse.json(usuarios)
