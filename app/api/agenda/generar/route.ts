@@ -102,21 +102,26 @@ export async function POST(req: Request) {
     await prisma.agendaVisita.deleteMany({ where: { fecha: { gte: start, lte: end } } })
   }
 
+  // Build weekday slots: [Mon[], Tue[], Wed[], Thu[], Fri[]] — always starts Mon regardless of month start
+  const byWeekday: Record<number, Date[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] }
+  workingDays.forEach((d) => { byWeekday[d.getDay()].push(d) })
+  // weekdaySlots[0] = all Mondays, [1] = all Tuesdays, ..., [4] = all Fridays (only non-empty)
+  const weekdaySlots = [1, 2, 3, 4, 5].map((dow) => byWeekday[dow]).filter((arr) => arr.length > 0)
+
   const toCreate: { fecha: Date; predioId: number; tecnicoId: number; notas: null }[] = []
 
   for (const [tecnicoId, tecnicoPredios] of Array.from(byTecnico.entries())) {
     // Sort predios geographically to cluster nearby farms on the same day
     const sorted = sortByProximity(tecnicoPredios)
-    const count = sorted.length
 
     sorted.forEach((predio, idx) => {
-      // Spread evenly: consecutive (geographically close) predios land on same/adjacent day
-      const dayIdx = Math.min(
-        Math.floor((idx * workingDays.length) / count),
-        workingDays.length - 1
-      )
+      // Cycle Mon→Tue→Wed→Thu→Fri so every weekday gets coverage regardless of how the month starts
+      const weekdayIdx = idx % weekdaySlots.length
+      const weekNum = Math.floor(idx / weekdaySlots.length)
+      const slots = weekdaySlots[weekdayIdx]
+      const day = slots[weekNum % slots.length]
       toCreate.push({
-        fecha: new Date(toDateStr(workingDays[dayIdx]) + 'T12:00:00'),
+        fecha: new Date(toDateStr(day) + 'T12:00:00'),
         predioId: predio.id,
         tecnicoId,
         notas: null,
