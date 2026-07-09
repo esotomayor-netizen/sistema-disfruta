@@ -102,24 +102,29 @@ export async function POST(req: Request) {
     await prisma.agendaVisita.deleteMany({ where: { fecha: { gte: start, lte: end } } })
   }
 
-  // Build weekday slots: [Mon[], Tue[], Wed[], Thu[], Fri[]] — always starts Mon regardless of month start
-  const byWeekday: Record<number, Date[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] }
-  workingDays.forEach((d) => { byWeekday[d.getDay()].push(d) })
-  // weekdaySlots[0] = all Mondays, [1] = all Tuesdays, ..., [4] = all Fridays (only non-empty)
-  const weekdaySlots = [1, 2, 3, 4, 5].map((dow) => byWeekday[dow]).filter((arr) => arr.length > 0)
+  // Group working days by weekday column: weekdayGroups[0]=all Mondays, ..., [4]=all Fridays
+  const weekdayGroups: Date[][] = [[], [], [], [], []]
+  workingDays.forEach((d) => {
+    const col = d.getDay() - 1 // Mon→0, Tue→1, Wed→2, Thu→3, Fri→4
+    if (col >= 0 && col <= 4) weekdayGroups[col].push(d)
+  })
 
   const toCreate: { fecha: Date; predioId: number; tecnicoId: number; notas: null }[] = []
 
   for (const [tecnicoId, tecnicoPredios] of Array.from(byTecnico.entries())) {
-    // Sort predios geographically to cluster nearby farms on the same day
     const sorted = sortByProximity(tecnicoPredios)
 
     sorted.forEach((predio, idx) => {
-      // Cycle Mon→Tue→Wed→Thu→Fri so every weekday gets coverage regardless of how the month starts
-      const weekdayIdx = idx % weekdaySlots.length
-      const weekNum = Math.floor(idx / weekdaySlots.length)
-      const slots = weekdaySlots[weekdayIdx]
-      const day = slots[weekNum % slots.length]
+      // Diagonal distribution: col cycles Mon→Tue→Wed→Thu→Fri,
+      // row shifts by col so each weekday starts in a different week of the month.
+      // Result: predio 0→Mon_W1, 1→Tue_W2, 2→Wed_W3, 3→Thu_W4, 4→Fri_W5,
+      //         5→Mon_W2, 6→Tue_W3 … covering all weekdays AND all weeks.
+      const col = idx % 5
+      const row = Math.floor(idx / 5)
+      const group = weekdayGroups[col]
+      if (!group || group.length === 0) return
+      const actualRow = (row + col) % group.length
+      const day = group[actualRow]
       toCreate.push({
         fecha: new Date(toDateStr(day) + 'T12:00:00'),
         predioId: predio.id,
