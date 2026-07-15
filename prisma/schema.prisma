@@ -34,19 +34,19 @@ model AgendaVisita {
 }
 
 model CheckIn {
-  id        Int          @id @default(autoincrement())
-  fecha     DateTime     @default(now())
+  id        Int           @id @default(autoincrement())
+  fecha     DateTime      @default(now())
   latitud   Float
   longitud  Float
   notas     String?
-  tecnico   Usuario      @relation("TecnicoCheckIn", fields: [tecnicoId], references: [id])
+  tecnico   Usuario       @relation("TecnicoCheckIn", fields: [tecnicoId], references: [id])
   tecnicoId Int
-  predio    Predio?      @relation(fields: [predioId], references: [id])
+  predio    Predio?       @relation(fields: [predioId], references: [id])
   predioId  Int?
   agenda    AgendaVisita? @relation(fields: [agendaId], references: [id])
   agendaId  Int?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model Empresa {
@@ -64,19 +64,19 @@ model Empresa {
 }
 
 model Predio {
-  id           Int          @id @default(autoincrement())
+  id           Int             @id @default(autoincrement())
   nombre       String
-  csg          String       @unique
+  csg          String          @unique
   superficie   Float
   ubicacion    String
-  activa       Boolean      @default(true)
+  activa       Boolean         @default(true)
   latitud      Float?
   longitud     Float?
-  empresa      Empresa      @relation(fields: [empresaId], references: [id])
+  empresa      Empresa         @relation(fields: [empresaId], references: [id])
   empresaId    Int
-  encargado    Usuario?     @relation("Encargado", fields: [encargadoId], references: [id])
+  encargado    Usuario?        @relation("Encargado", fields: [encargadoId], references: [id])
   encargadoId  Int?
-  tecnico      Usuario?     @relation("TecnicoPredio", fields: [tecnicoId], references: [id])
+  tecnico      Usuario?        @relation("TecnicoPredio", fields: [tecnicoId], references: [id])
   tecnicoId    Int?
   cultivos     PredioCultivo[]
   labores      Labor[]
@@ -84,8 +84,9 @@ model Predio {
   visitas      Visita[]
   agendas      AgendaVisita[]
   checkins     CheckIn[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  arboles      Arbol[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 }
 
 model PredioCultivo {
@@ -118,24 +119,10 @@ model Usuario {
   agendas         AgendaVisita[] @relation("TecnicoAgenda")
   recorridos      Recorrido[]    @relation("TecnicoRecorrido")
   checkins        CheckIn[]      @relation("TecnicoCheckIn")
+  conteos         Conteo[]       @relation("TecnicoConteo")
   oportunidades   Oportunidad[]  @relation("OportunidadTecnico")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-}
-
-model Oportunidad {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  telefono  String?
-  latitud   Float?
-  longitud  Float?
-  ubicacion String?
-  notas     String?
-  estado    String   @default("NUEVO")
-  tecnico   Usuario  @relation("OportunidadTecnico", fields: [tecnicoId], references: [id])
-  tecnicoId Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Visita {
@@ -153,6 +140,7 @@ model Visita {
   variedades    String?
   labores       Labor[]
   aplicaciones  Aplicacion[]
+  conteos       Conteo[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
@@ -244,43 +232,43 @@ model Temporada {
 }
 
 model VariedadCosecha {
-  id            Int      @id @default(autoincrement())
-  codigo        String   @unique
-  nombre        String
-  semanaInicio  String
-  semanaFin     String
-  pct5J         Float    @default(0)
-  pct4J         Float    @default(0)
-  pct3J         Float    @default(0)
-  pct2J         Float    @default(0)
-  pctJ          Float    @default(0)
-  pctXL         Float    @default(0)
-  pctExportacion Float   @default(0.85)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  codigo         String   @unique
+  nombre         String
+  semanaInicio   String
+  semanaFin      String
+  pct5J          Float    @default(0)
+  pct4J          Float    @default(0)
+  pct3J          Float    @default(0)
+  pct2J          Float    @default(0)
+  pctJ           Float    @default(0)
+  pctXL          Float    @default(0)
+  pctExportacion Float    @default(0.85)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model ProgramacionSemanal {
-  id           Int       @id @default(autoincrement())
-  temporada    Temporada @relation(fields: [temporadaId], references: [id])
-  temporadaId  Int
-  variedad     String
-  productor    String
-  sem44        Int       @default(0)
-  sem45        Int       @default(0)
-  sem46        Int       @default(0)
-  sem47        Int       @default(0)
-  sem48        Int       @default(0)
-  sem49        Int       @default(0)
-  sem50        Int       @default(0)
-  sem51        Int       @default(0)
-  sem52        Int       @default(0)
-  sem1         Int       @default(0)
-  sem2         Int       @default(0)
-  totalKg      Int       @default(0)
-  kg2JMasGrandes Int     @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id             Int       @id @default(autoincrement())
+  temporada      Temporada @relation(fields: [temporadaId], references: [id])
+  temporadaId    Int
+  variedad       String
+  productor      String
+  sem44          Int       @default(0)
+  sem45          Int       @default(0)
+  sem46          Int       @default(0)
+  sem47          Int       @default(0)
+  sem48          Int       @default(0)
+  sem49          Int       @default(0)
+  sem50          Int       @default(0)
+  sem51          Int       @default(0)
+  sem52          Int       @default(0)
+  sem1           Int       @default(0)
+  sem2           Int       @default(0)
+  totalKg        Int       @default(0)
+  kg2JMasGrandes Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model CompromisoCliente {
@@ -323,4 +311,73 @@ model PrecioCalibres {
   descripcion String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// ── Módulo Conteos (dardos / carozos) ────────────────────────────────────────
+
+model Arbol {
+  id        Int      @id @default(autoincrement())
+  predio    Predio   @relation(fields: [predioId], references: [id])
+  predioId  Int
+  codigo    String
+  variedad  String?
+  ramas     Rama[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([predioId, codigo])
+}
+
+model Rama {
+  id         Int      @id @default(autoincrement())
+  arbol      Arbol    @relation(fields: [arbolId], references: [id])
+  arbolId    Int
+  codigo     String
+  longitudCm Float?
+  conteos    Conteo[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([arbolId, codigo])
+}
+
+model Conteo {
+  id             Int            @id @default(autoincrement())
+  rama           Rama           @relation(fields: [ramaId], references: [id])
+  ramaId         Int
+  tipoEstructura TipoEstructura
+  cantidad       Int
+  fecha          DateTime       @default(now())
+  notas          String?
+  visita         Visita?        @relation(fields: [visitaId], references: [id])
+  visitaId       Int?
+  tecnico        Usuario?       @relation("TecnicoConteo", fields: [tecnicoId], references: [id])
+  tecnicoId      Int?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum TipoEstructura {
+  DARDO
+  CAROZO
+  BROTE
+  FLOR
+  VEGETATIVO
+}
+
+// ── Módulo Oportunidades ──────────────────────────────────────────────────────
+
+model Oportunidad {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  telefono  String?
+  latitud   Float?
+  longitud  Float?
+  ubicacion String?
+  notas     String?
+  estado    String   @default("NUEVO")
+  tecnico   Usuario  @relation("OportunidadTecnico", fields: [tecnicoId], references: [id])
+  tecnicoId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
