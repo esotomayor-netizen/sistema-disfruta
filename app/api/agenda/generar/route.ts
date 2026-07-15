@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Solo supervisores pueden generar la agenda' }, { status: 403 })
   }
 
-  const { mes, sobreescribir = false } = await req.json()
+  const { mes, sobreescribir = false, tecnicoId } = await req.json()
   if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
     return NextResponse.json({ error: 'Formato de mes inválido (YYYY-MM)' }, { status: 400 })
   }
@@ -79,13 +79,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'El mes no tiene días hábiles' }, { status: 400 })
   }
 
+  const predioWhere: any = { activa: true, tecnicoId: { not: null } }
+  if (tecnicoId) predioWhere.tecnicoId = Number(tecnicoId)
+
   const predios = await prisma.predio.findMany({
-    where: { activa: true, tecnicoId: { not: null } },
+    where: predioWhere,
     select: { id: true, latitud: true, longitud: true, tecnicoId: true },
   })
 
   if (predios.length === 0) {
-    return NextResponse.json({ error: 'No hay predios activos con técnico asignado' }, { status: 400 })
+    return NextResponse.json({ error: 'El técnico no tiene predios activos asignados' }, { status: 400 })
   }
 
   // Group predios by their assigned tecnico
@@ -99,7 +102,9 @@ export async function POST(req: Request) {
   if (sobreescribir) {
     const start = new Date(year, month - 1, 1)
     const end = new Date(year, month, 0, 23, 59, 59, 999)
-    await prisma.agendaVisita.deleteMany({ where: { fecha: { gte: start, lte: end } } })
+    const deleteWhere: any = { fecha: { gte: start, lte: end } }
+    if (tecnicoId) deleteWhere.tecnicoId = Number(tecnicoId)
+    await prisma.agendaVisita.deleteMany({ where: deleteWhere })
   }
 
   // Group working days by weekday column: weekdayGroups[0]=all Mondays, ..., [4]=all Fridays
