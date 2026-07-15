@@ -49,6 +49,7 @@ export default function AgendaPage() {
   // Generar agenda
   const [generarModal, setGenerarModal] = useState(false)
   const [generarMes, setGenerarMes] = useState(monthKey(today))
+  const [generarTecnicoId, setGenerarTecnicoId] = useState('')
   const [generarSobreescribir, setGenerarSobreescribir] = useState(false)
   const [generarLoading, setGenerarLoading] = useState(false)
   const [generarResult, setGenerarResult] = useState<GenerarResult | null>(null)
@@ -152,12 +153,13 @@ export default function AgendaPage() {
   }
 
   const handleGenerar = async () => {
+    if (!generarTecnicoId) return
     setGenerarLoading(true)
     setGenerarResult(null)
     const res = await fetch('/api/agenda/generar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mes: generarMes, sobreescribir: generarSobreescribir }),
+      body: JSON.stringify({ mes: generarMes, sobreescribir: generarSobreescribir, tecnicoId: generarTecnicoId }),
     })
     const data = await res.json()
     setGenerarResult(data)
@@ -208,7 +210,7 @@ export default function AgendaPage() {
             </select>
             {esSupervisor && (
               <button
-                onClick={() => { setGenerarModal(true); setGenerarResult(null) }}
+                onClick={() => { setGenerarModal(true); setGenerarResult(null); setGenerarTecnicoId(filtroTecnico) }}
                 className="btn-primary text-sm whitespace-nowrap"
               >
                 Generar Agenda
@@ -541,11 +543,26 @@ export default function AgendaPage() {
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-gray-900">Generar agenda mensual</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Distribuye todos los predios entre sus técnicos, optimizando por proximidad geográfica</p>
+                <p className="text-xs text-gray-400 mt-0.5">Genera automáticamente las visitas para el técnico seleccionado</p>
               </div>
               <button onClick={() => setGenerarModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
             <div className="p-6 space-y-5">
+              <div>
+                <label className="label">Técnico <span className="text-red-500">*</span></label>
+                <select
+                  className="input"
+                  value={generarTecnicoId}
+                  onChange={(e) => { setGenerarTecnicoId(e.target.value); setGenerarResult(null) }}
+                  required
+                >
+                  <option value="">Seleccionar técnico…</option>
+                  {tecnicos.map((t) => (
+                    <option key={t.id} value={t.id}>{t.nombre} {t.apellido}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="label">Mes a generar</label>
                 <select
@@ -568,16 +585,16 @@ export default function AgendaPage() {
                 />
                 <div>
                   <p className="text-sm font-medium text-gray-800">Reemplazar agenda existente del mes</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Si está marcado, elimina todas las visitas ya agendadas para ese mes antes de generar la nueva agenda.</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Si está marcado, elimina las visitas ya agendadas de este técnico en ese mes antes de generar la nueva agenda.</p>
                 </div>
               </label>
 
               {/* Cómo funciona */}
               <div className="bg-gray-50 rounded-lg px-4 py-3 text-xs text-gray-500 space-y-1 border border-gray-100">
                 <p className="font-semibold text-gray-700 mb-1">Cómo funciona</p>
-                <p>• Cada técnico recibe una visita a cada uno de sus predios asignados durante el mes.</p>
+                <p>• El técnico recibe una visita a cada uno de sus predios asignados durante el mes.</p>
                 <p>• Las visitas se distribuyen de Lunes a Viernes usando el GPS de cada predio para agrupar los más cercanos en el mismo día.</p>
-                <p>• Los predios sin GPS se agregan al final de la ruta de cada técnico.</p>
+                <p>• Los predios sin GPS se agregan al final de la ruta.</p>
               </div>
 
               {/* Resultado */}
@@ -602,7 +619,7 @@ export default function AgendaPage() {
               ) : (
                 <button
                   onClick={handleGenerar}
-                  disabled={generarLoading}
+                  disabled={generarLoading || !generarTecnicoId}
                   className="btn-primary flex-1"
                 >
                   {generarLoading ? 'Generando…' : 'Generar agenda'}
