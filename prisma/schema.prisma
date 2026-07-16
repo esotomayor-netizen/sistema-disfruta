@@ -121,6 +121,7 @@ model Usuario {
   checkins        CheckIn[]      @relation("TecnicoCheckIn")
   conteos         Conteo[]       @relation("TecnicoConteo")
   oportunidades   Oportunidad[]  @relation("OportunidadTecnico")
+  interacciones   Interaccion[]  @relation("TecnicoInteraccion")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -368,16 +369,40 @@ enum TipoEstructura {
 // ── Módulo Oportunidades ──────────────────────────────────────────────────────
 
 model Oportunidad {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  telefono  String?
-  latitud   Float?
-  longitud  Float?
-  ubicacion String?
-  notas     String?
-  estado    String   @default("NUEVO")
-  tecnico   Usuario  @relation("OportunidadTecnico", fields: [tecnicoId], references: [id])
-  tecnicoId Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int           @id @default(autoincrement())
+  nombre        String
+  telefono      String?
+  latitud       Float?
+  longitud      Float?
+  ubicacion     String?
+  notas         String?
+  estado        String        @default("NUEVO")
+  tecnico       Usuario       @relation("OportunidadTecnico", fields: [tecnicoId], references: [id])
+  tecnicoId     Int
+  interacciones Interaccion[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Interaccion {
+  id            Int             @id @default(autoincrement())
+  tipo          TipoInteraccion
+  fecha         DateTime        @default(now())
+  resumen       String
+  resultado     String?
+  proximaAccion String?
+  oportunidad   Oportunidad     @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  oportunidadId Int
+  tecnico       Usuario         @relation("TecnicoInteraccion", fields: [tecnicoId], references: [id])
+  tecnicoId     Int
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+enum TipoInteraccion {
+  LLAMADA
+  EMAIL
+  WHATSAPP
+  REUNION
+  NOTA
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
+import Interacciones from './Interacciones'
 
 const ESTADOS = [
   { value: 'NUEVO', label: 'Nuevo' },
@@ -135,8 +136,9 @@ export default function OportunidadPage() {
         <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{error}</div>
       )}
 
+      <div className="max-w-xl">
       {!editando ? (
-        <div className="card max-w-xl space-y-4">
+        <div className="card space-y-4">
           <div className="flex items-center justify-between">
             <span className={`badge ${estadoColor[oportunidad!.estado] ?? 'bg-gray-100 text-gray-600'}`}>
               {ESTADOS.find((s) => s.value === oportunidad!.estado)?.label ?? oportunidad!.estado}
@@ -202,7 +204,7 @@ export default function OportunidadPage() {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleGuardar} className="card max-w-xl space-y-5">
+        <form onSubmit={handleGuardar} className="card space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nombre del contacto <span className="text-red-500">*</span>
@@ -252,6 +254,11 @@ export default function OportunidadPage() {
           </div>
         </form>
       )}
+      </div>
+
+      <div className="max-w-xl">
+        <Interacciones oportunidadId={id} />
+      </div>
     </div>
   )
 }
