@@ -10,6 +10,7 @@ type Interaccion = {
   resumen: string
   resultado: string | null
   proximaAccion: string | null
+  gmailMessageId: string | null
   tecnico: { nombre: string; apellido: string }
 }
 
@@ -91,7 +92,13 @@ function nowLocalInput() {
   return local.toISOString().slice(0, 16)
 }
 
-export default function Interacciones({ oportunidadId }: { oportunidadId: string }) {
+export default function Interacciones({
+  oportunidadId,
+  contactEmail,
+}: {
+  oportunidadId: string
+  contactEmail: string | null
+}) {
   const { data: session } = useSession()
   const [interacciones, setInteracciones] = useState<Interaccion[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,6 +111,10 @@ export default function Interacciones({ oportunidadId }: { oportunidadId: string
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
+  const [gmailConectado, setGmailConectado] = useState<boolean | null>(null)
+  const [sincronizando, setSincronizando] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
+
   const fetchInteracciones = useCallback(() => {
     fetch(`/api/oportunidades/${oportunidadId}/interacciones`)
       .then((r) => r.json())
@@ -112,6 +123,46 @@ export default function Interacciones({ oportunidadId }: { oportunidadId: string
   }, [oportunidadId])
 
   useEffect(() => { fetchInteracciones() }, [fetchInteracciones])
+
+  const handleSync = useCallback(async (silencioso = false) => {
+    if (!contactEmail) return
+    setSincronizando(true)
+    if (!silencioso) setSyncMsg('')
+    try {
+      const res = await fetch('/api/gmail/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oportunidadId, contactEmail }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        if (data.created > 0) {
+          fetchInteracciones()
+          if (!silencioso) setSyncMsg(`${data.created} email${data.created > 1 ? 's' : ''} importado${data.created > 1 ? 's' : ''}`)
+        } else if (!silencioso) {
+          setSyncMsg('Sin emails nuevos')
+        }
+      } else {
+        if (!silencioso) setSyncMsg(data.error ?? 'Error al sincronizar')
+      }
+    } catch {
+      if (!silencioso) setSyncMsg('Error al sincronizar')
+    } finally {
+      setSincronizando(false)
+    }
+  }, [oportunidadId, contactEmail, fetchInteracciones])
+
+  useEffect(() => {
+    fetch('/api/gmail/status')
+      .then((r) => r.json())
+      .then((data) => {
+        setGmailConectado(data.connected)
+        if (data.connected && contactEmail) {
+          handleSync(true)
+        }
+      })
+      .catch(() => setGmailConectado(false))
+  }, [contactEmail, handleSync])
 
   const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -155,7 +206,7 @@ export default function Interacciones({ oportunidadId }: { oportunidadId: string
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">
           Historial de contacto
           {interacciones.length > 0 && (
@@ -164,15 +215,57 @@ export default function Interacciones({ oportunidadId }: { oportunidadId: string
             </span>
           )}
         </h2>
-        {!mostrarForm && (
-          <button
-            onClick={() => { setMostrarForm(true); setError(''); setFecha(nowLocalInput()) }}
-            className="btn-primary text-sm"
-          >
-            + Registrar
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {contactEmail && gmailConectado === true && (
+            <button
+              onClick={() => handleSync(false)}
+              disabled={sincronizando}
+              title="Importar emails enviados a este contacto desde Gmail"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 text-xs font-medium transition-all disabled:opacity-50"
+            >
+              <svg className={`w-3.5 h-3.5 ${sincronizando ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {sincronizando ? 'Sincronizando…' : 'Sync Gmail'}
+            </button>
+          )}
+          {contactEmail && gmailConectado === false && (
+            <a
+              href="/api/gmail/connect"
+              title="Conectar Gmail para importar emails automáticamente"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-primary-400 hover:text-primary-700 text-xs font-medium transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Conectar Gmail
+            </a>
+          )}
+          {!mostrarForm && (
+            <button
+              onClick={() => { setMostrarForm(true); setError(''); setFecha(nowLocalInput()) }}
+              className="btn-primary text-sm"
+            >
+              + Registrar
+            </button>
+          )}
+        </div>
       </div>
+
+      {syncMsg && (
+        <div className={`mb-3 text-xs px-3 py-2 rounded-lg border ${syncMsg.toLowerCase().includes('error') ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-700'}`}>
+          {syncMsg}
+        </div>
+      )}
+
+      {!contactEmail && (
+        <div className="mb-3 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Agrega el email del contacto en la ficha para habilitar la sincronización con Gmail.
+        </div>
+      )}
 
       {mostrarForm && (
         <form onSubmit={handleGuardar} className="card mb-5 space-y-4">
@@ -281,6 +374,9 @@ export default function Interacciones({ oportunidadId }: { oportunidadId: string
                         {tc.icon('w-3 h-3')}
                         {tc.label}
                       </span>
+                      {int.gmailMessageId && (
+                        <span className="text-xs text-gray-300 italic">vía Gmail</span>
+                      )}
                       <span className="text-xs text-gray-400 whitespace-nowrap">
                         {new Date(int.fecha).toLocaleString('es-CL', {
                           day: 'numeric',
@@ -295,15 +391,17 @@ export default function Interacciones({ oportunidadId }: { oportunidadId: string
                         {int.tecnico.nombre} {int.tecnico.apellido}
                       </span>
                     </div>
-                    <button
-                      onClick={() => handleEliminar(int.id)}
-                      className="text-gray-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0 mt-0.5"
-                      title="Eliminar"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    {!int.gmailMessageId && (
+                      <button
+                        onClick={() => handleEliminar(int.id)}
+                        className="text-gray-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0 mt-0.5"
+                        title="Eliminar"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
 
                   <p className="text-sm text-gray-800 mt-2 whitespace-pre-wrap leading-relaxed">
