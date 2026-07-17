@@ -102,14 +102,15 @@ model PredioCultivo {
 }
 
 model Usuario {
-  id              Int            @id @default(autoincrement())
-  nombre          String
-  apellido        String
-  email           String         @unique
-  password        String?
-  rol             String
-  telefono        String?
-  activo          Boolean        @default(true)
+  id                Int            @id @default(autoincrement())
+  nombre            String
+  apellido          String
+  email             String         @unique
+  password          String?
+  rol               String
+  telefono          String?
+  activo            Boolean        @default(true)
+  gmailRefreshToken String?
   predios         Predio[]       @relation("Encargado")
   prediosTecnico  Predio[]       @relation("TecnicoPredio")
   empresasTecnico Empresa[]      @relation("TecnicoEmpresa")
@@ -372,6 +373,7 @@ model Oportunidad {
   id            Int           @id @default(autoincrement())
   nombre        String
   telefono      String?
+  email         String?
   latitud       Float?
   longitud      Float?
   ubicacion     String?
@@ -385,18 +387,19 @@ model Oportunidad {
 }
 
 model Interaccion {
-  id            Int             @id @default(autoincrement())
-  tipo          TipoInteraccion
-  fecha         DateTime        @default(now())
-  resumen       String
-  resultado     String?
-  proximaAccion String?
-  oportunidad   Oportunidad     @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
-  oportunidadId Int
-  tecnico       Usuario         @relation("TecnicoInteraccion", fields: [tecnicoId], references: [id])
-  tecnicoId     Int
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id              Int             @id @default(autoincrement())
+  tipo            TipoInteraccion
+  fecha           DateTime        @default(now())
+  resumen         String
+  resultado       String?
+  proximaAccion   String?
+  gmailMessageId  String?         @unique
+  oportunidad     Oportunidad     @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  oportunidadId   Int
+  tecnico         Usuario         @relation("TecnicoInteraccion", fields: [tecnicoId], references: [id])
+  tecnicoId       Int
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
 enum TipoInteraccion {

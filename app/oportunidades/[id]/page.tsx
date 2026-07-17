@@ -24,6 +24,7 @@ type Oportunidad = {
   id: number
   nombre: string
   telefono: string | null
+  email: string | null
   latitud: number | null
   longitud: number | null
   ubicacion: string | null
@@ -42,6 +43,7 @@ export default function OportunidadPage() {
   const [editando, setEditando] = useState(false)
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
+  const [email, setEmail] = useState('')
   const [ubicacion, setUbicacion] = useState('')
   const [latitud, setLatitud] = useState<number | null>(null)
   const [longitud, setLongitud] = useState<number | null>(null)
@@ -59,6 +61,7 @@ export default function OportunidadPage() {
         setOportunidad(data)
         setNombre(data.nombre)
         setTelefono(data.telefono ?? '')
+        setEmail(data.email ?? '')
         setUbicacion(data.ubicacion ?? '')
         setLatitud(data.latitud)
         setLongitud(data.longitud)
@@ -87,7 +90,16 @@ export default function OportunidadPage() {
       const res = await fetch(`/api/oportunidades/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombre.trim(), telefono: telefono.trim() || null, latitud, longitud, ubicacion: ubicacion.trim() || null, notas: notas.trim() || null, estado }),
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          telefono: telefono.trim() || null,
+          email: email.trim() || null,
+          latitud,
+          longitud,
+          ubicacion: ubicacion.trim() || null,
+          notas: notas.trim() || null,
+          estado,
+        }),
       })
       if (!res.ok) throw new Error('Error al guardar')
       const updated = await res.json()
@@ -162,10 +174,18 @@ export default function OportunidadPage() {
               ) : <p className="text-gray-400">—</p>}
             </div>
             <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
+              {oportunidad!.email ? (
+                <a href={`mailto:${oportunidad!.email}`} className="text-primary-600 hover:underline font-medium">
+                  {oportunidad!.email}
+                </a>
+              ) : <p className="text-gray-400">—</p>}
+            </div>
+            <div>
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Técnico</p>
               <p className="font-medium text-gray-900">{oportunidad!.tecnico.nombre} {oportunidad!.tecnico.apellido}</p>
             </div>
-            <div>
+            <div className="col-span-2">
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Ubicación GPS</p>
               {oportunidad!.latitud && oportunidad!.longitud ? (
                 <a
@@ -212,9 +232,15 @@ export default function OportunidadPage() {
             <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} className="input w-full" required />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <input type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="input w-full" placeholder="+56 9 XXXX XXXX" />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <input type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="input w-full" placeholder="+56 9 XXXX XXXX" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email del contacto</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input w-full" placeholder="contacto@empresa.cl" />
+            </div>
           </div>
 
           <div>
@@ -257,7 +283,7 @@ export default function OportunidadPage() {
       </div>
 
       <div className="max-w-xl">
-        <Interacciones oportunidadId={id} />
+        <Interacciones oportunidadId={id} contactEmail={oportunidad?.email ?? null} />
       </div>
     </div>
   )
