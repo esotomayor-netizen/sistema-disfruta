@@ -218,8 +218,6 @@ model Aplicacion {
   updatedAt     DateTime  @updatedAt
 }
 
-// ── Módulo Cosecha & Exportación ─────────────────────────────────────────────
-
 model Temporada {
   id                  Int                   @id @default(autoincrement())
   nombre              String                @unique
@@ -315,8 +313,6 @@ model PrecioCalibres {
   updatedAt   DateTime  @updatedAt
 }
 
-// ── Módulo Conteos (dardos / carozos) ────────────────────────────────────────
-
 model Arbol {
   id        Int      @id @default(autoincrement())
   predio    Predio   @relation(fields: [predioId], references: [id])
@@ -350,7 +346,7 @@ model Conteo {
   tipoEstructura TipoEstructura
   cantidad       Int
   fecha          DateTime       @default(now())
-  notas          String?        
+  notas          String?
   visita         Visita?        @relation(fields: [visitaId], references: [id])
   visitaId       Int?
   tecnico        Usuario?       @relation("TecnicoConteo", fields: [tecnicoId], references: [id])
@@ -366,8 +362,6 @@ enum TipoEstructura {
   FLOR
   VEGETATIVO
 }
-
-// ── Módulo Oportunidades ──────────────────────────────────────────────────────
 
 model Oportunidad {
   id            Int           @id @default(autoincrement())
