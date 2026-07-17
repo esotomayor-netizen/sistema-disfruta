@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     data: {
       nombre: data.nombre,
       telefono: data.telefono || null,
+      email: data.email || null,
       latitud: data.latitud != null ? parseFloat(data.latitud) : null,
       longitud: data.longitud != null ? parseFloat(data.longitud) : null,
       ubicacion: data.ubicacion || null,

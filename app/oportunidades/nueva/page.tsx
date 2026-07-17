@@ -17,6 +17,7 @@ export default function NuevaOportunidadPage() {
   const { data: session } = useSession()
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
+  const [email, setEmail] = useState('')
   const [ubicacion, setUbicacion] = useState('')
   const [latitud, setLatitud] = useState<number | null>(null)
   const [longitud, setLongitud] = useState<number | null>(null)
@@ -62,6 +63,7 @@ export default function NuevaOportunidadPage() {
         body: JSON.stringify({
           nombre: nombre.trim(),
           telefono: telefono.trim() || null,
+          email: email.trim() || null,
           latitud,
           longitud,
           ubicacion: ubicacion.trim() || null,
@@ -107,15 +109,27 @@ export default function NuevaOportunidadPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <input
-              type="tel"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              className="input w-full"
-              placeholder="+56 9 XXXX XXXX"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <input
+                type="tel"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                className="input w-full"
+                placeholder="+56 9 XXXX XXXX"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email del contacto</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input w-full"
+                placeholder="contacto@empresa.cl"
+              />
+            </div>
           </div>
 
           <div>
