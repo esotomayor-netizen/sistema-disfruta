@@ -34,9 +34,11 @@ export async function POST(req: Request) {
     },
     include: { tecnico: true },
   })
-
-  // Fire-and-forget: don't block the response
-  notifyNuevaOportunidad(oportunidad).catch((e) => console.error('[notify] nueva oportunidad:', e))
+  try {
+    await notifyNuevaOportunidad(oportunidad)
+  } catch (e) {
+    console.error('[notify] nueva oportunidad:', e)
+  }
 
   return NextResponse.json(oportunidad, { status: 201 })
 }
