@@ -148,7 +148,7 @@ export async function procesarRecordatorios(): Promise<number> {
   const supervisores = await getSupervisores()
 
   // Notify each technician individually
-  for (const [, ops] of porTecnico) {
+  for (const ops of Array.from(porTecnico.values())) {
     const tec = ops[0].tecnico
     const saludo = fullName(tec)
     const cantidad = ops.length
