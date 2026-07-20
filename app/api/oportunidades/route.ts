@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized } from '@/lib/session'
+import { notifyNuevaOportunidad } from '@/lib/notify'
 
 export async function GET() {
   const session = await getSession()
@@ -33,5 +34,8 @@ export async function POST(req: Request) {
     },
     include: { tecnico: true },
   })
+  // Fire-and-forget: don't block the response
+  notifyNuevaOportunidad(oportunidad).catch((e) => console.error('[notify] nueva oportunidad:', e))
+
   return NextResponse.json(oportunidad, { status: 201 })
 }
