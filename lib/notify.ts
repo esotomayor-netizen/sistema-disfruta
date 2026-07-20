@@ -27,6 +27,15 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
 
 async function sendWhatsApp(phone: string, template: string, params: string[]): Promise<void> {
   if (!WA_TOKEN || !WA_PHONE_ID || !phone.trim()) return
+  // In test mode Meta only allows the pre-approved hello_world template.
+  // Set META_WA_PRODUCTION=true once custom templates are approved.
+  const isProduction = process.env.META_WA_PRODUCTION === 'true'
+  const templateName = isProduction ? template : 'hello_world'
+  const langCode = isProduction ? 'es' : 'en_US'
+  const components = isProduction && params.length > 0
+    ? [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }]
+    : []
+
   try {
     const res = await fetch(`https://graph.facebook.com/v21.0/${WA_PHONE_ID}/messages`, {
       method: 'POST',
@@ -35,14 +44,12 @@ async function sendWhatsApp(phone: string, template: string, params: string[]): 
         messaging_product: 'whatsapp',
         to: normalizeChileanPhone(phone),
         type: 'template',
-        template: {
-          name: template,
-          language: { code: 'es' },
-          components: [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }],
-        },
+        template: { name: templateName, language: { code: langCode }, components },
       }),
     })
-    if (!res.ok) console.error('[notify:whatsapp]', await res.text())
+    const body = await res.text()
+    if (!res.ok) console.error('[notify:whatsapp] error:', body)
+    else console.log('[notify:whatsapp] sent to', normalizeChileanPhone(phone), body)
   } catch (err) {
     console.error('[notify:whatsapp]', err)
   }
