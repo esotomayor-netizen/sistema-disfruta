@@ -1,10 +1,21 @@
 'use client'
 
-export default function PrintButton() {
+export default function PrintButton({ visitaId }: { visitaId: number }) {
+  const handlePrint = async () => {
+    try {
+      await fetch('/api/notificar/informe-visita', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitaId }),
+      })
+    } catch {}
+    window.print()
+  }
+
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #e5e7eb', marginBottom: 8 }}>
       <button
-        onClick={() => window.print()}
+        onClick={handlePrint}
         style={{ background: '#166534', color: 'white', border: 'none', borderRadius: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
       >
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">

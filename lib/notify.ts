@@ -6,7 +6,7 @@ const FROM = process.env.NOTIFY_FROM_EMAIL ?? 'Sistema Disfruta <onboarding@rese
 const WA_TOKEN = process.env.META_WHATSAPP_TOKEN
 const WA_PHONE_ID = process.env.META_PHONE_NUMBER_ID
 
-// ─── Canales ────────────────────────────────────────────────────────────────────────────
+// ─── Canales ──────────────────────────────────────────────────────────────────
 
 function normalizeChileanPhone(raw: string): string {
   const d = raw.replace(/\D/g, '')
@@ -55,7 +55,7 @@ async function sendWhatsApp(phone: string, template: string, params: string[]): 
   }
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 type Usuario = { id: number; nombre: string; apellido: string; email: string; telefono: string | null }
 
@@ -81,7 +81,50 @@ async function notifyAll(
   )
 }
 
-// ─── Nueva oportunidad ───────────────────────────────────────────────────────────────────────
+// ─── Informe de visita generado ───────────────────────────────────────────────
+// Templates WhatsApp requeridos en Meta Business Manager:
+//   Nombre: informe_visita | Idioma: es | Categoría: UTILITY
+//   Body: "Hola {{1}}, {{2}} generó el informe de visita del predio {{3}}."
+
+export async function notifyInformeVisita(visitaId: number, generadoPorId: number): Promise<void> {
+  const [visita, generadoPor, supervisores] = await Promise.all([
+    prisma.visita.findUnique({
+      where: { id: visitaId },
+      include: { predio: true, tecnico: true },
+    }),
+    prisma.usuario.findUnique({ where: { id: generadoPorId } }),
+    getSupervisores(),
+  ])
+
+  if (!visita || !generadoPor) return
+
+  const nombreGenerador = fullName(generadoPor)
+  const predio = visita.predio.nombre
+  const fechaVisita = new Date(visita.fecha).toLocaleDateString('es-CL')
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px">
+      <h2 style="color:#166534;margin-bottom:4px">Informe de Visita Generado</h2>
+      <p>Hola <strong>{{SALUDO}}</strong>,</p>
+      <p><strong>${nombreGenerador}</strong> generó el informe de visita técnica:</p>
+      <table style="border-collapse:collapse;margin:12px 0;width:100%">
+        <tr><td style="padding:6px 16px 6px 0;color:#6b7280;white-space:nowrap">Predio</td><td><strong>${predio}</strong></td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#6b7280;white-space:nowrap">Técnico de visita</td><td>${fullName(visita.tecnico)}</td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#6b7280;white-space:nowrap">Fecha de visita</td><td>${fechaVisita}</td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#6b7280;white-space:nowrap">Generado por</td><td>${nombreGenerador}</td></tr>
+      </table>
+    </div>`
+
+  await notifyAll(
+    supervisores,
+    `Informe generado: ${predio}`,
+    html,
+    'informe_visita',
+    (saludo) => [saludo, nombreGenerador, predio]
+  )
+}
+
+// ─── Nueva oportunidad ────────────────────────────────────────────────────────
 // Templates WhatsApp requeridos en Meta Business Manager:
 //   Nombre: nueva_oportunidad | Idioma: es | Categoría: UTILITY
 //   Body: "Hola {{1}}, se registró una nueva oportunidad: {{2}}. Técnico: {{3}}."
@@ -119,7 +162,7 @@ export async function notifyNuevaOportunidad(oportunidad: {
   )
 }
 
-// ─── Recordatorios de contacto (cron diario) ────────────────────────────────────────────
+// ─── Recordatorios de contacto (cron diario) ─────────────────────────────────
 // Templates WhatsApp requeridos:
 //   Nombre: recordatorio_tecnico | Idioma: es | Categoría: UTILITY
 //   Body: "Hola {{1}}, tienes {{2}} oportunidad(es) sin contacto hace más de 3 días. Revisa el sistema."
