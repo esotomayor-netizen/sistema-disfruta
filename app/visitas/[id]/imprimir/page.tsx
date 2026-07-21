@@ -71,7 +71,7 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
 
         {/* Botón imprimir — solo pantalla */}
         <div className="no-print">
-          <PrintButton />
+          <PrintButton visitaId={visita.id} />
         </div>
 
         {/* Encabezado */}
