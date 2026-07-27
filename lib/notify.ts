@@ -31,7 +31,7 @@ async function sendWhatsApp(phone: string, template: string, params: string[]): 
   // Set META_WA_PRODUCTION=true once custom templates are approved.
   const isProduction = process.env.META_WA_PRODUCTION === 'true'
   const templateName = isProduction ? template : 'hello_world'
-  const langCode = isProduction ? 'es' : 'en_US'
+  const langCode = isProduction ? 'es_CL' : 'en_US'
   const components = isProduction && params.length > 0
     ? [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }]
     : []
