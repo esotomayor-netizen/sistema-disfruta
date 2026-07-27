@@ -31,7 +31,7 @@ async function sendWhatsApp(phone: string, template: string, params: string[]): 
   // Set META_WA_PRODUCTION=true once custom templates are approved.
   const isProduction = process.env.META_WA_PRODUCTION === 'true'
   const templateName = isProduction ? template : 'hello_world'
-  const langCode = isProduction ? 'es' : 'en_US'
+  const langCode = isProduction ? 'es_CL' : 'en_US'
   const components = isProduction && params.length > 0
     ? [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }]
     : []
@@ -83,8 +83,8 @@ async function notifyAll(
 
 // ─── Informe de visita generado ───────────────────────────────────────────────
 // Templates WhatsApp requeridos en Meta Business Manager:
-//   Nombre: informe_visita | Idioma: es | Categoría: UTILITY
-//   Body: "Hola {{1}}, {{2}} generó el informe de visita del predio {{3}}."
+//   Nombre: informe_visita | Idioma: es_CL | Categoría: UTILITY
+//   Body: "Hola {{1}}, {{2}} generó el informe de visita del predio {{3}}. Ingresa al sistema para revisarlo."
 
 export async function notifyInformeVisita(visitaId: number, generadoPorId: number): Promise<void> {
   const [visita, generadoPor, supervisores] = await Promise.all([
@@ -126,8 +126,8 @@ export async function notifyInformeVisita(visitaId: number, generadoPorId: numbe
 
 // ─── Nueva oportunidad ────────────────────────────────────────────────────────
 // Templates WhatsApp requeridos en Meta Business Manager:
-//   Nombre: nueva_oportunidad | Idioma: es | Categoría: UTILITY
-//   Body: "Hola {{1}}, se registró una nueva oportunidad: {{2}}. Técnico: {{3}}."
+//   Nombre: nueva_oportunidad | Idioma: es_CL | Categoría: UTILITY
+//   Body: "Hola {{1}}, se registró una nueva oportunidad: {{2}}. Técnico asignado: {{3}}. Ingresa al sistema para registrar el primer contacto."
 
 export async function notifyNuevaOportunidad(oportunidad: {
   id: number
@@ -164,11 +164,11 @@ export async function notifyNuevaOportunidad(oportunidad: {
 
 // ─── Recordatorios de contacto (cron diario) ─────────────────────────────────
 // Templates WhatsApp requeridos:
-//   Nombre: recordatorio_tecnico | Idioma: es | Categoría: UTILITY
-//   Body: "Hola {{1}}, tienes {{2}} oportunidad(es) sin contacto hace más de 3 días. Revisa el sistema."
+//   Nombre: recordatorio_tecnico | Idioma: es_CL | Categoría: UTILITY
+//   Body: "Hola {{1}}, tienes {{2}} oportunidad(es) sin contacto hace más de 3 días. Ingresa al sistema para registrar el contacto."
 //
-//   Nombre: recordatorio_supervisor | Idioma: es | Categoría: UTILITY
-//   Body: "Hola {{1}}, hay {{2}} oportunidad(es) sin contacto reciente en el equipo. Revisa el sistema."
+//   Nombre: recordatorio_supervisor | Idioma: es_CL | Categoría: UTILITY
+//   Body: "Hola {{1}}, hay {{2}} oportunidad(es) sin contacto reciente en el equipo. Ingresa al sistema para revisar."
 
 export async function procesarRecordatorios(): Promise<number> {
   const hace3dias = new Date()
