@@ -27,7 +27,7 @@ export default async function CumplimientoPage({
   const desde = new Date(desdeStr + 'T00:00:00')
   const hasta = new Date(hastaStr + 'T23:59:59')
 
-  const [usuarios, visitasGroup, agendasGroup] = await Promise.all([
+  const [usuarios, visitasGroup, agendasGroup, informesGroup] = await Promise.all([
     prisma.usuario.findMany({
       where: { activo: true },
       orderBy: { nombre: 'asc' },
@@ -42,10 +42,16 @@ export default async function CumplimientoPage({
       where: { fecha: { gte: desde, lte: hasta } },
       _count: { id: true },
     }),
+    prisma.informeGenerado.groupBy({
+      by: ['generadoPorId'],
+      where: { createdAt: { gte: desde, lte: hasta } },
+      _count: { id: true },
+    }),
   ])
 
   const visitasMap = new Map(visitasGroup.map((v) => [v.tecnicoId, v._count.id]))
   const agendasMap = new Map(agendasGroup.map((a) => [a.tecnicoId, a._count.id]))
+  const informesMap = new Map(informesGroup.map((i) => [i.generadoPorId, i._count.id]))
 
   const rows = usuarios.map((u) => ({
     id: u.id,
@@ -54,17 +60,19 @@ export default async function CumplimientoPage({
     rol: u.rol,
     visitas: visitasMap.get(u.id) ?? 0,
     agendas: agendasMap.get(u.id) ?? 0,
+    informes: informesMap.get(u.id) ?? 0,
   }))
 
   const totalVisitas = rows.reduce((s, r) => s + r.visitas, 0)
   const totalAgendas = rows.reduce((s, r) => s + r.agendas, 0)
+  const totalInformes = rows.reduce((s, r) => s + r.informes, 0)
   const totalPct = totalAgendas > 0 ? Math.round((totalVisitas / totalAgendas) * 100) : null
 
   return (
     <div>
       <Header
         title="Reporte de Cumplimiento"
-        subtitle="Visitas realizadas vs. agendas programadas por técnico"
+        subtitle="Visitas realizadas, informes emitidos y agendas programadas por usuario"
       />
 
       <DateRangePicker desde={desdeStr} hasta={hastaStr} />
@@ -73,8 +81,9 @@ export default async function CumplimientoPage({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="table-th">Técnico</th>
+              <th className="table-th">Usuario</th>
               <th className="table-th text-center">Visitas Realizadas</th>
+              <th className="table-th text-center">Informes Emitidos</th>
               <th className="table-th text-center">Agendas Programadas</th>
               <th className="table-th text-center">Cumplimiento</th>
             </tr>
@@ -82,7 +91,7 @@ export default async function CumplimientoPage({
           <tbody className="divide-y divide-gray-100">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={4} className="table-td text-center text-gray-400 py-12">
+                <td colSpan={5} className="table-td text-center text-gray-400 py-12">
                   No hay usuarios activos registrados.
                 </td>
               </tr>
@@ -99,6 +108,9 @@ export default async function CumplimientoPage({
                   </td>
                   <td className="table-td text-center">
                     <span className="text-sm font-semibold text-gray-900">{r.visitas}</span>
+                  </td>
+                  <td className="table-td text-center">
+                    <span className="text-sm font-semibold text-blue-700">{r.informes}</span>
                   </td>
                   <td className="table-td text-center">
                     <span className="text-sm text-gray-600">{r.agendas}</span>
@@ -123,6 +135,7 @@ export default async function CumplimientoPage({
               <tr>
                 <td className="table-td font-semibold text-gray-700">Total del período</td>
                 <td className="table-td text-center font-bold text-gray-900">{totalVisitas}</td>
+                <td className="table-td text-center font-bold text-blue-700">{totalInformes}</td>
                 <td className="table-td text-center font-semibold text-gray-700">{totalAgendas}</td>
                 <td className="table-td text-center">
                   {totalPct !== null ? (

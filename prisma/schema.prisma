@@ -121,21 +121,22 @@ model Usuario {
   recorridos      Recorrido[]    @relation("TecnicoRecorrido")
   checkins        CheckIn[]      @relation("TecnicoCheckIn")
   conteos         Conteo[]       @relation("TecnicoConteo")
-  oportunidades   Oportunidad[]  @relation("OportunidadTecnico")
-  interacciones   Interaccion[]  @relation("TecnicoInteraccion")
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  oportunidades     Oportunidad[]     @relation("OportunidadTecnico")
+  interacciones     Interaccion[]     @relation("TecnicoInteraccion")
+  informesGenerados InformeGenerado[] @relation("GeneradorInforme")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 }
 
 model Visita {
-  id            Int          @id @default(autoincrement())
+  id            Int               @id @default(autoincrement())
   fecha         DateTime
-  predio        Predio       @relation(fields: [predioId], references: [id])
+  predio        Predio            @relation(fields: [predioId], references: [id])
   predioId      Int
-  tecnico       Usuario      @relation("TecnicoVisita", fields: [tecnicoId], references: [id])
+  tecnico       Usuario           @relation("TecnicoVisita", fields: [tecnicoId], references: [id])
   tecnicoId     Int
   observaciones String?
-  estado        String       @default("EN_PROGRESO")
+  estado        String            @default("EN_PROGRESO")
   checkinLat    Float?
   checkinLng    Float?
   especie       String?
@@ -143,8 +144,18 @@ model Visita {
   labores       Labor[]
   aplicaciones  Aplicacion[]
   conteos       Conteo[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  informes      InformeGenerado[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model InformeGenerado {
+  id            Int      @id @default(autoincrement())
+  visita        Visita   @relation(fields: [visitaId], references: [id])
+  visitaId      Int
+  generadoPor   Usuario  @relation("GeneradorInforme", fields: [generadoPorId], references: [id])
+  generadoPorId Int
+  createdAt     DateTime @default(now())
 }
 
 model Labor {
