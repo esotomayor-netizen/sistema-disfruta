@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import ConditionalLayout from '@/components/ConditionalLayout'
 import SessionProviderWrapper from '@/components/SessionProviderWrapper'
+import AutoRefresh from '@/components/AutoRefresh'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es">
       <body className={inter.className}>
         <SessionProviderWrapper>
+          <AutoRefresh />
           <ConditionalLayout>{children}</ConditionalLayout>
         </SessionProviderWrapper>
       </body>
