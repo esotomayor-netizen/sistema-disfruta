@@ -43,7 +43,7 @@ const printStyles = `
   .fotos-row td { background: #f9fafb; padding: 10px 12px; border-top: none; }
   .fotos-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 6px; }
   .fotos-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-  .fotos-grid img { width: 90px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; }
+  .fotos-grid img { width: 10cm; height: 10cm; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; }
   .report-footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 9px; color: #9ca3af; }
   .firma { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
   .firma-box { border-top: 1px solid #374151; padding-top: 8px; font-size: 10px; color: #374151; text-align: center; }
