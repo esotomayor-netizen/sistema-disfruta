@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { formatDate, TIPOS_PRODUCTO, LABOR_TIPOS, labelFromValue } from '@/lib/constants'
+import { formatDate, TIPOS_PRODUCTO, labelFromValue } from '@/lib/constants'
 import PrintButton from './PrintButton'
 
 export const dynamic = 'force-dynamic'
@@ -35,15 +35,20 @@ const printStyles = `
   table { width: 100%; border-collapse: collapse; }
   th { background: #f0fdf4; text-align: left; padding: 6px 8px; font-size: 10px; font-weight: 700; color: #166534; border: 1px solid #d1fae5; }
   td { padding: 6px 8px; font-size: 10px; border: 1px solid #e5e7eb; vertical-align: top; }
-  tr:nth-child(even) td { background: #fafafa; }
+  .zebra tr:nth-child(even) td { background: #fafafa; }
+  .labor-title-row td { background: #f0fdf4; font-weight: 700; color: #166534; font-size: 11px; padding: 6px 10px; border: 1px solid #d1fae5; }
+  .labor-detalle-row td { background: #fff; padding: 8px 10px; border-top: none; }
+  .labor-detalle-row + .labor-title-row td { border-top: 1px solid #d1fae5; }
+  .detalle-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 4px; }
+  .labor-detalle-row p { font-size: 10.5px; color: #374151; line-height: 1.6; }
   .sketch-row td { background: #faf5ff; padding: 10px 12px; border-top: none; }
   .sketch-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #7c3aed; margin-bottom: 6px; }
   .sketch-wrap { border: 1px solid #e9d5ff; border-radius: 6px; overflow: hidden; background: white; display: inline-block; max-width: 100%; }
   .sketch-wrap svg { display: block; max-width: 100%; height: auto; }
-  .fotos-row td { background: #f9fafb; padding: 10px 12px; border-top: none; }
-  .fotos-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 6px; }
-  .fotos-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-  .fotos-grid img { width: 10cm; height: 10cm; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; }
+  .fotos-final-grid { display: flex; flex-wrap: wrap; gap: 14px; }
+  .fotos-final-grid .foto-item { width: 10cm; }
+  .fotos-final-grid img { width: 10cm; height: 10cm; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; display: block; }
+  .fotos-final-grid .foto-caption { font-size: 9px; color: #6b7280; margin-top: 4px; text-align: center; }
   .report-footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 9px; color: #9ca3af; }
   .firma { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
   .firma-box { border-top: 1px solid #374151; padding-top: 8px; font-size: 10px; color: #374151; text-align: center; }
@@ -140,47 +145,26 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
             <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>No se registraron labores en esta visita.</p>
           ) : (
             <table>
-              <thead>
-                <tr>
-                  <th style={{ width: '5%' }}>#</th>
-                  <th style={{ width: '30%' }}>Labor</th>
-                  <th style={{ width: '18%' }}>Tipo</th>
-                  <th style={{ width: '47%' }}>Descripción / Detalle</th>
-                </tr>
-              </thead>
               <tbody>
-                {visita.labores.map((l, i) => (
+                {visita.labores.map((l) => (
                   <>
-                    <tr key={l.id}>
-                      <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                      <td><strong>{l.descripcion}</strong></td>
+                    <tr key={l.id} className="labor-title-row">
+                      <td>{l.descripcion}</td>
+                    </tr>
+                    <tr key={`${l.id}-detalle`} className="labor-detalle-row">
                       <td>
-                        <span className={`badge ${l.tipo === 'PODA' ? 'badge-blue' : l.tipo === 'CONTROL_PLAGAS' ? 'badge-orange' : 'badge-gray'}`}>
-                          {labelFromValue(LABOR_TIPOS, l.tipo)}
-                        </span>
+                        <div className="detalle-label">Descripción / Detalle</div>
+                        <p>{(l as any).observaciones ?? '—'}</p>
                       </td>
-                      <td>{(l as any).observaciones ?? '—'}</td>
                     </tr>
                     {(l as any).dibujo && (
                       <tr key={`${l.id}-sketch`} className="sketch-row">
-                        <td colSpan={4}>
+                        <td>
                           <div className="sketch-label">Bosquejo técnico</div>
                           <div
                             className="sketch-wrap"
                             dangerouslySetInnerHTML={{ __html: (l as any).dibujo }}
                           />
-                        </td>
-                      </tr>
-                    )}
-                    {l.fotos && l.fotos.length > 0 && (
-                      <tr key={`${l.id}-fotos`} className="fotos-row">
-                        <td colSpan={4}>
-                          <div className="fotos-label">Fotos ({l.fotos.length})</div>
-                          <div className="fotos-grid">
-                            {l.fotos.map((src, fi) => (
-                              <img key={fi} src={src} alt="Foto de la labor" />
-                            ))}
-                          </div>
                         </td>
                       </tr>
                     )}
@@ -197,7 +181,7 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
           {visita.aplicaciones.length === 0 ? (
             <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>No se registraron aplicaciones en esta visita.</p>
           ) : (
-            <table>
+            <table className="zebra">
               <thead>
                 <tr>
                   <th style={{ width: '5%' }}>#</th>
@@ -225,6 +209,27 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
             </table>
           )}
         </div>
+
+        {/* Fotografías (todas al final) */}
+        {(() => {
+          const todasLasFotos = visita.labores.flatMap((l) =>
+            (l.fotos ?? []).map((src) => ({ src, labor: l.descripcion }))
+          )
+          if (todasLasFotos.length === 0) return null
+          return (
+            <div className="section">
+              <h2>Fotografías de la Visita ({todasLasFotos.length})</h2>
+              <div className="fotos-final-grid">
+                {todasLasFotos.map((f, i) => (
+                  <div key={i} className="foto-item">
+                    <img src={f.src} alt="Foto de la visita" />
+                    <p className="foto-caption">{f.labor}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Firmas */}
         <div className="firma">
