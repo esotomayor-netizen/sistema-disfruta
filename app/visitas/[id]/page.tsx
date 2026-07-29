@@ -69,6 +69,7 @@ export default function VisitaDetailPage() {
   const [fotosNuevas, setFotosNuevas] = useState<string[]>([])
   const [observacionesEdit, setObservacionesEdit] = useState('')
   const [guardandoObs, setGuardandoObs] = useState(false)
+  const [refinandoObs, setRefinandoObs] = useState(false)
   const [estadoFenologico, setEstadoFenologico] = useState('')
   const [programaFito, setProgramaFito] = useState<ProgramaFitoItem[]>([])
   const [mostrarManual, setMostrarManual] = useState(false)
@@ -325,6 +326,23 @@ export default function VisitaDetailPage() {
     fetchVisita()
   }
 
+  const handleRefinarObservaciones = async () => {
+    if (!visita || !observacionesEdit.trim()) return
+    setRefinandoObs(true)
+    const res = await fetch('/api/ia/refinar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        labor: 'Observaciones generales de visita técnica',
+        categoria: visita.predio.nombre,
+        descripcion: observacionesEdit,
+      }),
+    })
+    const data = await res.json()
+    if (data.descripcion) setObservacionesEdit(data.descripcion)
+    setRefinandoObs(false)
+  }
+
   const handleEliminarLabor = async (laborId: number) => {
     await fetch(`/api/labores/${laborId}`, { method: 'DELETE' })
     fetchVisita()
@@ -430,7 +448,25 @@ export default function VisitaDetailPage() {
 
       {/* Observaciones */}
       <div className="card mb-6">
-        <h2 className="font-semibold text-gray-800 mb-2">Observaciones</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-gray-800">Observaciones</h2>
+          <button
+            onClick={handleRefinarObservaciones}
+            disabled={refinandoObs || !observacionesEdit.trim()}
+            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 font-medium disabled:opacity-40"
+          >
+            {refinandoObs ? (
+              <span className="animate-pulse">Mejorando…</span>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Mejorar con IA
+              </>
+            )}
+          </button>
+        </div>
         <textarea
           className="input"
           rows={4}
