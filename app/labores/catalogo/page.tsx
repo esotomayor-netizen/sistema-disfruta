@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import { LABOR_TIPOS } from '@/lib/constants'
@@ -47,6 +48,8 @@ interface ActivarForm {
 
 export default function CatalogoPage() {
   const router = useRouter()
+  const { data: session } = useSession()
+  const esSupervisor = (session?.user as any)?.rol === 'SUPERVISOR'
   const [catalogo, setCatalogo] = useState<CatalogoItem[]>([])
   const [predios, setPredios] = useState<Predio[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -55,6 +58,8 @@ export default function CatalogoPage() {
   const [activando, setActivando] = useState<CatalogoItem | null>(null)
   const [saving, setSaving] = useState(false)
   const [successId, setSuccessId] = useState<number | null>(null)
+  const [mejorando, setMejorando] = useState(false)
+  const [progreso, setProgreso] = useState<{ hechos: number; total: number } | null>(null)
   const [activarForm, setActivarForm] = useState<ActivarForm>({
     predioId: '',
     responsableId: '',
@@ -95,6 +100,31 @@ export default function CatalogoPage() {
     return acc
   }, {})
 
+  const handleMejorarDescripciones = async () => {
+    if (!confirm('Esto reemplazará la descripción de las 92 labores del catálogo con versiones más extensas generadas por IA. ¿Continuar?')) return
+    setMejorando(true)
+    setProgreso({ hechos: 0, total: catalogo.length })
+    let offset: number | null = 0
+    try {
+      while (offset !== null) {
+        const currentOffset: number = offset
+        const res: Response = await fetch('/api/admin/catalogo/mejorar-descripciones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ offset: currentOffset, limit: 5 }),
+        })
+        const data: { processed: number; total: number; nextOffset: number | null } = await res.json()
+        if (!res.ok) break
+        setProgreso({ hechos: Math.min(currentOffset + data.processed, data.total), total: data.total })
+        offset = data.nextOffset
+      }
+      const cat = await fetch('/api/catalogo').then((r) => r.json())
+      setCatalogo(cat as CatalogoItem[])
+    } finally {
+      setMejorando(false)
+    }
+  }
+
   const handleActivar = (item: CatalogoItem) => {
     setActivando(item)
     setSuccessId(null)
@@ -134,10 +164,38 @@ export default function CatalogoPage() {
         subtitle="Labores recomendadas por especie — selecciona y activa para asignar a un predio"
         action={
           <div className="flex gap-2">
+            {esSupervisor && (
+              <button
+                onClick={handleMejorarDescripciones}
+                disabled={mejorando || catalogo.length === 0}
+                className="btn-secondary flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {mejorando
+                  ? `Generando… ${progreso ? `${progreso.hechos}/${progreso.total}` : ''}`
+                  : 'Generar descripciones detalladas con IA'}
+              </button>
+            )}
             <Link href="/labores" className="btn-secondary">Ver Labores Activas →</Link>
           </div>
         }
       />
+
+      {mejorando && progreso && (
+        <div className="mb-6">
+          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-primary-600 h-2 rounded-full transition-all"
+              style={{ width: `${Math.round((progreso.hechos / progreso.total) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Generando descripciones extensas con IA: {progreso.hechos} de {progreso.total}
+          </p>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -195,8 +253,8 @@ export default function CatalogoPage() {
                         {item.categoria}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 max-w-[180px]">{item.labor}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs max-w-[280px]">{item.descripcion}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 max-w-[160px]">{item.labor}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs max-w-[420px] leading-relaxed">{item.descripcion}</td>
                     <td className="px-4 py-3">
                       <span className={`badge ${prioridadColor(item.prioridad)}`}>{item.prioridad}</span>
                     </td>
