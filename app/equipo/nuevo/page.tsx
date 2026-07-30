@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
-import { ROLES_USUARIO } from '@/lib/constants'
+import { ROLES_USUARIO, ROLES_ENCARGADO } from '@/lib/constants'
 
 export default function NuevoMiembroPage() {
   const router = useRouter()
@@ -60,9 +60,16 @@ export default function NuevoMiembroPage() {
             <div>
               <label className="label">Rol</label>
               <select className="input" value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })}>
-                {ROLES_USUARIO.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
+                <optgroup label="Equipo interno">
+                  {ROLES_USUARIO.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Contacto externo">
+                  {ROLES_ENCARGADO.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </optgroup>
               </select>
             </div>
             <div>
