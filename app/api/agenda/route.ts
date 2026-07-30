@@ -48,9 +48,17 @@ export async function POST(req: Request) {
   })
 
   const session = await getSession()
-  if (session) {
+  if (!session) {
+    console.log('[notify] agenda-programada: sin sesión, se omite aviso')
+  } else {
     const generador = await prisma.usuario.findUnique({ where: { id: (session.user as any).id } })
-    if (generador?.email === AGENDA_WHATSAPP_SUPERVISOR_EMAIL && agenda.predio.encargado) {
+    if (generador?.email !== AGENDA_WHATSAPP_SUPERVISOR_EMAIL) {
+      console.log(`[notify] agenda-programada: usuario que agenda (${generador?.email ?? 'desconocido'}) no es ${AGENDA_WHATSAPP_SUPERVISOR_EMAIL}, se omite aviso`)
+    } else if (!agenda.predio.encargado) {
+      console.log(`[notify] agenda-programada: predio "${agenda.predio.nombre}" no tiene Encargado asignado, se omite aviso`)
+    } else if (!agenda.predio.encargado.telefono) {
+      console.log(`[notify] agenda-programada: encargado "${agenda.predio.encargado.nombre} ${agenda.predio.encargado.apellido}" no tiene teléfono cargado, se omite aviso`)
+    } else {
       try {
         await notifyAgendaProgramada(agenda.predio.encargado, agenda.predio.nombre, agenda.fecha)
       } catch (e) {

@@ -158,12 +158,21 @@ export async function POST(req: Request) {
   await prisma.agendaVisita.createMany({ data: toCreate, skipDuplicates: true })
 
   const generador = await prisma.usuario.findUnique({ where: { id: (session.user as any).id } })
-  if (generador?.email === AGENDA_WHATSAPP_SUPERVISOR_EMAIL) {
+  if (generador?.email !== AGENDA_WHATSAPP_SUPERVISOR_EMAIL) {
+    console.log(`[notify] agenda-programada: usuario que genera (${generador?.email ?? 'desconocido'}) no es ${AGENDA_WHATSAPP_SUPERVISOR_EMAIL}, se omiten avisos`)
+  } else {
     const predioMap = new Map(predios.map((p) => [p.id, p]))
     await Promise.all(
       toCreate.map(async (item) => {
         const predio = predioMap.get(item.predioId)
-        if (!predio?.encargado) return
+        if (!predio?.encargado) {
+          console.log(`[notify] agenda-programada: predio id ${item.predioId} sin Encargado asignado, se omite aviso`)
+          return
+        }
+        if (!predio.encargado.telefono) {
+          console.log(`[notify] agenda-programada: encargado "${predio.encargado.nombre} ${predio.encargado.apellido}" sin teléfono, se omite aviso`)
+          return
+        }
         try {
           await notifyAgendaProgramada(predio.encargado, predio.nombre ?? '', item.fecha)
         } catch (e) {
