@@ -75,11 +75,16 @@ async function notifyAll(
   waTemplate: string,
   waParamsFn: (saludo: string) => string[]
 ): Promise<void> {
+  console.log(`[notify:all] "${waTemplate}" → ${destinatarios.length} destinatario(s): ${destinatarios.map((d) => `${fullName(d)} <${d.email}> tel=${d.telefono ?? 'sin teléfono'}`).join(' | ')}`)
   await Promise.all(
     destinatarios.map(async (u) => {
       const saludo = fullName(u)
       await sendEmail(u.email, subject, html.replace('{{SALUDO}}', saludo))
-      if (u.telefono) await sendWhatsApp(u.telefono, waTemplate, waParamsFn(saludo))
+      if (u.telefono) {
+        await sendWhatsApp(u.telefono, waTemplate, waParamsFn(saludo))
+      } else {
+        console.log(`[notify:all] "${waTemplate}" → ${fullName(u)} sin teléfono, se omite WhatsApp`)
+      }
     })
   )
 }
@@ -116,7 +121,14 @@ export async function notifyInformeVisita(visitaId: number, generadoPorId: numbe
     getSupervisores(),
   ])
 
-  if (!visita || !generadoPor) return
+  if (!visita || !generadoPor) {
+    console.log(`[notify] informe-visita: visita=${!!visita} generadoPor=${!!generadoPor}, se omite aviso`)
+    return
+  }
+  if (supervisores.length === 0) {
+    console.log('[notify] informe-visita: no hay supervisores activos en el sistema, se omite aviso')
+    return
+  }
 
   const nombreGenerador = fullName(generadoPor)
   const predio = visita.predio.nombre
