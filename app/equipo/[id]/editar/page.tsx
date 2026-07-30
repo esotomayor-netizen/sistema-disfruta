@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
-import { ROLES_USUARIO } from '@/lib/constants'
+import { ROLES_USUARIO, ROLES_ENCARGADO } from '@/lib/constants'
 
 export default function EditarMiembroPage() {
   const { id } = useParams()
@@ -20,11 +20,10 @@ export default function EditarMiembroPage() {
   })
 
   useEffect(() => {
-    fetch('/api/equipo')
+    fetch(`/api/equipo/${id}`)
       .then((r) => r.json())
-      .then((usuarios: { id: number; nombre: string; apellido: string; email: string; rol: string; telefono: string | null; activo: boolean }[]) => {
-        const u = usuarios.find((x) => x.id === parseInt(id as string))
-        if (u) setForm({ nombre: u.nombre, apellido: u.apellido, email: u.email, rol: u.rol, telefono: u.telefono ?? '', activo: u.activo })
+      .then((u: { nombre: string; apellido: string; email: string; rol: string; telefono: string | null; activo: boolean }) => {
+        setForm({ nombre: u.nombre, apellido: u.apellido, email: u.email, rol: u.rol, telefono: u.telefono ?? '', activo: u.activo })
       })
   }, [id])
 
@@ -70,7 +69,12 @@ export default function EditarMiembroPage() {
             <div>
               <label className="label">Rol</label>
               <select className="input" value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })}>
-                {ROLES_USUARIO.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
+                <optgroup label="Equipo interno">
+                  {ROLES_USUARIO.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
+                </optgroup>
+                <optgroup label="Contacto externo">
+                  {ROLES_ENCARGADO.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
+                </optgroup>
               </select>
             </div>
             <div>

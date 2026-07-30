@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Header from '@/components/Header'
 import Link from 'next/link'
-import { labelFromValue, ROLES_USUARIO } from '@/lib/constants'
+import { labelFromValue, ROLES_USUARIO, ROLES_ENCARGADO } from '@/lib/constants'
 import SetPasswordButton from '@/components/SetPasswordButton'
 import DeleteUsuarioButton from '@/components/DeleteUsuarioButton'
 
@@ -11,19 +11,24 @@ const rolColor: Record<string, string> = {
   SUPERVISOR: 'bg-purple-100 text-purple-800',
   TECNICO: 'bg-blue-100 text-blue-800',
   APLICADOR: 'bg-orange-100 text-orange-800',
+  ENCARGADO: 'bg-green-100 text-green-800',
 }
 
 const rolInitial: Record<string, string> = {
   SUPERVISOR: 'S',
   TECNICO: 'T',
   APLICADOR: 'A',
+  ENCARGADO: 'E',
 }
 
 const rolBgAvatar: Record<string, string> = {
   SUPERVISOR: 'bg-purple-600',
   TECNICO: 'bg-blue-600',
   APLICADOR: 'bg-orange-500',
+  ENCARGADO: 'bg-green-600',
 }
+
+const TODOS_LOS_ROLES = [...ROLES_USUARIO, ...ROLES_ENCARGADO]
 
 export default async function EquipoPage() {
   const usuarios = await prisma.usuario.findMany({
@@ -64,7 +69,7 @@ export default async function EquipoPage() {
                   <div className="min-w-0">
                     <p className="font-semibold text-gray-900">{u.nombre} {u.apellido}</p>
                     <span className={`badge ${rolColor[u.rol] ?? 'bg-gray-100 text-gray-800'}`}>
-                      {labelFromValue(ROLES_USUARIO, u.rol)}
+                      {labelFromValue(TODOS_LOS_ROLES, u.rol)}
                     </span>
                   </div>
                 </div>
@@ -107,7 +112,7 @@ export default async function EquipoPage() {
                   </div>
                   <div>
                     <p className="font-medium text-gray-700">{u.nombre} {u.apellido}</p>
-                    <p className="text-xs text-gray-400">{labelFromValue(ROLES_USUARIO, u.rol)}</p>
+                    <p className="text-xs text-gray-400">{labelFromValue(TODOS_LOS_ROLES, u.rol)}</p>
                   </div>
                   <Link href={`/equipo/${u.id}/editar`} className="text-xs text-primary-600 hover:text-primary-700">Editar</Link>
                   <DeleteUsuarioButton userId={u.id} userName={`${u.nombre} ${u.apellido}`} />

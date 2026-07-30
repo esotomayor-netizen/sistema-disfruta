@@ -2,6 +2,12 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export async function GET(_: Request, { params }: { params: { id: string } }) {
+  const usuario = await prisma.usuario.findUnique({ where: { id: parseInt(params.id) } })
+  if (!usuario) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+  return NextResponse.json(usuario)
+}
+
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const data = await req.json()
   const usuario = await prisma.usuario.update({
