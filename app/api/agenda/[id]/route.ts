@@ -10,10 +10,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json({ error: 'Solo un supervisor puede editar visitas agendadas' }, { status: 403 })
   }
   const data = await req.json()
+  const hora = /^\d{2}:\d{2}$/.test(data.hora) ? data.hora : '12:00'
   const agenda = await prisma.agendaVisita.update({
     where: { id: parseInt(params.id) },
     data: {
-      fecha: new Date(data.fecha + 'T12:00:00'),
+      fecha: new Date(`${data.fecha}T${hora}:00`),
       predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
       notas: data.notas || null,

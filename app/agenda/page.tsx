@@ -25,6 +25,10 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
+function toHHMM(date: Date) {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
 export default function AgendaPage() {
   const { data: session } = useSession()
   const esSupervisor = (session?.user as any)?.rol === 'SUPERVISOR'
@@ -38,12 +42,12 @@ export default function AgendaPage() {
 
   // Crear visita
   const [modal, setModal] = useState<{ fecha: string } | null>(null)
-  const [form, setForm] = useState({ predioId: '', tecnicoId: '', notas: '' })
+  const [form, setForm] = useState({ predioId: '', tecnicoId: '', notas: '', hora: '09:00' })
   const [saving, setSaving] = useState(false)
 
   // Editar visita
   const [editModal, setEditModal] = useState<AgendaItem | null>(null)
-  const [editForm, setEditForm] = useState({ fecha: '', predioId: '', tecnicoId: '', notas: '' })
+  const [editForm, setEditForm] = useState({ fecha: '', predioId: '', tecnicoId: '', notas: '', hora: '09:00' })
   const [editSaving, setEditSaving] = useState(false)
 
   // Generar agenda
@@ -93,7 +97,7 @@ export default function AgendaPage() {
 
   const handleDayClick = (day: number) => {
     const fecha = toYMD(new Date(viewDate.getFullYear(), viewDate.getMonth(), day))
-    setForm({ predioId: '', tecnicoId: tecnicos[0]?.id.toString() ?? '', notas: '' })
+    setForm({ predioId: '', tecnicoId: tecnicos[0]?.id.toString() ?? '', notas: '', hora: '09:00' })
     setModal({ fecha })
   }
 
@@ -127,6 +131,7 @@ export default function AgendaPage() {
       predioId: String(item.predio.id),
       tecnicoId: String(item.tecnico.id),
       notas: item.notas ?? '',
+      hora: toHHMM(new Date(item.fecha)),
     })
   }
 
@@ -297,7 +302,7 @@ export default function AgendaPage() {
                       {dayAgendas.slice(0, 3).map((a) => (
                         <div
                           key={a.id}
-                          title={`${a.predio.nombre} · ${a.tecnico.nombre} ${a.tecnico.apellido}`}
+                          title={`${a.predio.nombre} · ${a.tecnico.nombre} ${a.tecnico.apellido} · ${toHHMM(new Date(a.fecha))} hrs`}
                           onClick={(e) => handleEditClick(a, e)}
                           className={`text-xs bg-primary-100 text-primary-800 rounded px-1 py-0.5 flex items-center gap-1 ${esSupervisor ? 'cursor-pointer hover:bg-primary-200' : ''}`}
                         >
@@ -344,7 +349,7 @@ export default function AgendaPage() {
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 text-sm truncate">{a.predio.nombre}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(a.fecha).toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      {new Date(a.fecha).toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })} · {toHHMM(new Date(a.fecha))} hrs
                     </p>
                     <p className="text-xs text-gray-500">{a.tecnico.nombre} {a.tecnico.apellido}</p>
                     {a.notas && <p className="text-xs text-gray-400 mt-0.5 italic truncate">{a.notas}</p>}
@@ -449,6 +454,15 @@ export default function AgendaPage() {
                 </select>
               </div>
               <div>
+                <label className="label">Hora</label>
+                <input
+                  className="input"
+                  type="time"
+                  value={form.hora}
+                  onChange={(e) => setForm({ ...form, hora: e.target.value })}
+                />
+              </div>
+              <div>
                 <label className="label">Notas (opcional)</label>
                 <input
                   className="input"
@@ -484,14 +498,25 @@ export default function AgendaPage() {
               <button onClick={() => setEditModal(null)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
             <div className="p-6 space-y-4">
-              <div>
-                <label className="label">Fecha</label>
-                <input
-                  className="input"
-                  type="date"
-                  value={editForm.fecha}
-                  onChange={(e) => setEditForm({ ...editForm, fecha: e.target.value })}
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Fecha</label>
+                  <input
+                    className="input"
+                    type="date"
+                    value={editForm.fecha}
+                    onChange={(e) => setEditForm({ ...editForm, fecha: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="label">Hora</label>
+                  <input
+                    className="input"
+                    type="time"
+                    value={editForm.hora}
+                    onChange={(e) => setEditForm({ ...editForm, hora: e.target.value })}
+                  />
+                </div>
               </div>
               <div>
                 <label className="label">Predio</label>
