@@ -7,7 +7,7 @@ const WA_TOKEN = process.env.META_WHATSAPP_TOKEN
 const WA_PHONE_ID = process.env.META_PHONE_NUMBER_ID
 
 // Único usuario autorizado para disparar el aviso de agenda programada al encargado del predio
-export const AGENDA_WHATSAPP_SUPERVISOR_EMAIL = 'eduardo.sotomayor@exportadoradisfruta.cl'
+export const AGENDA_WHATSAPP_SUPERVISOR_EMAIL = 'e.sotomayor@exportadoradisfruta.cl'
 
 // ─── Canales ──────────────────────────────────────────────────────────────────
 
