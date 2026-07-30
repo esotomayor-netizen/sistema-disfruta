@@ -6,6 +6,9 @@ const FROM = process.env.NOTIFY_FROM_EMAIL ?? 'Sistema Disfruta <onboarding@rese
 const WA_TOKEN = process.env.META_WHATSAPP_TOKEN
 const WA_PHONE_ID = process.env.META_PHONE_NUMBER_ID
 
+// Único usuario autorizado para disparar el aviso de agenda programada al encargado del predio
+export const AGENDA_WHATSAPP_SUPERVISOR_EMAIL = 'eduardo.sotomayor@exportadoradisfruta.cl'
+
 // ─── Canales ──────────────────────────────────────────────────────────────────
 
 function normalizeChileanPhone(raw: string): string {
@@ -79,6 +82,23 @@ async function notifyAll(
       if (u.telefono) await sendWhatsApp(u.telefono, waTemplate, waParamsFn(saludo))
     })
   )
+}
+
+// ─── Agenda programada (aviso al encargado del predio) ───────────────────────
+// Templates WhatsApp requeridos en Meta Business Manager:
+//   Nombre: agenda_programada | Idioma: es_CL | Categoría: UTILITY
+//   Body: "Hola {{1}}, se agendó una visita técnica al predio {{2}} para el {{3}} a las {{4}} hrs."
+
+export async function notifyAgendaProgramada(
+  encargado: Usuario,
+  predioNombre: string,
+  fecha: Date
+): Promise<void> {
+  if (!encargado.telefono) return
+  const saludo = fullName(encargado)
+  const fechaStr = fecha.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+  const horaStr = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+  await sendWhatsApp(encargado.telefono, 'agenda_programada', [saludo, predioNombre, fechaStr, horaStr])
 }
 
 // ─── Informe de visita generado ───────────────────────────────────────────────
