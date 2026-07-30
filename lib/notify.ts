@@ -6,7 +6,10 @@ const FROM = process.env.NOTIFY_FROM_EMAIL ?? 'Sistema Disfruta <onboarding@rese
 const WA_TOKEN = process.env.META_WHATSAPP_TOKEN
 const WA_PHONE_ID = process.env.META_PHONE_NUMBER_ID
 
-// ─── Canales ──────────────────────────────────────────────────────────────────
+// Único usuario autorizado para disparar el aviso de agenda programada al encargado del predio
+export const AGENDA_WHATSAPP_SUPERVISOR_EMAIL = 'eduardo.sotomayor@exportadoradisfruta.cl'
+
+// ─── Canales ───────────────────────────────────────────────────────────────────────
 
 function normalizeChileanPhone(raw: string): string {
   const d = raw.replace(/\D/g, '')
@@ -55,7 +58,7 @@ async function sendWhatsApp(phone: string, template: string, params: string[]): 
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────────────────
 
 type Usuario = { id: number; nombre: string; apellido: string; email: string; telefono: string | null }
 
@@ -81,10 +84,27 @@ async function notifyAll(
   )
 }
 
-// ─── Informe de visita generado ───────────────────────────────────────────────
+// ─── Agenda programada (aviso al encargado del predio) ───────────────────────────────
 // Templates WhatsApp requeridos en Meta Business Manager:
-//   Nombre: informe_visita | Idioma: es_CL | Categoría: UTILITY
-//   Body: "Hola {{1}}, {{2}} generó el informe de visita del predio {{3}}. Ingresa al sistema para revisarlo."
+//   Nombre: agenda_programada | Idioma: es_CL | Categoría: UTILITY
+//   Body: "Hola {{1}}, se agendó una visita técnica al predio {{2}} para el {{3}} a las {{4}} hrs."
+
+export async function notifyAgendaProgramada(
+  encargado: Usuario,
+  predioNombre: string,
+  fecha: Date
+): Promise<void> {
+  if (!encargado.telefono) return
+  const saludo = fullName(encargado)
+  const fechaStr = fecha.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+  const horaStr = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+  await sendWhatsApp(encargado.telefono, 'agenda_programada', [saludo, predioNombre, fechaStr, horaStr])
+}
+
+// ─── Informe de visita generado ────────────────────────────────────────────────────
+// Templates WhatsApp requeridos en Meta Business Manager:
+//   Nombre: informe_visita | Idioma: es | Categoría: UTILITY
+//   Body: "Hola {{1}}, {{2}} generó el informe de visita del predio {{3}}."
 
 export async function notifyInformeVisita(visitaId: number, generadoPorId: number): Promise<void> {
   const [visita, generadoPor, supervisores] = await Promise.all([
@@ -124,10 +144,10 @@ export async function notifyInformeVisita(visitaId: number, generadoPorId: numbe
   )
 }
 
-// ─── Nueva oportunidad ────────────────────────────────────────────────────────
+// ─── Nueva oportunidad ────────────────────────────────────────────────────────────
 // Templates WhatsApp requeridos en Meta Business Manager:
-//   Nombre: nueva_oportunidad | Idioma: es_CL | Categoría: UTILITY
-//   Body: "Hola {{1}}, se registró una nueva oportunidad: {{2}}. Técnico asignado: {{3}}. Ingresa al sistema para registrar el primer contacto."
+//   Nombre: nueva_oportunidad | Idioma: es | Categoría: UTILITY
+//   Body: "Hola {{1}}, se registró una nueva oportunidad: {{2}}. Técnico: {{3}}."
 
 export async function notifyNuevaOportunidad(oportunidad: {
   id: number
@@ -162,13 +182,13 @@ export async function notifyNuevaOportunidad(oportunidad: {
   )
 }
 
-// ─── Recordatorios de contacto (cron diario) ─────────────────────────────────
+// ─── Recordatorios de contacto (cron diario) ────────────────────────────────────
 // Templates WhatsApp requeridos:
-//   Nombre: recordatorio_tecnico | Idioma: es_CL | Categoría: UTILITY
-//   Body: "Hola {{1}}, tienes {{2}} oportunidad(es) sin contacto hace más de 3 días. Ingresa al sistema para registrar el contacto."
+//   Nombre: recordatorio_tecnico | Idioma: es | Categoría: UTILITY
+//   Body: "Hola {{1}}, tienes {{2}} oportunidad(es) sin contacto hace más de 3 días. Revisa el sistema."
 //
-//   Nombre: recordatorio_supervisor | Idioma: es_CL | Categoría: UTILITY
-//   Body: "Hola {{1}}, hay {{2}} oportunidad(es) sin contacto reciente en el equipo. Ingresa al sistema para revisar."
+//   Nombre: recordatorio_supervisor | Idioma: es | Categoría: UTILITY
+//   Body: "Hola {{1}}, hay {{2}} oportunidad(es) sin contacto reciente en el equipo. Revisa el sistema."
 
 export async function procesarRecordatorios(): Promise<number> {
   const hace3dias = new Date()

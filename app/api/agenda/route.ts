@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
+import { notifyAgendaProgramada, AGENDA_WHATSAPP_SUPERVISOR_EMAIL } from '@/lib/notify'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -41,7 +43,20 @@ export async function POST(req: Request) {
       predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
     },
-    include: { predio: { include: { cultivos: true } }, tecnico: true },
+    include: { predio: { include: { cultivos: true, encargado: true } }, tecnico: true },
   })
+
+  const session = await getSession()
+  if (session) {
+    const generador = await prisma.usuario.findUnique({ where: { id: (session.user as any).id } })
+    if (generador?.email === AGENDA_WHATSAPP_SUPERVISOR_EMAIL && agenda.predio.encargado) {
+      try {
+        await notifyAgendaProgramada(agenda.predio.encargado, agenda.predio.nombre, agenda.fecha)
+      } catch (e) {
+        console.error('[notify] agenda-programada:', e)
+      }
+    }
+  }
+
   return NextResponse.json(agenda, { status: 201 })
 }

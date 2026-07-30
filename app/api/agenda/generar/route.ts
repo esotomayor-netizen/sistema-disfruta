@@ -1,7 +1,9 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized, isSupervisor } from '@/lib/session'
+import { notifyAgendaProgramada, AGENDA_WHATSAPP_SUPERVISOR_EMAIL } from '@/lib/notify'
 
 function getWorkingDays(year: number, month: number): Date[] {
   const days: Date[] = []
@@ -24,7 +26,14 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-interface PredioLite { id: number; latitud: number | null; longitud: number | null; tecnicoId: number }
+interface PredioLite {
+  id: number
+  latitud: number | null
+  longitud: number | null
+  tecnicoId: number
+  nombre?: string
+  encargado?: { id: number; nombre: string; apellido: string; email: string; telefono: string | null } | null
+}
 
 // Nearest-neighbor greedy sort to minimize travel distance between consecutive visits
 function sortByProximity(predios: PredioLite[]): PredioLite[] {
@@ -84,7 +93,14 @@ export async function POST(req: Request) {
 
   const predios = await prisma.predio.findMany({
     where: predioWhere,
-    select: { id: true, latitud: true, longitud: true, tecnicoId: true },
+    select: {
+      id: true,
+      nombre: true,
+      latitud: true,
+      longitud: true,
+      tecnicoId: true,
+      encargado: { select: { id: true, nombre: true, apellido: true, email: true, telefono: true } },
+    },
   })
 
   if (predios.length === 0) {
@@ -140,6 +156,22 @@ export async function POST(req: Request) {
   }
 
   await prisma.agendaVisita.createMany({ data: toCreate, skipDuplicates: true })
+
+  const generador = await prisma.usuario.findUnique({ where: { id: (session.user as any).id } })
+  if (generador?.email === AGENDA_WHATSAPP_SUPERVISOR_EMAIL) {
+    const predioMap = new Map(predios.map((p) => [p.id, p]))
+    await Promise.all(
+      toCreate.map(async (item) => {
+        const predio = predioMap.get(item.predioId)
+        if (!predio?.encargado) return
+        try {
+          await notifyAgendaProgramada(predio.encargado, predio.nombre ?? '', item.fecha)
+        } catch (e) {
+          console.error('[notify] agenda-programada:', e)
+        }
+      })
+    )
+  }
 
   return NextResponse.json({
     ok: true,
