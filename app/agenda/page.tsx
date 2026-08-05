@@ -10,7 +10,12 @@ import {
 
 interface Predio { id: number; nombre: string; cultivos: { cultivo: string }[]; empresa: { razonSocial: string } }
 interface Usuario { id: number; nombre: string; apellido: string }
-interface AgendaItem { id: number; fecha: string; notas: string | null; predio: Predio; tecnico: Usuario }
+interface OportunidadLite { id: number; nombre: string }
+interface AgendaItem { id: number; fecha: string; notas: string | null; predio: Predio | null; oportunidad: OportunidadLite | null; tecnico: Usuario }
+
+function agendaTargetName(a: AgendaItem): string {
+  return a.predio?.nombre ?? a.oportunidad?.nombre ?? '—'
+}
 interface Stat { mes: string; planificadas: number; realizadas: number }
 interface GenerarResult { ok: boolean; creadas?: number; tecnicos?: number; diasHabiles?: number; mes?: string; error?: string }
 
@@ -125,6 +130,7 @@ export default function AgendaPage() {
   const handleEditClick = (item: AgendaItem, e: React.MouseEvent) => {
     e.stopPropagation()
     if (!esSupervisor) return
+    if (!item.predio) return // Las visitas agendadas a una oportunidad se editan desde su propia ficha
     setEditModal(item)
     setEditForm({
       fecha: toYMD(new Date(item.fecha)),
@@ -302,11 +308,11 @@ export default function AgendaPage() {
                       {dayAgendas.slice(0, 3).map((a) => (
                         <div
                           key={a.id}
-                          title={`${a.predio.nombre} · ${a.tecnico.nombre} ${a.tecnico.apellido} · ${toHHMM(new Date(a.fecha))} hrs`}
+                          title={`${agendaTargetName(a)}${a.oportunidad ? ' (oportunidad)' : ''} · ${a.tecnico.nombre} ${a.tecnico.apellido} · ${toHHMM(new Date(a.fecha))} hrs`}
                           onClick={(e) => handleEditClick(a, e)}
-                          className={`text-xs bg-primary-100 text-primary-800 rounded px-1 py-0.5 flex items-center gap-1 ${esSupervisor ? 'cursor-pointer hover:bg-primary-200' : ''}`}
+                          className={`text-xs rounded px-1 py-0.5 flex items-center gap-1 ${a.oportunidad ? 'bg-amber-100 text-amber-800' : 'bg-primary-100 text-primary-800'} ${esSupervisor ? 'cursor-pointer hover:brightness-95' : ''}`}
                         >
-                          <span className="truncate flex-1">{a.predio.nombre}</span>
+                          <span className="truncate flex-1">{agendaTargetName(a)}</span>
                           {esSupervisor && (
                             <button
                               onClick={(e) => handleEliminar(a.id, e)}
@@ -347,7 +353,10 @@ export default function AgendaPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900 text-sm truncate">{a.predio.nombre}</p>
+                    <p className="font-medium text-gray-900 text-sm truncate flex items-center gap-1.5">
+                      {agendaTargetName(a)}
+                      {a.oportunidad && <span className="badge bg-amber-100 text-amber-800 text-[10px]">Oportunidad</span>}
+                    </p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {new Date(a.fecha).toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })} · {toHHMM(new Date(a.fecha))} hrs
                     </p>
@@ -493,7 +502,7 @@ export default function AgendaPage() {
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-gray-900">Editar visita agendada</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{editModal.predio.nombre}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{agendaTargetName(editModal)}</p>
               </div>
               <button onClick={() => setEditModal(null)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>

@@ -16,23 +16,23 @@ export async function GET(req: Request) {
   const end = new Date(fecha + 'T23:59:59')
 
   const agendas = await prisma.agendaVisita.findMany({
-    where: { tecnicoId: parseInt(tecnicoId), fecha: { gte: start, lte: end } },
+    where: { tecnicoId: parseInt(tecnicoId), fecha: { gte: start, lte: end }, predioId: { not: null } },
     include: { predio: { include: { empresa: true } } },
     orderBy: { id: 'asc' },
   })
 
-  const conGPS = agendas.filter(a => a.predio.latitud !== null && a.predio.longitud !== null)
-  const sinGPS = agendas.filter(a => a.predio.latitud === null || a.predio.longitud === null)
+  const conGPS = agendas.filter(a => a.predio!.latitud !== null && a.predio!.longitud !== null)
+  const sinGPS = agendas.filter(a => a.predio!.latitud === null || a.predio!.longitud === null)
 
   const ordered = nearestNeighborOrder(
-    conGPS.map(a => ({ lat: a.predio.latitud!, lng: a.predio.longitud!, agenda: a }))
+    conGPS.map(a => ({ lat: a.predio!.latitud!, lng: a.predio!.longitud!, agenda: a }))
   )
 
   const paradas = ordered.map((p, i) => ({
     orden:    i + 1,
     agendaId: p.agenda.id,
-    predio:   p.agenda.predio.nombre,
-    empresa:  p.agenda.predio.empresa.razonSocial,
+    predio:   p.agenda.predio!.nombre,
+    empresa:  p.agenda.predio!.empresa.razonSocial,
     lat:      p.lat,
     lng:      p.lng,
   }))
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     fecha,
     totalVisitas:  agendas.length,
     prediosConGPS: ordered.length,
-    prediosSinGPS: sinGPS.map(a => a.predio.nombre),
+    prediosSinGPS: sinGPS.map(a => a.predio!.nombre),
     paradas,
     mapsUrl,
     proximaFecha,

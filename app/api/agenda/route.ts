@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   const month = searchParams.get('month') // YYYY-MM
   const fecha = searchParams.get('fecha') // YYYY-MM-DD (single day)
   const tecnicoId = searchParams.get('tecnicoId')
+  const oportunidadId = searchParams.get('oportunidadId')
 
   let start: Date | undefined
   let end: Date | undefined
@@ -27,9 +28,10 @@ export async function GET(req: Request) {
     where: {
       ...(start && end ? { fecha: fecha ? { gte: start, lte: end } : { gte: start, lt: end } } : {}),
       ...(tecnicoId ? { tecnicoId: parseInt(tecnicoId) } : {}),
+      ...(oportunidadId ? { oportunidadId: parseInt(oportunidadId) } : {}),
     },
     orderBy: { fecha: 'asc' },
-    include: { predio: { include: { cultivos: true } }, tecnico: true },
+    include: { predio: { include: { cultivos: true } }, oportunidad: true, tecnico: true },
   })
   return NextResponse.json(agendas)
 }
@@ -37,14 +39,22 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const data = await req.json()
   const hora = /^\d{2}:\d{2}$/.test(data.hora) ? data.hora : '12:00'
+
+  const predioId = data.predioId ? parseInt(data.predioId) : null
+  const oportunidadId = data.oportunidadId ? parseInt(data.oportunidadId) : null
+  if (!predioId && !oportunidadId) {
+    return NextResponse.json({ error: 'Debe indicar un predioId o un oportunidadId' }, { status: 400 })
+  }
+
   const agenda = await prisma.agendaVisita.create({
     data: {
       fecha: new Date(`${data.fecha}T${hora}:00`),
       notas: data.notas || null,
-      predioId: parseInt(data.predioId),
+      predioId,
+      oportunidadId,
       tecnicoId: parseInt(data.tecnicoId),
     },
-    include: { predio: { include: { cultivos: true, encargado: true } }, tecnico: true },
+    include: { predio: { include: { cultivos: true, encargado: true } }, oportunidad: true, tecnico: true },
   })
 
   const session = await getSession()
@@ -54,6 +64,8 @@ export async function POST(req: Request) {
     const generador = await prisma.usuario.findUnique({ where: { id: (session.user as any).id } })
     if (generador?.email !== AGENDA_WHATSAPP_SUPERVISOR_EMAIL) {
       console.log(`[notify] agenda-programada: usuario que agenda (${generador?.email ?? 'desconocido'}) no es ${AGENDA_WHATSAPP_SUPERVISOR_EMAIL}, se omite aviso`)
+    } else if (!agenda.predio) {
+      console.log('[notify] agenda-programada: visita agendada a una oportunidad (sin predio), se omite aviso')
     } else if (!agenda.predio.encargado) {
       console.log(`[notify] agenda-programada: predio "${agenda.predio.nombre}" no tiene Encargado asignado, se omite aviso`)
     } else if (!agenda.predio.encargado.telefono) {

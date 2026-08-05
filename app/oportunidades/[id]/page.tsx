@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import Interacciones from './Interacciones'
+import AgendarVisita from './AgendarVisita'
 import { parseCoordinate } from '@/lib/geo'
 
 const ESTADOS = [
@@ -32,7 +33,7 @@ type Oportunidad = {
   notas: string | null
   estado: string
   createdAt: string
-  tecnico: { nombre: string; apellido: string }
+  tecnico: { id: number; nombre: string; apellido: string }
 }
 
 export default function OportunidadPage() {
@@ -309,6 +310,10 @@ export default function OportunidadPage() {
           </div>
         </form>
       )}
+      </div>
+
+      <div className="max-w-xl">
+        <AgendarVisita oportunidadId={id} tecnicoDefaultId={oportunidad?.tecnico.id ?? null} />
       </div>
 
       <div className="max-w-xl">
