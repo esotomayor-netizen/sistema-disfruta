@@ -4,13 +4,13 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
-import { formatDate, TIPOS_PRODUCTO, UNIDADES, ESTADOS_FENOLOGICOS, labelFromValue, tipoProductoColor } from '@/lib/constants'
+import { formatDate, TIPOS_PRODUCTO, UNIDADES, ESTADOS_FENOLOGICOS, LABOR_TIPOS, labelFromValue, tipoProductoColor } from '@/lib/constants'
 
 interface Predio { id: number; nombre: string; csg: string; cultivos: { cultivo: string; variedades: string | null }[]; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
 interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; fotos: string[]; estado: string; responsable: Usuario }
 interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; observaciones: string | null; estado: string; tecnico: Usuario }
-interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; checkinLat: number | null; checkinLng: number | null; especie: string | null; variedades: string | null; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
+interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; checkinLat: number | null; checkinLng: number | null; especie: string | null; variedades: string | null; fotos: string[]; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
 interface CatalogoItem { id: number; labor: string; categoria: string; descripcion: string; especie: string }
 interface ProgramaItem { id: number; producto: string; ingredienteActivo: string | null; dosisHa: string | null; tratamientoObjetivo: string | null; grupo?: string }
 interface ProgramaFitoItem { id: number; producto: string; ingredienteActivo: string | null; concentracion: string | null; dosisHa: string | null; tratamientoObjetivo: string | null; observaciones: string | null }
@@ -78,11 +78,19 @@ export default function VisitaDetailPage() {
   const [manualUnidad, setManualUnidad] = useState('L/ha')
   const [manualTipo, setManualTipo] = useState('OTRO')
   const [manualObjetivo, setManualObjetivo] = useState('')
+  const [mostrarManualLabor, setMostrarManualLabor] = useState(false)
+  const [manualLaborTipo, setManualLaborTipo] = useState('MANTENIMIENTO')
+  const [manualLaborDescripcion, setManualLaborDescripcion] = useState('')
+  const [manualLaborDetalle, setManualLaborDetalle] = useState('')
+  const [imagenesVisita, setImagenesVisita] = useState<(string | null)[]>([null, null, null, null])
+  const [guardandoImagenes, setGuardandoImagenes] = useState(false)
 
   const fetchVisita = useCallback(() => {
     fetch(`/api/visitas/${id}`).then((r) => r.json()).then((v) => {
       setVisita(v)
       setObservacionesEdit(v.observaciones ?? '')
+      const fotos = (v.fotos ?? []) as string[]
+      setImagenesVisita([0, 1, 2, 3].map((i) => fotos[i] ?? null))
     })
   }, [id])
 
@@ -314,6 +322,67 @@ export default function VisitaDetailPage() {
     fetchVisita()
   }
 
+  const handleImagenChange = (index: number, files: FileList | null) => {
+    const file = files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const result = e.target?.result
+      if (typeof result === 'string') {
+        setImagenesVisita((prev) => prev.map((img, i) => (i === index ? result : img)))
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleEliminarImagen = (index: number) => {
+    setImagenesVisita((prev) => prev.map((img, i) => (i === index ? null : img)))
+  }
+
+  const handleGuardarImagenes = async () => {
+    if (!visita) return
+    setGuardandoImagenes(true)
+    await fetch(`/api/visitas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        estado: visita.estado,
+        observaciones: visita.observaciones,
+        fotos: imagenesVisita.filter((img): img is string => !!img),
+      }),
+    })
+    setGuardandoImagenes(false)
+    fetchVisita()
+  }
+
+  const handleAgregarLaborManual = async () => {
+    if (!visita || !manualLaborDescripcion.trim()) return
+    setSaving(true)
+    await fetch('/api/labores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tipo: manualLaborTipo,
+        descripcion: manualLaborDescripcion.trim(),
+        fecha: visita.fecha,
+        estado: 'COMPLETADA',
+        observaciones: manualLaborDetalle.trim() || null,
+        fotos: fotosNuevas,
+        predioId: visita.predio.id,
+        responsableId: visita.tecnico.id,
+        visitaId: visita.id,
+      }),
+    })
+    setSaving(false)
+    setModal(null)
+    setManualLaborTipo('MANTENIMIENTO')
+    setManualLaborDescripcion('')
+    setManualLaborDetalle('')
+    setMostrarManualLabor(false)
+    setFotosNuevas([])
+    fetchVisita()
+  }
+
   const handleGuardarObservaciones = async () => {
     if (!visita) return
     setGuardandoObs(true)
@@ -481,6 +550,48 @@ export default function VisitaDetailPage() {
         </div>
       </div>
 
+      {/* Imágenes generales de la visita (independiente de labores) */}
+      <div className="card mb-6">
+        <h2 className="font-semibold text-gray-800 mb-3">Imágenes</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {imagenesVisita.map((img, i) => (
+            <div key={i} className="aspect-square">
+              {img ? (
+                <div className="relative w-full h-full">
+                  <img src={img} className="w-full h-full object-cover rounded-lg border border-gray-200" alt={`Imagen ${i + 1}`} />
+                  <button
+                    type="button"
+                    onClick={() => handleEliminarImagen(i)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-full rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-primary-300 hover:text-primary-500 cursor-pointer transition-colors">
+                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-xs">Foto {i + 1}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => handleImagenChange(i, e.target.files)}
+                  />
+                </label>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end mt-3">
+          <button onClick={handleGuardarImagenes} disabled={guardandoImagenes} className="btn-secondary text-xs py-1.5 px-3">
+            {guardandoImagenes ? 'Guardando…' : 'Guardar imágenes'}
+          </button>
+        </div>
+      </div>
+
       {/* Banner modo edición */}
       {modoEdicion && (
         <div className="mb-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-700">
@@ -497,7 +608,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Labores ({visita.labores.length})</h2>
             {(visita.estado === 'EN_PROGRESO' || modoEdicion) && (
-              <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null); setBosquejo(null); setFotosNuevas([]) }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
+              <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null); setBosquejo(null); setFotosNuevas([]); setMostrarManualLabor(false); setManualLaborDescripcion(''); setManualLaborDetalle('') }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
             )}
           </div>
           <div className="space-y-2">
@@ -725,11 +836,73 @@ export default function VisitaDetailPage() {
               </div>
             )}
 
+            {/* Agregar labor manualmente */}
+            <div className="px-4 pb-2 border-t border-gray-100 pt-3">
+              <button
+                type="button"
+                onClick={() => setMostrarManualLabor(!mostrarManualLabor)}
+                className="text-xs text-primary-600 hover:text-primary-800 font-medium"
+              >
+                {mostrarManualLabor ? '− Ocultar' : '+ Agregar labor manualmente (no está en el catálogo)'}
+              </button>
+              {mostrarManualLabor && (
+                <div className="mt-2 space-y-2">
+                  <select className="input" value={manualLaborTipo} onChange={(e) => setManualLaborTipo(e.target.value)}>
+                    {LABOR_TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Nombre de la labor"
+                    value={manualLaborDescripcion}
+                    onChange={(e) => setManualLaborDescripcion(e.target.value)}
+                  />
+                  <textarea
+                    className="input text-sm"
+                    rows={2}
+                    placeholder="Detalle / observaciones (opcional)"
+                    value={manualLaborDetalle}
+                    onChange={(e) => setManualLaborDetalle(e.target.value)}
+                  />
+                  <div>
+                    <label className="label">Fotos (opcional)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      capture="environment"
+                      onChange={(e) => handleAgregarFotos(e.target.files)}
+                      className="input text-sm"
+                    />
+                    {fotosNuevas.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {fotosNuevas.map((src, i) => (
+                          <div key={i} className="relative">
+                            <img src={src} className="w-16 h-16 object-cover rounded-lg border border-gray-200" alt="Foto adjunta" />
+                            <button
+                              type="button"
+                              onClick={() => handleEliminarFotoNueva(i)}
+                              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={handleAgregarLaborManual} disabled={!manualLaborDescripcion.trim() || saving} className="btn-primary w-full text-sm">
+                    {saving ? 'Guardando…' : 'Agregar labor manual'}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
               <button onClick={handleAgregarLabor} disabled={!laborSeleccionada || saving} className="btn-primary flex-1">
                 {saving ? 'Guardando…' : 'Agregar labor'}
               </button>
-              <button onClick={() => { setModal(null); setFotosNuevas([]) }} className="btn-secondary">Cancelar</button>
+              <button onClick={() => { setModal(null); setFotosNuevas([]); setMostrarManualLabor(false) }} className="btn-secondary">Cancelar</button>
             </div>
           </div>
         </div>
