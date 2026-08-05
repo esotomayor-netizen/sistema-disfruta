@@ -23,6 +23,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     data: {
       estado: data.estado,
       observaciones: data.observaciones,
+      ...(Array.isArray(data.fotos) ? { fotos: data.fotos } : {}),
     },
   })
   return NextResponse.json(visita)
