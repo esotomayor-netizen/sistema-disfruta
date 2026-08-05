@@ -143,6 +143,7 @@ model Visita {
   checkinLng    Float?
   especie       String?
   variedades    String?
+  fotos         String[]          @default([])
   labores       Labor[]
   aplicaciones  Aplicacion[]
   conteos       Conteo[]

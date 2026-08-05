@@ -138,6 +138,20 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
           </div>
         )}
 
+        {/* Imágenes generales (independiente de labores) */}
+        {visita.fotos && visita.fotos.length > 0 && (
+          <div className="section">
+            <h2>Imágenes ({visita.fotos.length})</h2>
+            <div className="fotos-final-grid">
+              {visita.fotos.map((src, i) => (
+                <div key={i} className="foto-item">
+                  <img src={src} alt={`Imagen ${i + 1} de la visita`} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Labores */}
         <div className="section">
           <h2>Labores Realizadas ({visita.labores.length})</h2>
