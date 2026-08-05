@@ -111,6 +111,7 @@ export default function Interacciones({
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
+  // Gmail
   const [gmailConectado, setGmailConectado] = useState<boolean | null>(null)
   const [sincronizando, setSincronizando] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
@@ -152,6 +153,7 @@ export default function Interacciones({
     }
   }, [oportunidadId, contactEmail, fetchInteracciones])
 
+  // Verificar estado Gmail y auto-sincronizar al cargar si hay email de contacto
   useEffect(() => {
     fetch('/api/gmail/status')
       .then((r) => r.json())
