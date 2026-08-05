@@ -11,15 +11,23 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
   const data = await req.json()
   const hora = /^\d{2}:\d{2}$/.test(data.hora) ? data.hora : '12:00'
+
+  const predioId = data.predioId ? parseInt(data.predioId) : null
+  const oportunidadId = data.oportunidadId ? parseInt(data.oportunidadId) : null
+  if (!predioId && !oportunidadId) {
+    return NextResponse.json({ error: 'Debe indicar un predioId o un oportunidadId' }, { status: 400 })
+  }
+
   const agenda = await prisma.agendaVisita.update({
     where: { id: parseInt(params.id) },
     data: {
       fecha: new Date(`${data.fecha}T${hora}:00`),
-      predioId: parseInt(data.predioId),
+      predioId,
+      oportunidadId,
       tecnicoId: parseInt(data.tecnicoId),
       notas: data.notas || null,
     },
-    include: { predio: { include: { cultivos: true } }, tecnico: true },
+    include: { predio: { include: { cultivos: true } }, oportunidad: true, tecnico: true },
   })
   return NextResponse.json(agenda)
 }

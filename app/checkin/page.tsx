@@ -71,7 +71,7 @@ export default function CheckInPage() {
       fetch(`/api/agenda?fecha=${today}&tecnicoId=${tecnicoId}`).then((r) => r.json()),
       fetch(`/api/checkins?fecha=${today}&tecnicoId=${tecnicoId}`).then((r) => r.json()),
     ]).then(([a, c]) => {
-      setAgenda(a as AgendaVisita[])
+      setAgenda((a as (AgendaVisita & { predio: Predio | null })[]).filter((item) => item.predio) as AgendaVisita[])
       const cs = c as CheckIn[]
       setCheckins(cs)
       if (cs.length >= 2) {

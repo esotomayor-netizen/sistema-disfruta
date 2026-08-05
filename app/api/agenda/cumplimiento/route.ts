@@ -18,6 +18,7 @@ export async function GET(req: Request) {
   const agendas = await prisma.agendaVisita.findMany({
     where: {
       fecha: { gte: start, lt: end },
+      predioId: { not: null },
       ...(tecnicoId ? { tecnicoId: parseInt(tecnicoId) } : {}),
     },
     include: { predio: true, tecnico: true },
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
 
       const visita = await prisma.visita.findFirst({
         where: {
-          predioId: a.predioId,
+          predioId: a.predioId!,
           tecnicoId: a.tecnicoId,
           fecha: { gte: dayStart, lte: dayEnd },
           checkinLat: { not: null },
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
       return {
         id: a.id,
         fecha: a.fecha,
-        predio: { id: a.predio.id, nombre: a.predio.nombre },
+        predio: { id: a.predio!.id, nombre: a.predio!.nombre },
         tecnico: { id: a.tecnico.id, nombre: a.tecnico.nombre, apellido: a.tecnico.apellido },
         notas: a.notas,
         cumplida: !!visita,
