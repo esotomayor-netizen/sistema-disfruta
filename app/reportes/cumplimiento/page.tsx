@@ -29,7 +29,7 @@ export default async function CumplimientoPage({
 
   const [usuarios, visitasGroup, agendasGroup, informesGroup] = await Promise.all([
     prisma.usuario.findMany({
-      where: { activo: true },
+      where: { activo: true, rol: { not: 'ENCARGADO' } },
       orderBy: { nombre: 'asc' },
     }),
     prisma.visita.groupBy({
