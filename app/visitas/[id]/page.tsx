@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import { formatDate, TIPOS_PRODUCTO, UNIDADES, ESTADOS_FENOLOGICOS, LABOR_TIPOS, labelFromValue, tipoProductoColor } from '@/lib/constants'
@@ -49,7 +50,10 @@ function inferTipo(item: ProgramaItem): string {
 export default function VisitaDetailPage() {
   const { id } = useParams()
   const router = useRouter()
+  const { data: session } = useSession()
+  const puedeEliminarVisita = (session?.user as any)?.email === 'e.sotomayor@exportadoradisfruta.cl'
   const [visita, setVisita] = useState<Visita | null>(null)
+  const [eliminandoVisita, setEliminandoVisita] = useState(false)
   const [catalogo, setCatalogo] = useState<CatalogoItem[]>([])
   const [programa, setPrograma] = useState<ProgramaItem[]>([])
   const [modal, setModal] = useState<'labor' | 'aplicacion' | null>(null)
@@ -431,6 +435,18 @@ export default function VisitaDetailPage() {
     fetchVisita()
   }
 
+  const handleEliminarVisita = async () => {
+    if (!confirm('¿Eliminar esta visita? Se eliminarán también sus labores, aplicaciones e informes asociados. Esta acción no se puede deshacer.')) return
+    setEliminandoVisita(true)
+    const res = await fetch(`/api/visitas/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      router.push('/visitas')
+    } else {
+      setEliminandoVisita(false)
+      alert('No se pudo eliminar la visita.')
+    }
+  }
+
   if (!visita) return <div className="p-8 text-gray-400">Cargando…</div>
 
   return (
@@ -460,6 +476,18 @@ export default function VisitaDetailPage() {
             )}
             {visita.estado === 'EN_PROGRESO' && (
               <button onClick={handleCompletar} className="btn-primary">Marcar completada</button>
+            )}
+            {puedeEliminarVisita && (
+              <button
+                onClick={handleEliminarVisita}
+                disabled={eliminandoVisita}
+                className="btn-secondary flex items-center gap-1.5 text-red-600 hover:bg-red-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                {eliminandoVisita ? 'Eliminando…' : 'Eliminar visita'}
+              </button>
             )}
           </div>
         }

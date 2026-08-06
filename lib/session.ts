@@ -13,3 +13,9 @@ export function unauthorized() {
 export function isSupervisor(session: Awaited<ReturnType<typeof getSession>>) {
   return session?.user?.rol === 'SUPERVISOR'
 }
+
+export const EMAIL_EDUARDO_SOTOMAYOR = 'e.sotomayor@exportadoradisfruta.cl'
+
+export function puedeEliminarVisitas(session: Awaited<ReturnType<typeof getSession>>) {
+  return session?.user?.email === EMAIL_EDUARDO_SOTOMAYOR
+}
