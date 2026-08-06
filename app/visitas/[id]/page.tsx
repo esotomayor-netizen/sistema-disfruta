@@ -576,7 +576,6 @@ export default function VisitaDetailPage() {
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     className="hidden"
                     onChange={(e) => handleImagenChange(i, e.target.files)}
                   />
@@ -812,7 +811,6 @@ export default function VisitaDetailPage() {
                     type="file"
                     accept="image/*"
                     multiple
-                    capture="environment"
                     onChange={(e) => handleAgregarFotos(e.target.files)}
                     className="input text-sm"
                   />
@@ -870,7 +868,6 @@ export default function VisitaDetailPage() {
                       type="file"
                       accept="image/*"
                       multiple
-                      capture="environment"
                       onChange={(e) => handleAgregarFotos(e.target.files)}
                       className="input text-sm"
                     />
