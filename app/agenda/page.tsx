@@ -37,6 +37,8 @@ function toHHMM(date: Date) {
 export default function AgendaPage() {
   const { data: session } = useSession()
   const esSupervisor = (session?.user as any)?.rol === 'SUPERVISOR'
+  const puedeEditarAgenda = (item: AgendaItem) =>
+    !!item.predio && (esSupervisor || (session?.user as any)?.id === item.tecnico.id)
   const today = new Date()
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [agendas, setAgendas] = useState<AgendaItem[]>([])
@@ -129,7 +131,8 @@ export default function AgendaPage() {
 
   const handleEditClick = (item: AgendaItem, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!esSupervisor) return
+    const esDueño = (session?.user as any)?.id === item.tecnico.id
+    if (!esSupervisor && !esDueño) return
     if (!item.predio) return // Las visitas agendadas a una oportunidad se editan desde su propia ficha
     setEditModal(item)
     setEditForm({
@@ -310,7 +313,7 @@ export default function AgendaPage() {
                           key={a.id}
                           title={`${agendaTargetName(a)}${a.oportunidad ? ' (oportunidad)' : ''} · ${a.tecnico.nombre} ${a.tecnico.apellido} · ${toHHMM(new Date(a.fecha))} hrs`}
                           onClick={(e) => handleEditClick(a, e)}
-                          className={`text-xs rounded px-1 py-0.5 flex items-center gap-1 ${a.oportunidad ? 'bg-amber-100 text-amber-800' : 'bg-primary-100 text-primary-800'} ${esSupervisor ? 'cursor-pointer hover:brightness-95' : ''}`}
+                          className={`text-xs rounded px-1 py-0.5 flex items-center gap-1 ${a.oportunidad ? 'bg-amber-100 text-amber-800' : 'bg-primary-100 text-primary-800'} ${puedeEditarAgenda(a) ? 'cursor-pointer hover:brightness-95' : ''}`}
                         >
                           <span className="truncate flex-1">{agendaTargetName(a)}</span>
                           {esSupervisor && (
@@ -333,7 +336,7 @@ export default function AgendaPage() {
             <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
               {esSupervisor
                 ? 'Clic en un día hábil para agregar · Clic en una visita para editar · × para eliminar'
-                : 'Clic en un día hábil para agendar una visita'}
+                : 'Clic en un día hábil para agendar una visita · Clic en una de tus visitas para reprogramarla'}
             </div>
           </div>
         </div>
@@ -349,7 +352,7 @@ export default function AgendaPage() {
               <div
                 key={a.id}
                 onClick={(e) => handleEditClick(a, e as any)}
-                className={`card py-3 px-4 ${esSupervisor ? 'cursor-pointer hover:border-primary-300 transition-colors' : ''}`}
+                className={`card py-3 px-4 ${puedeEditarAgenda(a) ? 'cursor-pointer hover:border-primary-300 transition-colors' : ''}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -527,24 +530,34 @@ export default function AgendaPage() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="label">Predio</label>
-                <select className="input" value={editForm.predioId} onChange={(e) => setEditForm({ ...editForm, predioId: e.target.value })}>
-                  {predios.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre}{p.cultivos.length ? ` (${p.cultivos.map(c => c.cultivo).join(', ')})` : ''} — {p.empresa.razonSocial}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">Técnico responsable</label>
-                <select className="input" value={editForm.tecnicoId} onChange={(e) => setEditForm({ ...editForm, tecnicoId: e.target.value })}>
-                  {tecnicos.map((t) => (
-                    <option key={t.id} value={t.id}>{t.nombre} {t.apellido}</option>
-                  ))}
-                </select>
-              </div>
+              {esSupervisor ? (
+                <>
+                  <div>
+                    <label className="label">Predio</label>
+                    <select className="input" value={editForm.predioId} onChange={(e) => setEditForm({ ...editForm, predioId: e.target.value })}>
+                      {predios.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.nombre}{p.cultivos.length ? ` (${p.cultivos.map(c => c.cultivo).join(', ')})` : ''} — {p.empresa.razonSocial}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Técnico responsable</label>
+                    <select className="input" value={editForm.tecnicoId} onChange={(e) => setEditForm({ ...editForm, tecnicoId: e.target.value })}>
+                      {tecnicos.map((t) => (
+                        <option key={t.id} value={t.id}>{t.nombre} {t.apellido}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600">
+                  <p><span className="text-gray-400">Predio:</span> {agendaTargetName(editModal)}</p>
+                  <p><span className="text-gray-400">Técnico:</span> {editModal.tecnico.nombre} {editModal.tecnico.apellido}</p>
+                  <p className="text-xs text-gray-400 mt-1">Puedes reprogramar la fecha, hora y notas. Para cambiar el predio o el técnico, contacta a tu supervisor.</p>
+                </div>
+              )}
               <div>
                 <label className="label">Notas (opcional)</label>
                 <input
@@ -564,7 +577,9 @@ export default function AgendaPage() {
                 {editSaving ? 'Guardando…' : 'Guardar cambios'}
               </button>
               <button onClick={() => setEditModal(null)} className="btn-secondary">Cancelar</button>
-              <button onClick={handleEliminarDesdeEdit} className="btn-danger">Eliminar</button>
+              {esSupervisor && (
+                <button onClick={handleEliminarDesdeEdit} className="btn-danger">Eliminar</button>
+              )}
             </div>
           </div>
         </div>
