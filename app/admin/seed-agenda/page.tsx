@@ -2,7 +2,14 @@
 
 import { useState } from 'react'
 
+function proximoMes() {
+  const d = new Date()
+  d.setMonth(d.getMonth() + 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 export default function SeedAgendaPage() {
+  const [mes, setMes] = useState(proximoMes())
   const [log, setLog] = useState<string>('')
   const [loading, setLoading] = useState(false)
 
@@ -13,7 +20,7 @@ export default function SeedAgendaPage() {
       const res = await fetch('/api/admin/seed-agenda', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dryRun, clearExisting: true, months: [6, 7], year: 2026 }),
+        body: JSON.stringify({ dryRun, clearExisting: true, mes }),
       })
       const data = await res.json()
       setLog(JSON.stringify(data, null, 2))
@@ -25,11 +32,21 @@ export default function SeedAgendaPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Generar Agenda Junio–Julio 2026</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Generar Agenda por Técnico</h1>
       <p className="text-gray-500 mb-6 text-sm">
-        Crea automáticamente las visitas agendadas para cada técnico basándose en la planilla de frecuencia de visitas.
-        Primero haz una simulación para verificar, luego confirma.
+        Crea automáticamente las visitas agendadas para cada técnico basándose en la planilla de frecuencia de visitas
+        (cartera y visitas/mes definidas en el código). Primero haz una simulación para verificar el itinerario, luego confirma.
       </p>
+
+      <div className="mb-6">
+        <label className="block text-xs font-medium text-gray-600 mb-1">Mes a generar</label>
+        <input
+          type="month"
+          value={mes}
+          onChange={(e) => setMes(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+        />
+      </div>
 
       <div className="flex gap-3 mb-6">
         <button

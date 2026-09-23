@@ -63,6 +63,50 @@ export function nearestNeighborOrder<T extends GeoPoint>(points: T[]): T[] {
   return route
 }
 
+/** Distancia en línea recta entre dos puntos (km), fórmula de Haversine. */
+export function haversineKm(a: GeoPoint, b: GeoPoint): number {
+  const R = 6371
+  const dLat = (b.lat - a.lat) * (Math.PI / 180)
+  const dLng = (b.lng - a.lng) * (Math.PI / 180)
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * (Math.PI / 180)) * Math.cos(b.lat * (Math.PI / 180)) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s))
+}
+
+// Sin acceso a una API de rutas real, se estima el tiempo de viaje por carretera
+// a partir de la distancia en línea recta: se corrige por un factor de trazado
+// (las carreteras no son rectas) y se divide por una velocidad promedio mixta
+// (autopista + caminos rurales). Son supuestos razonables, no un cálculo exacto.
+const FACTOR_TRAZADO_VIAL = 1.3
+const VELOCIDAD_PROMEDIO_KMH = 65
+
+/** Minutos de viaje estimados por carretera entre dos puntos. */
+export function travelMinutes(a: GeoPoint, b: GeoPoint): number {
+  const km = haversineKm(a, b) * FACTOR_TRAZADO_VIAL
+  return (km / VELOCIDAD_PROMEDIO_KMH) * 60
+}
+
+/** Ordena puntos por ruta más corta (heurística nearest-neighbor) partiendo de un origen fijo. */
+export function nearestNeighborOrderFrom<T extends GeoPoint>(origin: GeoPoint, points: T[]): T[] {
+  const remaining = [...points]
+  const route: T[] = []
+  let cur: GeoPoint = origin
+
+  while (remaining.length > 0) {
+    let bestIdx = 0
+    let bestDist = Infinity
+    for (let i = 0; i < remaining.length; i++) {
+      const d = haversineKm(cur, remaining[i])
+      if (d < bestDist) { bestDist = d; bestIdx = i }
+    }
+    route.push(remaining[bestIdx])
+    cur = remaining[bestIdx]
+    remaining.splice(bestIdx, 1)
+  }
+  return route
+}
+
 /** Genera un link de Google Maps con ruta multi-parada (sin necesidad de API key). */
 export function googleMapsRouteUrl(points: GeoPoint[]): string | null {
   if (points.length === 0) return null
