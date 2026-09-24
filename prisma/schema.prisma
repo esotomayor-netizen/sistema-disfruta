@@ -75,6 +75,7 @@ model Predio {
   latitud      Float?
   longitud     Float?
   comuna       String?
+  visitasMensuales Int         @default(1)
   empresa      Empresa         @relation(fields: [empresaId], references: [id])
   empresaId    Int
   encargado    Usuario?        @relation("Encargado", fields: [encargadoId], references: [id])
@@ -114,6 +115,8 @@ model Usuario {
   telefono          String?
   activo            Boolean           @default(true)
   gmailRefreshToken String?
+  origenLat         Float?
+  origenLng         Float?
   predios           Predio[]          @relation("Encargado")
   prediosTecnico    Predio[]          @relation("TecnicoPredio")
   empresasTecnico   Empresa[]         @relation("TecnicoEmpresa")

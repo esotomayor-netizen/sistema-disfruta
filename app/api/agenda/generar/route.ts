@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized, isSupervisor } from '@/lib/session'
 import { notifyAgendaProgramada, AGENDA_WHATSAPP_SUPERVISOR_EMAIL } from '@/lib/notify'
+import { nearestNeighborOrder, buildTimedSchedule, type GeoPoint } from '@/lib/geo'
+import { coordenadaComuna } from '@/lib/comunas-cl'
 
 function getWorkingDays(year: number, month: number): Date[] {
   const days: Date[] = []
@@ -16,23 +18,21 @@ function getWorkingDays(year: number, month: number): Date[] {
   return days
 }
 
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371
-  const dLat = (lat2 - lat1) * (Math.PI / 180)
-  const dLon = (lon2 - lon1) * (Math.PI / 180)
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
 interface PredioLite {
   id: number
   latitud: number | null
   longitud: number | null
+  comuna: string | null
   tecnicoId: number
+  visitasMensuales: number
   nombre?: string
   encargado?: { id: number; nombre: string; apellido: string; email: string; telefono: string | null } | null
+}
+
+// Punto resuelto: GPS real del predio, o el centro de su comuna cuando no tiene GPS cargado.
+function resolvePoint(p: { latitud: number | null; longitud: number | null; comuna: string | null }): GeoPoint | null {
+  if (p.latitud != null && p.longitud != null) return { lat: p.latitud, lng: p.longitud }
+  return coordenadaComuna(p.comuna)
 }
 
 // Nearest-neighbor greedy sort to minimize travel distance between consecutive visits
@@ -41,29 +41,10 @@ function sortByProximity(predios: PredioLite[]): PredioLite[] {
   const withoutGps = predios.filter((p) => p.latitud == null || p.longitud == null)
   if (withGps.length === 0) return predios
 
-  // Start from centroid of all GPS predios
-  const centLat = withGps.reduce((s, p) => s + p.latitud!, 0) / withGps.length
-  const centLon = withGps.reduce((s, p) => s + p.longitud!, 0) / withGps.length
-
-  const result: PredioLite[] = []
-  const remaining = [...withGps]
-  let curLat = centLat
-  let curLon = centLon
-
-  while (remaining.length > 0) {
-    let minDist = Infinity
-    let minIdx = 0
-    remaining.forEach((p, i) => {
-      const d = haversineKm(curLat, curLon, p.latitud!, p.longitud!)
-      if (d < minDist) { minDist = d; minIdx = i }
-    })
-    result.push(remaining[minIdx])
-    curLat = remaining[minIdx].latitud!
-    curLon = remaining[minIdx].longitud!
-    remaining.splice(minIdx, 1)
-  }
-
-  return [...result, ...withoutGps]
+  return [
+    ...nearestNeighborOrder(withGps.map((p) => ({ ...p, lat: p.latitud!, lng: p.longitud! }))),
+    ...withoutGps,
+  ]
 }
 
 function toDateStr(d: Date): string {
@@ -98,6 +79,8 @@ export async function POST(req: Request) {
       nombre: true,
       latitud: true,
       longitud: true,
+      comuna: true,
+      visitasMensuales: true,
       tecnicoId: true,
       encargado: { select: { id: true, nombre: true, apellido: true, email: true, telefono: true } },
     },
@@ -114,6 +97,15 @@ export async function POST(req: Request) {
     if (!byTecnico.has(tid)) byTecnico.set(tid, [])
     byTecnico.get(tid)!.push(p as PredioLite)
   })
+
+  const tecnicos = await prisma.usuario.findMany({
+    where: { id: { in: Array.from(byTecnico.keys()) } },
+    select: { id: true, origenLat: true, origenLng: true },
+  })
+  const origenPorTecnico = new Map(
+    tecnicos.filter((t) => t.origenLat != null && t.origenLng != null)
+      .map((t) => [t.id, { lat: t.origenLat!, lng: t.origenLng! }])
+  )
 
   if (sobreescribir) {
     const start = new Date(year, month - 1, 1)
@@ -132,27 +124,61 @@ export async function POST(req: Request) {
 
   const toCreate: { fecha: Date; predioId: number; tecnicoId: number; notas: null }[] = []
 
-  for (const [tecnicoId, tecnicoPredios] of Array.from(byTecnico.entries())) {
-    const sorted = sortByProximity(tecnicoPredios)
+  for (const [tecId, tecnicoPredios] of Array.from(byTecnico.entries())) {
+    const origen = origenPorTecnico.get(tecId)
 
-    sorted.forEach((predio, idx) => {
-      // Diagonal distribution: col cycles Mon→Tue→Wed→Thu→Fri,
-      // row shifts by col so each weekday starts in a different week of the month.
-      // Result: predio 0→Mon_W1, 1→Tue_W2, 2→Wed_W3, 3→Thu_W4, 4→Fri_W5,
-      //         5→Mon_W2, 6→Tue_W3 … covering all weekdays AND all weeks.
-      const col = idx % 5
-      const row = Math.floor(idx / 5)
-      const group = weekdayGroups[col]
-      if (!group || group.length === 0) return
-      const actualRow = (row + col) % group.length
-      const day = group[actualRow]
-      toCreate.push({
-        fecha: new Date(toDateStr(day) + 'T12:00:00'),
-        predioId: predio.id,
-        tecnicoId,
-        notas: null,
-      })
+    // Usa el GPS real del predio, o el centro de su comuna cuando no tiene GPS cargado,
+    // para el ordenamiento geográfico y (si aplica) el cálculo de tiempos de viaje.
+    const efectivos: PredioLite[] = tecnicoPredios.map((p) => {
+      const punto = resolvePoint(p)
+      return punto ? { ...p, latitud: punto.lat, longitud: punto.lng } : p
     })
+    const conPunto = efectivos.filter((p) => p.latitud != null && p.longitud != null)
+
+    if (origen && conPunto.length > 0) {
+      // Modelo de horario real: 8:00–17:00, Lun-Vie, con tiempos de viaje desde el origen del técnico.
+      const items = conPunto.map((p) => ({
+        id: p.id,
+        lat: p.latitud!,
+        lng: p.longitud!,
+        visitas: Math.max(1, p.visitasMensuales),
+      }))
+      const schedule = buildTimedSchedule(items, workingDays, origen)
+      schedule.forEach((e) => {
+        const [hh, mm] = e.horaInicio.split(':').map(Number)
+        toCreate.push({
+          fecha: new Date(e.date.getFullYear(), e.date.getMonth(), e.date.getDate(), hh, mm, 0),
+          predioId: e.id,
+          tecnicoId: tecId,
+          notas: null,
+        })
+      })
+    } else {
+      // Modelo simple (sin origen definido para el técnico): distribución diagonal por semana/día.
+      const sorted = sortByProximity(efectivos)
+      const maxVisits = Math.max(...sorted.map((p) => Math.max(1, p.visitasMensuales)))
+      const queue: PredioLite[] = []
+      for (let pass = 0; pass < maxVisits; pass++) {
+        for (const p of sorted) if (pass < Math.max(1, p.visitasMensuales)) queue.push(p)
+      }
+
+      queue.forEach((predio, idx) => {
+        // Diagonal distribution: col cycles Mon→Tue→Wed→Thu→Fri,
+        // row shifts by col so each weekday starts in a different week of the month.
+        const col = idx % 5
+        const row = Math.floor(idx / 5)
+        const group = weekdayGroups[col]
+        if (!group || group.length === 0) return
+        const actualRow = (row + col) % group.length
+        const day = group[actualRow]
+        toCreate.push({
+          fecha: new Date(toDateStr(day) + 'T12:00:00'),
+          predioId: predio.id,
+          tecnicoId: tecId,
+          notas: null,
+        })
+      })
+    }
   }
 
   await prisma.agendaVisita.createMany({ data: toCreate, skipDuplicates: true })
