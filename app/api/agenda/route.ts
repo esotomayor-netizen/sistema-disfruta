@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { notifyAgendaProgramada, AGENDA_WHATSAPP_SUPERVISOR_EMAIL } from '@/lib/notify'
+import { chileDateTime } from '@/lib/tz'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -46,9 +47,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Debe indicar un predioId o un oportunidadId' }, { status: 400 })
   }
 
+  const [anio, mesNum, diaNum] = data.fecha.split('-').map(Number)
+  const [horaNum, minNum] = hora.split(':').map(Number)
+
   const agenda = await prisma.agendaVisita.create({
     data: {
-      fecha: new Date(`${data.fecha}T${hora}:00`),
+      fecha: chileDateTime(anio, mesNum, diaNum, horaNum, minNum),
       notas: data.notas || null,
       predioId,
       oportunidadId,

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized, isSupervisor } from '@/lib/session'
 import { nearestNeighborOrder } from '@/lib/geo'
 import { nameSimilarity } from '@/lib/fuzzy-match'
+import { chileDateTime } from '@/lib/tz'
 
 // ── Planilla de asignaciones ──────────────────────────────────────────────────
 const ASSIGNMENTS: { email: string; label: string; predios: { name: string; visitsPerMonth: number }[] }[] = [
@@ -213,7 +214,7 @@ export async function POST(req: Request) {
 
     for (const e of schedule) {
       toCreate.push({
-        fecha:     new Date(e.date.getFullYear(), e.date.getMonth(), e.date.getDate(), 12, 0, 0),
+        fecha:     chileDateTime(e.date.getFullYear(), e.date.getMonth() + 1, e.date.getDate(), 9, 0),
         predioId:  e.predioId,
         tecnicoId: tecnico.id,
         notas:     'Propuesta de agenda',
@@ -245,11 +246,12 @@ export async function POST(req: Request) {
         .filter(r => r.tecnicoId)
         .map(r => r.tecnicoId as number)
 
-      const start = new Date(year, month - 1, 1)
-      const end = new Date(year, month, 1)
+      const ultimoDia = new Date(year, month, 0).getDate()
+      const start = chileDateTime(year, month, 1, 0, 0)
+      const end = chileDateTime(year, month, ultimoDia, 23, 59)
       await prisma.agendaVisita.deleteMany({
         where: {
-          fecha:     { gte: start, lt: end },
+          fecha:     { gte: start, lte: end },
           tecnicoId: { in: tecnicoIds },
         },
       })
