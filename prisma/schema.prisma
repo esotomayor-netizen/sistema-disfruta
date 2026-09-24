@@ -117,6 +117,7 @@ model Usuario {
   gmailRefreshToken String?
   origenLat         Float?
   origenLng         Float?
+  icsToken          String?           @unique
   predios           Predio[]          @relation("Encargado")
   prediosTecnico    Predio[]          @relation("TecnicoPredio")
   empresasTecnico   Empresa[]         @relation("TecnicoEmpresa")
@@ -236,7 +237,7 @@ model Aplicacion {
   updatedAt     DateTime @updatedAt
 }
 
-// ── Módulo Cosecha & Exportación ─────────────────────────────────────────────
+// ── Módulo Cosecha & Exportación ─────────────────────────────────────────────────
 
 model Temporada {
   id                  Int                   @id @default(autoincrement())
@@ -333,7 +334,7 @@ model PrecioCalibres {
   updatedAt   DateTime  @updatedAt
 }
 
-// ── Módulo Conteos (dardos / carozos) ────────────────────────────────────────
+// ── Módulo Conteos (dardos / carozos) ───────────────────────────────────────────
 
 model Arbol {
   id        Int      @id @default(autoincrement())
@@ -385,7 +386,7 @@ enum TipoEstructura {
   VEGETATIVO
 }
 
-// ── Módulo Oportunidades ──────────────────────────────────────────────────────
+// ── Módulo Oportunidades ────────────────────────────────────────────────────────
 
 model Oportunidad {
   id            Int            @id @default(autoincrement())

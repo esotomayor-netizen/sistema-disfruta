@@ -64,6 +64,12 @@ export default function AgendaPage() {
   const [generarLoading, setGenerarLoading] = useState(false)
   const [generarResult, setGenerarResult] = useState<GenerarResult | null>(null)
 
+  // Sincronizar con Outlook / Google Calendar (feed .ics)
+  const [syncModal, setSyncModal] = useState(false)
+  const [syncUrl, setSyncUrl] = useState<string | null>(null)
+  const [syncLoading, setSyncLoading] = useState(false)
+  const [syncCopiado, setSyncCopiado] = useState(false)
+
   const fetchAgendas = useCallback(() => {
     const mk = monthKey(viewDate)
     const params = new URLSearchParams({ month: mk })
@@ -184,6 +190,31 @@ export default function AgendaPage() {
     }
   }
 
+  const handleAbrirSync = async () => {
+    setSyncModal(true)
+    setSyncCopiado(false)
+    setSyncLoading(true)
+    const res = await fetch('/api/agenda/ics-token')
+    const data = await res.json()
+    setSyncUrl(`${window.location.origin}/api/agenda/ics/${data.token}`)
+    setSyncLoading(false)
+  }
+
+  const handleRegenerarSync = async () => {
+    setSyncLoading(true)
+    setSyncCopiado(false)
+    const res = await fetch('/api/agenda/ics-token', { method: 'POST' })
+    const data = await res.json()
+    setSyncUrl(`${window.location.origin}/api/agenda/ics/${data.token}`)
+    setSyncLoading(false)
+  }
+
+  const handleCopiarSync = () => {
+    if (!syncUrl) return
+    navigator.clipboard.writeText(syncUrl)
+    setSyncCopiado(true)
+  }
+
   // KPI for current month
   const planificadas = agendas.length
   const currentStat = stats.find((s) => {
@@ -221,6 +252,9 @@ export default function AgendaPage() {
                 Generar Agenda
               </button>
             )}
+            <button onClick={handleAbrirSync} className="btn-secondary text-sm whitespace-nowrap">
+              Sincronizar con Outlook
+            </button>
             <Link href="/agenda/cumplimiento" className="btn-secondary text-sm whitespace-nowrap">
               Ver cumplimiento
             </Link>
@@ -656,6 +690,57 @@ export default function AgendaPage() {
               <button onClick={() => setGenerarModal(false)} className="btn-secondary">
                 {generarResult?.ok ? 'Cerrar' : 'Cancelar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: sincronizar con Outlook / Google Calendar */}
+      {syncModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">Sincronizar con Outlook</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Muestra tu agenda de la plataforma en tu calendario de Outlook</p>
+              </div>
+              <button onClick={() => setSyncModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              {syncLoading || !syncUrl ? (
+                <p className="text-sm text-gray-400">Cargando link…</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="label">Tu link de suscripción</label>
+                    <div className="flex gap-2">
+                      <input className="input flex-1 text-xs" readOnly value={syncUrl} onClick={(e) => (e.target as HTMLInputElement).select()} />
+                      <button onClick={handleCopiarSync} className="btn-secondary text-sm whitespace-nowrap">
+                        {syncCopiado ? 'Copiado ✓' : 'Copiar'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg px-4 py-3 text-xs text-gray-500 space-y-1 border border-gray-100">
+                    <p className="font-semibold text-gray-700 mb-1">Cómo agregarlo en Outlook</p>
+                    <p>1. Copia el link de arriba.</p>
+                    <p>2. En Outlook web: Calendario → Agregar calendario → Suscribirse desde la web, y pega el link.</p>
+                    <p>3. En Outlook de escritorio: Agregar calendario → Desde Internet, y pega el link.</p>
+                    <p>Outlook lo va a mantener actualizado solo cada pocas horas — no es necesario volver a hacer nada.</p>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-100 rounded-lg px-4 py-3 text-xs text-amber-700">
+                    Este link es personal: cualquiera que lo tenga puede ver tu agenda. No lo compartas. Si crees que se filtró, genera uno nuevo.
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button onClick={handleRegenerarSync} disabled={syncLoading} className="btn-secondary text-sm">
+                Generar un link nuevo
+              </button>
+              <div className="flex-1" />
+              <button onClick={() => setSyncModal(false)} className="btn-secondary">Cerrar</button>
             </div>
           </div>
         </div>
