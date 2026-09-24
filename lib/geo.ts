@@ -107,6 +107,79 @@ export function nearestNeighborOrderFrom<T extends GeoPoint>(origin: GeoPoint, p
   return route
 }
 
+export interface DiaProgramado {
+  id: number
+  date: Date
+  horaInicio: string
+  distKm: number
+}
+
+const DURACION_VISITA_MIN_DEFAULT = 90
+const JORNADA_INICIO_MIN = 8 * 60
+const JORNADA_FIN_MIN = 17 * 60
+
+/**
+ * Arma la agenda real de un técnico con punto de partida fijo: sale de `origen`
+ * a las 8:00, visita en el orden geográfico más eficiente (nearest-neighbor
+ * desde el origen), cada visita dura `duracionVisitaMin`, y antes de sumar una
+ * visita al día verifica que — sumando el viaje de vuelta al origen — alcance
+ * a terminar antes de las 17:00. Si no alcanza, pasa al siguiente día hábil.
+ * `visitas` en cada item indica cuántas veces al mes debe repetirse esa visita.
+ */
+export function buildTimedSchedule<T extends GeoPoint & { id: number; visitas: number }>(
+  items: T[],
+  workdays: Date[],
+  origen: GeoPoint,
+  duracionVisitaMin = DURACION_VISITA_MIN_DEFAULT
+): DiaProgramado[] {
+  if (workdays.length === 0 || items.length === 0) return []
+
+  const ordered = nearestNeighborOrderFrom(origen, items)
+  const maxVisits = Math.max(...ordered.map(p => p.visitas))
+  const queue: T[] = []
+  for (let pass = 0; pass < maxVisits; pass++) {
+    for (const p of ordered) if (pass < p.visitas) queue.push(p)
+  }
+
+  const result: DiaProgramado[] = []
+  let dayIdx = 0
+  let cursor: GeoPoint = origen
+  let minutos = JORNADA_INICIO_MIN
+  let visitasHoy = 0
+
+  for (const visita of queue) {
+    if (dayIdx >= workdays.length) break // sin más días hábiles en el mes
+
+    let ida = travelMinutes(cursor, visita)
+    let llegada = minutos + ida
+    const vuelta = travelMinutes(visita, origen)
+    const finDia = llegada + duracionVisitaMin + vuelta
+
+    if (visitasHoy > 0 && finDia > JORNADA_FIN_MIN) {
+      dayIdx++
+      cursor = origen
+      minutos = JORNADA_INICIO_MIN
+      visitasHoy = 0
+      if (dayIdx >= workdays.length) break
+      ida = travelMinutes(cursor, visita)
+      llegada = minutos + ida
+    }
+
+    result.push({
+      id: visita.id,
+      date: workdays[dayIdx],
+      horaInicio: `${String(Math.floor(llegada / 60)).padStart(2, '0')}:${String(Math.round(llegada % 60)).padStart(2, '0')}`,
+      distKm: Math.round(haversineKm(cursor, visita) * 10) / 10,
+    })
+
+    cursor = visita
+    minutos = llegada + duracionVisitaMin
+    visitasHoy++
+  }
+
+  return result
+}
+
 /** Genera un link de Google Maps con ruta multi-parada (sin necesidad de API key). */
 export function googleMapsRouteUrl(points: GeoPoint[]): string | null {
   if (points.length === 0) return null
