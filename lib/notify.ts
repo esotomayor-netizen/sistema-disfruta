@@ -9,7 +9,7 @@ const WA_PHONE_ID = process.env.META_PHONE_NUMBER_ID
 // Único usuario autorizado para disparar el aviso de agenda programada al encargado del predio
 export const AGENDA_WHATSAPP_SUPERVISOR_EMAIL = 'e.sotomayor@exportadoradisfruta.cl'
 
-// ─── Canales ───────────────────────────────────────────────────────────────────────
+// ─── Canales ──────────────────────────────────────────────────────────
 
 function normalizeChileanPhone(raw: string): string {
   const d = raw.replace(/\D/g, '')
@@ -58,7 +58,7 @@ async function sendWhatsApp(phone: string, template: string, params: string[]): 
   }
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────
 
 type Usuario = { id: number; nombre: string; apellido: string; email: string; telefono: string | null }
 
@@ -89,24 +89,26 @@ async function notifyAll(
   )
 }
 
-// ─── Agenda programada (aviso al encargado del predio) ───────────────────────────────
+// ─── Agenda programada (aviso al contacto del predio) ─────────────────────────
+// El destinatario puede ser el Encargado interno del predio (Usuario del
+// sistema) o, cuando no hay uno asignado, el contacto del productor cargado
+// en la Empresa (caso de la cartera de productores externos, ej. Eduardo).
 // Templates WhatsApp requeridos en Meta Business Manager:
-//   Nombre: agenda_programada | Idioma: es_CL | Categoría: UTILITY
+//   Nombre: agenda_programada_productores | Idioma: es_CL | Categoría: UTILITY
 //   Body: "Hola {{1}}, se agendó una visita técnica al predio {{2}} para el {{3}} a las {{4}} hrs."
 
 export async function notifyAgendaProgramada(
-  encargado: Usuario,
+  contacto: { nombre: string; telefono: string },
   predioNombre: string,
   fecha: Date
 ): Promise<void> {
-  if (!encargado.telefono) return
-  const saludo = fullName(encargado)
+  if (!contacto.telefono) return
   const fechaStr = fecha.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
   const horaStr = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
-  await sendWhatsApp(encargado.telefono, 'agenda_programada', [saludo, predioNombre, fechaStr, horaStr])
+  await sendWhatsApp(contacto.telefono, 'agenda_programada_productores', [contacto.nombre, predioNombre, fechaStr, horaStr])
 }
 
-// ─── Informe de visita generado ────────────────────────────────────────────────────
+// ─── Informe de visita generado ─────────────────────────────────────
 // Templates WhatsApp requeridos en Meta Business Manager:
 //   Nombre: informe_visita | Idioma: es | Categoría: UTILITY
 //   Body: "Hola {{1}}, {{2}} generó el informe de visita del predio {{3}}."
@@ -156,7 +158,7 @@ export async function notifyInformeVisita(visitaId: number, generadoPorId: numbe
   )
 }
 
-// ─── Nueva oportunidad ────────────────────────────────────────────────────────────
+// ─── Nueva oportunidad ───────────────────────────────────────────────────────
 // Templates WhatsApp requeridos en Meta Business Manager:
 //   Nombre: nueva_oportunidad | Idioma: es | Categoría: UTILITY
 //   Body: "Hola {{1}}, se registró una nueva oportunidad: {{2}}. Técnico: {{3}}."
@@ -194,7 +196,7 @@ export async function notifyNuevaOportunidad(oportunidad: {
   )
 }
 
-// ─── Recordatorios de contacto (cron diario) ────────────────────────────────────
+// ─── Recordatorios de contacto (cron diario) ───────────────────────────
 // Templates WhatsApp requeridos:
 //   Nombre: recordatorio_tecnico | Idioma: es | Categoría: UTILITY
 //   Body: "Hola {{1}}, tienes {{2}} oportunidad(es) sin contacto hace más de 3 días. Revisa el sistema."

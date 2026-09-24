@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       oportunidadId,
       tecnicoId: parseInt(data.tecnicoId),
     },
-    include: { predio: { include: { cultivos: true, encargado: true } }, oportunidad: true, tecnico: true },
+    include: { predio: { include: { cultivos: true, encargado: true, empresa: true } }, oportunidad: true, tecnico: true },
   })
 
   const session = await getSession()
@@ -70,15 +70,20 @@ export async function POST(req: Request) {
       console.log(`[notify] agenda-programada: usuario que agenda (${generador?.email ?? 'desconocido'}) no es ${AGENDA_WHATSAPP_SUPERVISOR_EMAIL}, se omite aviso`)
     } else if (!agenda.predio) {
       console.log('[notify] agenda-programada: visita agendada a una oportunidad (sin predio), se omite aviso')
-    } else if (!agenda.predio.encargado) {
-      console.log(`[notify] agenda-programada: predio "${agenda.predio.nombre}" no tiene Encargado asignado, se omite aviso`)
-    } else if (!agenda.predio.encargado.telefono) {
-      console.log(`[notify] agenda-programada: encargado "${agenda.predio.encargado.nombre} ${agenda.predio.encargado.apellido}" no tiene teléfono cargado, se omite aviso`)
     } else {
-      try {
-        await notifyAgendaProgramada(agenda.predio.encargado, agenda.predio.nombre, agenda.fecha)
-      } catch (e) {
-        console.error('[notify] agenda-programada:', e)
+      const contacto = agenda.predio.encargado?.telefono
+        ? { nombre: `${agenda.predio.encargado.nombre} ${agenda.predio.encargado.apellido}`, telefono: agenda.predio.encargado.telefono }
+        : agenda.predio.empresa?.contactoTelefono
+          ? { nombre: agenda.predio.empresa.contactoNombre, telefono: agenda.predio.empresa.contactoTelefono }
+          : null
+      if (!contacto) {
+        console.log(`[notify] agenda-programada: predio "${agenda.predio.nombre}" sin contacto con teléfono (ni encargado ni empresa), se omite aviso`)
+      } else {
+        try {
+          await notifyAgendaProgramada(contacto, agenda.predio.nombre, agenda.fecha)
+        } catch (e) {
+          console.error('[notify] agenda-programada:', e)
+        }
       }
     }
   }

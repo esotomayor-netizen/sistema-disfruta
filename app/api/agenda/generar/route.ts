@@ -41,6 +41,22 @@ interface PredioLite {
   visitasMensuales: number
   nombre?: string
   encargado?: { id: number; nombre: string; apellido: string; email: string; telefono: string | null } | null
+  empresa?: { contactoNombre: string; contactoTelefono: string | null } | null
+}
+
+// Contacto a notificar por WhatsApp: el Encargado interno si está asignado y
+// tiene teléfono, si no el contacto del productor cargado en la Empresa.
+function contactoNotificacion(predio: {
+  encargado?: { nombre: string; apellido: string; telefono: string | null } | null
+  empresa?: { contactoNombre: string; contactoTelefono: string | null } | null
+}): { nombre: string; telefono: string } | null {
+  if (predio.encargado?.telefono) {
+    return { nombre: `${predio.encargado.nombre} ${predio.encargado.apellido}`, telefono: predio.encargado.telefono }
+  }
+  if (predio.empresa?.contactoTelefono) {
+    return { nombre: predio.empresa.contactoNombre, telefono: predio.empresa.contactoTelefono }
+  }
+  return null
 }
 
 // Punto resuelto: GPS real del predio, o el centro de su comuna cuando no tiene GPS
@@ -99,6 +115,7 @@ export async function POST(req: Request) {
       visitasMensuales: true,
       tecnicoId: true,
       encargado: { select: { id: true, nombre: true, apellido: true, email: true, telefono: true } },
+      empresa: { select: { contactoNombre: true, contactoTelefono: true } },
     },
   })
   console.log('[generar-diag] predios:', JSON.stringify(predios.map(p => ({ id: p.id, nombre: p.nombre, comuna: p.comuna, visitasMensuales: p.visitasMensuales, tieneGps: p.latitud != null }))))
@@ -214,16 +231,14 @@ export async function POST(req: Request) {
     await Promise.all(
       toCreate.map(async (item) => {
         const predio = predioMap.get(item.predioId)
-        if (!predio?.encargado) {
-          console.log(`[notify] agenda-programada: predio id ${item.predioId} sin Encargado asignado, se omite aviso`)
-          return
-        }
-        if (!predio.encargado.telefono) {
-          console.log(`[notify] agenda-programada: encargado "${predio.encargado.nombre} ${predio.encargado.apellido}" sin teléfono, se omite aviso`)
+        if (!predio) return
+        const contacto = contactoNotificacion(predio)
+        if (!contacto) {
+          console.log(`[notify] agenda-programada: predio id ${item.predioId} sin contacto con teléfono (ni encargado ni empresa), se omite aviso`)
           return
         }
         try {
-          await notifyAgendaProgramada(predio.encargado, predio.nombre ?? '', item.fecha)
+          await notifyAgendaProgramada(contacto, predio.nombre ?? '', item.fecha)
         } catch (e) {
           console.error('[notify] agenda-programada:', e)
         }
