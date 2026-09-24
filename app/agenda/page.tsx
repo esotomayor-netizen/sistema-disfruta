@@ -60,7 +60,7 @@ export default function AgendaPage() {
   // Generar agenda
   const [generarModal, setGenerarModal] = useState(false)
   const [generarTecnicoId, setGenerarTecnicoId] = useState('')
-  const [generarSobreescribir, setGenerarSobreescribir] = useState(false)
+  const [generarSobreescribir, setGenerarSobreescribir] = useState(true)
   const [generarLoading, setGenerarLoading] = useState(false)
   const [generarResult, setGenerarResult] = useState<GenerarResult | null>(null)
 
@@ -612,7 +612,7 @@ export default function AgendaPage() {
                 />
                 <div>
                   <p className="text-sm font-medium text-gray-800">Reemplazar agenda existente del período</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Si está marcado, elimina las visitas ya agendadas de este técnico en los próximos 30 días antes de generar la nueva agenda.</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Recomendado: elimina las visitas ya agendadas de este técnico en los próximos 30 días antes de generar la nueva agenda, para no duplicarlas si generas más de una vez.</p>
                 </div>
               </label>
 
