@@ -10,7 +10,7 @@ import { nameSimilarity } from '@/lib/fuzzy-match'
 // comuna, visitas/mes) para que el botón "Generar Agenda" de /agenda —
 // usado por cualquier técnico— arme su ruta real con horario y viajes.
 const EMAIL_EDUARDO = 'e.sotomayor@exportadoradisfruta.cl'
-const ORIGEN_OLIVAR = { lat: -34.1708, lng: -70.7444 } // Rancagua / sector Olivar
+const ORIGEN_EDUARDO = { lat: -34.2083454, lng: -70.7760397 } // Punto GPS real de partida diaria (Rancagua)
 
 const CARTERA_EDUARDO: { razon: string; visitasMensuales: number; comuna?: string }[] = [
   { razon: 'AGRICOLA ATALAYA SPA',                      visitasMensuales: 1, comuna: 'San Francisco de Mostazal' },
@@ -94,13 +94,13 @@ export async function POST(req: Request) {
   if (!dryRun) {
     await prisma.usuario.update({
       where: { id: eduardo.id },
-      data: { origenLat: ORIGEN_OLIVAR.lat, origenLng: ORIGEN_OLIVAR.lng },
+      data: { origenLat: ORIGEN_EDUARDO.lat, origenLng: ORIGEN_EDUARDO.lng },
     })
   }
 
   return NextResponse.json({
     dryRun,
-    origenAsignado: ORIGEN_OLIVAR,
+    origenAsignado: ORIGEN_EDUARDO,
     prediosActualizados: reporte.filter(r => r.accion !== 'OMITIDO').length,
     omitidos: reporte.filter(r => r.accion === 'OMITIDO').length,
     reporte,
