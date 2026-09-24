@@ -196,7 +196,7 @@ export default function AgendaPage() {
     setSyncLoading(true)
     const res = await fetch('/api/agenda/ics-token')
     const data = await res.json()
-    setSyncUrl(`${window.location.origin}/api/agenda/ics/${data.token}`)
+    setSyncUrl(`${window.location.origin}/api/agenda/ics/${data.token}.ics`)
     setSyncLoading(false)
   }
 
@@ -205,7 +205,7 @@ export default function AgendaPage() {
     setSyncCopiado(false)
     const res = await fetch('/api/agenda/ics-token', { method: 'POST' })
     const data = await res.json()
-    setSyncUrl(`${window.location.origin}/api/agenda/ics/${data.token}`)
+    setSyncUrl(`${window.location.origin}/api/agenda/ics/${data.token}.ics`)
     setSyncLoading(false)
   }
 

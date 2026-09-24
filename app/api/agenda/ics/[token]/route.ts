@@ -11,7 +11,10 @@ const DIAS_ATRAS = 14
 const DIAS_ADELANTE = 90
 
 export async function GET(_: Request, { params }: { params: { token: string } }) {
-  const usuario = await prisma.usuario.findUnique({ where: { icsToken: params.token } })
+  // Outlook de escritorio (clásico) exige que la URL termine en ".ics" para
+  // reconocer el feed correctamente; aceptamos el token con o sin ese sufijo.
+  const token = params.token.replace(/\.ics$/i, '')
+  const usuario = await prisma.usuario.findUnique({ where: { icsToken: token } })
   if (!usuario) {
     return NextResponse.json({ error: 'Link no válido' }, { status: 404 })
   }
