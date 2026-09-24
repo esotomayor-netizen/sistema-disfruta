@@ -87,26 +87,6 @@ export function travelMinutes(a: GeoPoint, b: GeoPoint): number {
   return (km / VELOCIDAD_PROMEDIO_KMH) * 60
 }
 
-/** Ordena puntos por ruta más corta (heurística nearest-neighbor) partiendo de un origen fijo. */
-export function nearestNeighborOrderFrom<T extends GeoPoint>(origin: GeoPoint, points: T[]): T[] {
-  const remaining = [...points]
-  const route: T[] = []
-  let cur: GeoPoint = origin
-
-  while (remaining.length > 0) {
-    let bestIdx = 0
-    let bestDist = Infinity
-    for (let i = 0; i < remaining.length; i++) {
-      const d = haversineKm(cur, remaining[i])
-      if (d < bestDist) { bestDist = d; bestIdx = i }
-    }
-    route.push(remaining[bestIdx])
-    cur = remaining[bestIdx]
-    remaining.splice(bestIdx, 1)
-  }
-  return route
-}
-
 export interface DiaProgramado {
   id: number
   date: Date
@@ -120,11 +100,19 @@ const JORNADA_FIN_MIN = 17 * 60
 
 /**
  * Arma la agenda real de un técnico con punto de partida fijo: sale de `origen`
- * a las 8:00, visita en el orden geográfico más eficiente (nearest-neighbor
- * desde el origen), cada visita dura `duracionVisitaMin`, y antes de sumar una
+ * a las 8:00, visita en el orden geográfico más cercano al punto donde está en
+ * cada momento, cada visita dura `duracionVisitaMin`, y antes de sumar una
  * visita al día verifica que — sumando el viaje de vuelta al origen — alcance
  * a terminar antes de las 17:00. Si no alcanza, pasa al siguiente día hábil.
- * `visitas` en cada item indica cuántas veces al mes debe repetirse esa visita.
+ *
+ * `visitas` en cada item indica cuántas veces al mes debe repetirse esa visita
+ * (objetivo de la visita: revisar brotación/flores/cuaja/labores, que cambian
+ * con el tiempo). Para que dos visitas al mismo predio no queden juntas —lo
+ * que no aporta nada si el huerto no alcanzó a cambiar—, cada repetición
+ * recibe una "fecha objetivo" separada uniformemente a lo largo de la ventana
+ * de días hábiles (ej. 2 visitas/mes en un mes de ~22 días hábiles → objetivo
+ * en el día hábil 0 y en el día hábil ~11, es decir ~15 días de por medio) y
+ * solo se agenda a partir de que su objetivo se cumple.
  */
 export function buildTimedSchedule<T extends GeoPoint & { id: number; visitas: number }>(
   items: T[],
@@ -134,47 +122,55 @@ export function buildTimedSchedule<T extends GeoPoint & { id: number; visitas: n
 ): DiaProgramado[] {
   if (workdays.length === 0 || items.length === 0) return []
 
-  const ordered = nearestNeighborOrderFrom(origen, items)
-  const maxVisits = Math.max(...ordered.map(p => p.visitas))
-  const queue: T[] = []
-  for (let pass = 0; pass < maxVisits; pass++) {
-    for (const p of ordered) if (pass < p.visitas) queue.push(p)
+  interface Instancia extends GeoPoint { id: number; targetIdx: number }
+  const pendientes: Instancia[] = []
+  for (const item of items) {
+    const n = Math.max(1, item.visitas)
+    for (let i = 0; i < n; i++) {
+      const targetIdx = Math.min(workdays.length - 1, Math.round((i * workdays.length) / n))
+      pendientes.push({ id: item.id, lat: item.lat, lng: item.lng, targetIdx })
+    }
   }
 
   const result: DiaProgramado[] = []
-  let dayIdx = 0
-  let cursor: GeoPoint = origen
-  let minutos = JORNADA_INICIO_MIN
-  let visitasHoy = 0
 
-  for (const visita of queue) {
-    if (dayIdx >= workdays.length) break // sin más días hábiles en el mes
+  for (let dayIdx = 0; dayIdx < workdays.length && pendientes.length > 0; dayIdx++) {
+    let cursor: GeoPoint = origen
+    let minutos = JORNADA_INICIO_MIN
+    let visitasHoy = 0
 
-    let ida = travelMinutes(cursor, visita)
-    let llegada = minutos + ida
-    const vuelta = travelMinutes(visita, origen)
-    const finDia = llegada + duracionVisitaMin + vuelta
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // De las visitas cuya fecha objetivo ya se cumplió, toma la más cercana al punto actual.
+      let mejorIdx = -1
+      let mejorDist = Infinity
+      for (let i = 0; i < pendientes.length; i++) {
+        if (pendientes[i].targetIdx > dayIdx) continue
+        const d = haversineKm(cursor, pendientes[i])
+        if (d < mejorDist) { mejorDist = d; mejorIdx = i }
+      }
+      if (mejorIdx === -1) break // nada pendiente y listo para hoy
 
-    if (visitasHoy > 0 && finDia > JORNADA_FIN_MIN) {
-      dayIdx++
-      cursor = origen
-      minutos = JORNADA_INICIO_MIN
-      visitasHoy = 0
-      if (dayIdx >= workdays.length) break
-      ida = travelMinutes(cursor, visita)
-      llegada = minutos + ida
+      const visita = pendientes[mejorIdx]
+      const ida = travelMinutes(cursor, visita)
+      const llegada = minutos + ida
+      const vuelta = travelMinutes(visita, origen)
+      const finDia = llegada + duracionVisitaMin + vuelta
+
+      if (visitasHoy > 0 && finDia > JORNADA_FIN_MIN) break // no alcanza en el día, se retoma mañana
+
+      result.push({
+        id: visita.id,
+        date: workdays[dayIdx],
+        horaInicio: `${String(Math.floor(llegada / 60)).padStart(2, '0')}:${String(Math.round(llegada % 60)).padStart(2, '0')}`,
+        distKm: Math.round(mejorDist * 10) / 10,
+      })
+
+      cursor = visita
+      minutos = llegada + duracionVisitaMin
+      visitasHoy++
+      pendientes.splice(mejorIdx, 1)
     }
-
-    result.push({
-      id: visita.id,
-      date: workdays[dayIdx],
-      horaInicio: `${String(Math.floor(llegada / 60)).padStart(2, '0')}:${String(Math.round(llegada % 60)).padStart(2, '0')}`,
-      distKm: Math.round(haversineKm(cursor, visita) * 10) / 10,
-    })
-
-    cursor = visita
-    minutos = llegada + duracionVisitaMin
-    visitasHoy++
   }
 
   return result
