@@ -69,6 +69,7 @@ export async function POST(req: Request) {
   }
 
   const { sobreescribir = false, tecnicoId } = await req.json().catch(() => ({}))
+  console.log(`[generar-diag] body: sobreescribir=${sobreescribir} tecnicoId=${tecnicoId}`)
 
   const workingDays = next30WorkingDays()
   if (workingDays.length === 0) {
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
   }
   const desde = workingDays[0]
   const hasta = workingDays[workingDays.length - 1]
+  console.log(`[generar-diag] ventana: ${desde.year}-${desde.month}-${desde.day} a ${hasta.year}-${hasta.month}-${hasta.day} (${workingDays.length} días hábiles)`)
 
   const predioWhere: any = { activa: true, tecnicoId: { not: null } }
   if (tecnicoId) predioWhere.tecnicoId = Number(tecnicoId)
@@ -93,6 +95,7 @@ export async function POST(req: Request) {
       encargado: { select: { id: true, nombre: true, apellido: true, email: true, telefono: true } },
     },
   })
+  console.log('[generar-diag] predios:', JSON.stringify(predios.map(p => ({ id: p.id, nombre: p.nombre, comuna: p.comuna, visitasMensuales: p.visitasMensuales, tieneGps: p.latitud != null }))))
 
   if (predios.length === 0) {
     return NextResponse.json({ error: 'El técnico no tiene predios activos asignados' }, { status: 400 })
@@ -120,7 +123,8 @@ export async function POST(req: Request) {
     const end = chileDateTime(hasta.year, hasta.month, hasta.day, 23, 59)
     const deleteWhere: any = { fecha: { gte: start, lte: end } }
     if (tecnicoId) deleteWhere.tecnicoId = Number(tecnicoId)
-    await prisma.agendaVisita.deleteMany({ where: deleteWhere })
+    const borradas = await prisma.agendaVisita.deleteMany({ where: deleteWhere })
+    console.log(`[generar-diag] sobreescribir: borradas ${borradas.count} visitas en [${start.toISOString()}, ${end.toISOString()}]`)
   }
 
   // Agrupa los días hábiles disponibles por columna de día de semana: [0]=Lunes, ..., [4]=Viernes
@@ -152,8 +156,11 @@ export async function POST(req: Request) {
         lng: p.longitud!,
         visitas: Math.max(1, p.visitasMensuales),
       }))
+      console.log(`[generar-diag] técnico ${tecId}: ${items.length} predios con punto, ${efectivos.length - conPunto.length} sin punto`)
+      console.log('[generar-diag] items:', JSON.stringify(items.map(i => ({ id: i.id, visitas: i.visitas }))))
       const diasComoDate = workingDays.map((d) => new Date(d.year, d.month - 1, d.day))
       const schedule = buildTimedSchedule(items, diasComoDate, origen)
+      console.log('[generar-diag] schedule:', JSON.stringify(schedule.map(e => ({ id: e.id, fecha: `${e.date.getFullYear()}-${e.date.getMonth()+1}-${e.date.getDate()}`, hora: e.horaInicio }))))
       schedule.forEach((e) => {
         const [hh, mm] = e.horaInicio.split(':').map(Number)
         toCreate.push({
