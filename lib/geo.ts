@@ -109,6 +109,7 @@ export interface DiaProgramado {
 }
 
 const DURACION_VISITA_MIN_DEFAULT = 90
+const MAX_VISITAS_POR_DIA_DEFAULT = 2
 const JORNADA_INICIO_MIN = 8 * 60
 const JORNADA_FIN_MIN = 17 * 60
 
@@ -116,7 +117,10 @@ const JORNADA_FIN_MIN = 17 * 60
  * Arma la agenda real de un técnico con punto de partida fijo: sale de `origen`
  * a las 8:00, cada visita dura `duracionVisitaMin`, y antes de sumar una visita
  * al día verifica que — sumando el viaje de vuelta al origen — alcance a
- * terminar antes de las 17:00. Si no alcanza, pasa al siguiente día hábil.
+ * terminar antes de las 17:00, y que no se supere `maxVisitasPorDia` (los
+ * tiempos de viaje reales entre predios rurales hacen poco realista visitar
+ * más de un par por día, aunque el cálculo de horario todavía tenga margen).
+ * Si no alcanza, pasa al siguiente día hábil.
  *
  * `visitas` en cada item indica cuántas veces al mes debe repetirse esa visita
  * (objetivo de la visita: revisar brotación/flores/cuaja/labores, que cambian
@@ -132,7 +136,8 @@ export function buildTimedSchedule<T extends GeoPoint & { id: number; visitas: n
   items: T[],
   workdays: Date[],
   origen: GeoPoint,
-  duracionVisitaMin = DURACION_VISITA_MIN_DEFAULT
+  duracionVisitaMin = DURACION_VISITA_MIN_DEFAULT,
+  maxVisitasPorDia = MAX_VISITAS_POR_DIA_DEFAULT
 ): DiaProgramado[] {
   if (workdays.length === 0 || items.length === 0) return []
 
@@ -171,7 +176,8 @@ export function buildTimedSchedule<T extends GeoPoint & { id: number; visitas: n
       const vuelta = travelMinutes(visita, origen)
       const finDia = llegada + duracionVisitaMin + vuelta
 
-      if (estado.visitasHoy > 0 && finDia > JORNADA_FIN_MIN) continue // día lleno, probar el siguiente
+      if (estado.visitasHoy >= maxVisitasPorDia) continue // tope diario alcanzado, probar el siguiente
+      if (estado.visitasHoy > 0 && finDia > JORNADA_FIN_MIN) continue // no alcanza el horario, probar el siguiente
 
       const llegadaRedondeada = Math.round(llegada)
       let hh = Math.floor(llegadaRedondeada / 60)

@@ -28,7 +28,7 @@ export default function SetupEduardoPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Configurar cartera de Eduardo Sotomayor</h1>
       <p className="text-gray-500 mb-6 text-sm">
         Paso previo (una sola vez): asigna sus 15 predios como técnico, carga la comuna de referencia y las
-        visitas/mes de cada uno, y fija su punto de partida diario (Olivar, Rancagua). Después de correr esto,
+        visitas/mes de cada uno, y fija su punto de partida diario (Rancagua). Después de correr esto,
         el botón &quot;Generar Agenda&quot; de la página Agenda arma su ruta real con horario y tiempos de viaje.
       </p>
 
