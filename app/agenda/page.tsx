@@ -17,7 +17,7 @@ function agendaTargetName(a: AgendaItem): string {
   return a.predio?.nombre ?? a.oportunidad?.nombre ?? '—'
 }
 interface Stat { mes: string; planificadas: number; realizadas: number }
-interface GenerarResult { ok: boolean; creadas?: number; tecnicos?: number; diasHabiles?: number; mes?: string; error?: string }
+interface GenerarResult { ok: boolean; creadas?: number; tecnicos?: number; diasHabiles?: number; desde?: string; hasta?: string; error?: string }
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -59,7 +59,6 @@ export default function AgendaPage() {
 
   // Generar agenda
   const [generarModal, setGenerarModal] = useState(false)
-  const [generarMes, setGenerarMes] = useState(monthKey(today))
   const [generarTecnicoId, setGenerarTecnicoId] = useState('')
   const [generarSobreescribir, setGenerarSobreescribir] = useState(false)
   const [generarLoading, setGenerarLoading] = useState(false)
@@ -173,14 +172,13 @@ export default function AgendaPage() {
     const res = await fetch('/api/agenda/generar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mes: generarMes, sobreescribir: generarSobreescribir, tecnicoId: generarTecnicoId }),
+      body: JSON.stringify({ sobreescribir: generarSobreescribir, tecnicoId: generarTecnicoId }),
     })
     const data = await res.json()
     setGenerarResult(data)
     setGenerarLoading(false)
     if (data.ok) {
-      const [y, m] = generarMes.split('-').map(Number)
-      setViewDate(new Date(y, m - 1, 1))
+      setViewDate(new Date(today.getFullYear(), today.getMonth(), 1))
       fetchAgendas()
       fetchStats()
     }
@@ -197,13 +195,6 @@ export default function AgendaPage() {
   }) ?? stats[stats.length - 1]
   const realizadasMes = currentStat?.realizadas ?? 0
   const cumplimiento = planificadas > 0 ? Math.round((realizadasMes / planificadas) * 100) : null
-
-  // Year/month options for generar modal (current month ± 6 months)
-  const mesOptions: { value: string; label: string }[] = []
-  for (let delta = -2; delta <= 6; delta++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + delta, 1)
-    mesOptions.push({ value: monthKey(d), label: `${MESES[d.getMonth()]} ${d.getFullYear()}` })
-  }
 
   return (
     <div>
@@ -591,8 +582,8 @@ export default function AgendaPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-gray-900">Generar agenda mensual</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Genera automáticamente las visitas para el técnico seleccionado</p>
+                <h3 className="font-semibold text-gray-900">Generar agenda — próximos 30 días</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Genera automáticamente las visitas del técnico seleccionado para los próximos 30 días</p>
               </div>
               <button onClick={() => setGenerarModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
@@ -612,19 +603,6 @@ export default function AgendaPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="label">Mes a generar</label>
-                <select
-                  className="input"
-                  value={generarMes}
-                  onChange={(e) => { setGenerarMes(e.target.value); setGenerarResult(null) }}
-                >
-                  {mesOptions.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -633,17 +611,18 @@ export default function AgendaPage() {
                   className="mt-0.5 w-4 h-4 accent-primary-600"
                 />
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Reemplazar agenda existente del mes</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Si está marcado, elimina las visitas ya agendadas de este técnico en ese mes antes de generar la nueva agenda.</p>
+                  <p className="text-sm font-medium text-gray-800">Reemplazar agenda existente del período</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Si está marcado, elimina las visitas ya agendadas de este técnico en los próximos 30 días antes de generar la nueva agenda.</p>
                 </div>
               </label>
 
               {/* Cómo funciona */}
               <div className="bg-gray-50 rounded-lg px-4 py-3 text-xs text-gray-500 space-y-1 border border-gray-100">
                 <p className="font-semibold text-gray-700 mb-1">Cómo funciona</p>
-                <p>• El técnico recibe una visita a cada uno de sus predios asignados durante el mes.</p>
-                <p>• Las visitas se distribuyen de Lunes a Viernes usando el GPS de cada predio para agrupar los más cercanos en el mismo día.</p>
-                <p>• Los predios sin GPS se agregan al final de la ruta.</p>
+                <p>• Genera visitas para los próximos 30 días de corrido, de Lunes a Viernes entre las 8:00 y las 17:00 — nunca en fechas ya pasadas.</p>
+                <p>• Si el técnico tiene un punto de partida fijo configurado, arma su ruta real considerando tiempos de viaje.</p>
+                <p>• Si no, distribuye las visitas usando el GPS de cada predio para agrupar los más cercanos.</p>
+                <p>• Los predios sin GPS ni comuna cargada se agregan al final de la ruta.</p>
               </div>
 
               {/* Resultado */}
@@ -652,7 +631,7 @@ export default function AgendaPage() {
                   {generarResult.ok ? (
                     <div className="space-y-1">
                       <p className="font-semibold">Agenda generada correctamente</p>
-                      <p>{generarResult.creadas} visitas creadas · {generarResult.tecnicos} técnico{(generarResult.tecnicos ?? 0) > 1 ? 's' : ''} · {generarResult.diasHabiles} días hábiles</p>
+                      <p>{generarResult.creadas} visitas creadas · {generarResult.tecnicos} técnico{(generarResult.tecnicos ?? 0) > 1 ? 's' : ''} · {generarResult.diasHabiles} días hábiles ({generarResult.desde} a {generarResult.hasta})</p>
                     </div>
                   ) : (
                     <p>{generarResult.error ?? 'Error al generar la agenda'}</p>

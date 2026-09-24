@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized, isSupervisor } from '@/lib/session'
+import { chileDateTime } from '@/lib/tz'
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const session = await getSession()
@@ -17,13 +18,15 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   const data = await req.json()
   const hora = /^\d{2}:\d{2}$/.test(data.hora) ? data.hora : '12:00'
+  const [anio, mesNum, diaNum] = data.fecha.split('-').map(Number)
+  const [horaNum, minNum] = hora.split(':').map(Number)
 
   if (!isSupervisor(session)) {
     // Un técnico solo puede reprogramar fecha/hora/notas de su propia visita
     const agenda = await prisma.agendaVisita.update({
       where: { id: existente.id },
       data: {
-        fecha: new Date(`${data.fecha}T${hora}:00`),
+        fecha: chileDateTime(anio, mesNum, diaNum, horaNum, minNum),
         notas: data.notas || null,
       },
       include: { predio: { include: { cultivos: true } }, oportunidad: true, tecnico: true },
@@ -40,7 +43,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const agenda = await prisma.agendaVisita.update({
     where: { id: existente.id },
     data: {
-      fecha: new Date(`${data.fecha}T${hora}:00`),
+      fecha: chileDateTime(anio, mesNum, diaNum, horaNum, minNum),
       predioId,
       oportunidadId,
       tecnicoId: parseInt(data.tecnicoId),

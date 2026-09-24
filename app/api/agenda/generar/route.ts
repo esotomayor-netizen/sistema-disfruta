@@ -6,14 +6,28 @@ import { getSession, unauthorized, isSupervisor } from '@/lib/session'
 import { notifyAgendaProgramada, AGENDA_WHATSAPP_SUPERVISOR_EMAIL } from '@/lib/notify'
 import { nearestNeighborOrder, buildTimedSchedule, type GeoPoint } from '@/lib/geo'
 import { coordenadaComuna } from '@/lib/comunas-cl'
+import { chileDateTime, chileToday } from '@/lib/tz'
 
-function getWorkingDays(year: number, month: number): Date[] {
-  const days: Date[] = []
-  const date = new Date(year, month - 1, 1)
-  while (date.getMonth() === month - 1) {
-    const dow = date.getDay()
-    if (dow >= 1 && dow <= 5) days.push(new Date(date))
-    date.setDate(date.getDate() + 1)
+interface DiaCalendario {
+  year: number
+  month: number // 1-12
+  day: number
+}
+
+// Próximos 30 días de corrido a partir de "hoy" en Chile, quedándose solo con
+// los días hábiles (Lun-Vie). Así "Generar Agenda" nunca crea visitas en el
+// pasado, sin importar en qué punto del mes se ejecute.
+function next30WorkingDays(): DiaCalendario[] {
+  const { year, month, day } = chileToday()
+  const anchor = new Date(Date.UTC(year, month - 1, day))
+  const days: DiaCalendario[] = []
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(anchor)
+    d.setUTCDate(d.getUTCDate() + i)
+    const dow = d.getUTCDay()
+    if (dow >= 1 && dow <= 5) {
+      days.push({ year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() })
+    }
   }
   return days
 }
@@ -47,10 +61,6 @@ function sortByProximity(predios: PredioLite[]): PredioLite[] {
   ]
 }
 
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return unauthorized()
@@ -58,16 +68,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Solo supervisores pueden generar la agenda' }, { status: 403 })
   }
 
-  const { mes, sobreescribir = false, tecnicoId } = await req.json()
-  if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
-    return NextResponse.json({ error: 'Formato de mes inválido (YYYY-MM)' }, { status: 400 })
-  }
+  const { sobreescribir = false, tecnicoId } = await req.json().catch(() => ({}))
 
-  const [year, month] = mes.split('-').map(Number)
-  const workingDays = getWorkingDays(year, month)
+  const workingDays = next30WorkingDays()
   if (workingDays.length === 0) {
-    return NextResponse.json({ error: 'El mes no tiene días hábiles' }, { status: 400 })
+    return NextResponse.json({ error: 'No hay días hábiles en los próximos 30 días' }, { status: 400 })
   }
+  const desde = workingDays[0]
+  const hasta = workingDays[workingDays.length - 1]
 
   const predioWhere: any = { activa: true, tecnicoId: { not: null } }
   if (tecnicoId) predioWhere.tecnicoId = Number(tecnicoId)
@@ -108,17 +116,18 @@ export async function POST(req: Request) {
   )
 
   if (sobreescribir) {
-    const start = new Date(year, month - 1, 1)
-    const end = new Date(year, month, 0, 23, 59, 59, 999)
+    const start = chileDateTime(desde.year, desde.month, desde.day, 0, 0)
+    const end = chileDateTime(hasta.year, hasta.month, hasta.day, 23, 59)
     const deleteWhere: any = { fecha: { gte: start, lte: end } }
     if (tecnicoId) deleteWhere.tecnicoId = Number(tecnicoId)
     await prisma.agendaVisita.deleteMany({ where: deleteWhere })
   }
 
-  // Group working days by weekday column: weekdayGroups[0]=all Mondays, ..., [4]=all Fridays
-  const weekdayGroups: Date[][] = [[], [], [], [], []]
+  // Agrupa los días hábiles disponibles por columna de día de semana: [0]=Lunes, ..., [4]=Viernes
+  const weekdayGroups: DiaCalendario[][] = [[], [], [], [], []]
   workingDays.forEach((d) => {
-    const col = d.getDay() - 1 // Mon→0, Tue→1, Wed→2, Thu→3, Fri→4
+    const dow = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay()
+    const col = dow - 1 // Lun→0 ... Vie→4
     if (col >= 0 && col <= 4) weekdayGroups[col].push(d)
   })
 
@@ -143,11 +152,12 @@ export async function POST(req: Request) {
         lng: p.longitud!,
         visitas: Math.max(1, p.visitasMensuales),
       }))
-      const schedule = buildTimedSchedule(items, workingDays, origen)
+      const diasComoDate = workingDays.map((d) => new Date(d.year, d.month - 1, d.day))
+      const schedule = buildTimedSchedule(items, diasComoDate, origen)
       schedule.forEach((e) => {
         const [hh, mm] = e.horaInicio.split(':').map(Number)
         toCreate.push({
-          fecha: new Date(e.date.getFullYear(), e.date.getMonth(), e.date.getDate(), hh, mm, 0),
+          fecha: chileDateTime(e.date.getFullYear(), e.date.getMonth() + 1, e.date.getDate(), hh, mm),
           predioId: e.id,
           tecnicoId: tecId,
           notas: null,
@@ -164,7 +174,7 @@ export async function POST(req: Request) {
 
       queue.forEach((predio, idx) => {
         // Diagonal distribution: col cycles Mon→Tue→Wed→Thu→Fri,
-        // row shifts by col so each weekday starts in a different week of the month.
+        // row shifts by col so each weekday starts in a different week of the window.
         const col = idx % 5
         const row = Math.floor(idx / 5)
         const group = weekdayGroups[col]
@@ -172,7 +182,7 @@ export async function POST(req: Request) {
         const actualRow = (row + col) % group.length
         const day = group[actualRow]
         toCreate.push({
-          fecha: new Date(toDateStr(day) + 'T12:00:00'),
+          fecha: chileDateTime(day.year, day.month, day.day, 9, 0),
           predioId: predio.id,
           tecnicoId: tecId,
           notas: null,
@@ -213,6 +223,7 @@ export async function POST(req: Request) {
     creadas: toCreate.length,
     tecnicos: byTecnico.size,
     diasHabiles: workingDays.length,
-    mes,
+    desde: `${desde.year}-${String(desde.month).padStart(2, '0')}-${String(desde.day).padStart(2, '0')}`,
+    hasta: `${hasta.year}-${String(hasta.month).padStart(2, '0')}-${String(hasta.day).padStart(2, '0')}`,
   })
 }
