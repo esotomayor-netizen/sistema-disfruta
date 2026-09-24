@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession, unauthorized, isSupervisor } from '@/lib/session'
 import { notifyAgendaProgramada, AGENDA_WHATSAPP_SUPERVISOR_EMAIL } from '@/lib/notify'
-import { nearestNeighborOrder, buildTimedSchedule, type GeoPoint } from '@/lib/geo'
+import { nearestNeighborOrder, buildTimedSchedule, isPuntoEnChile, type GeoPoint } from '@/lib/geo'
 import { coordenadaComuna } from '@/lib/comunas-cl'
 import { chileDateTime, chileToday } from '@/lib/tz'
 
@@ -43,9 +43,15 @@ interface PredioLite {
   encargado?: { id: number; nombre: string; apellido: string; email: string; telefono: string | null } | null
 }
 
-// Punto resuelto: GPS real del predio, o el centro de su comuna cuando no tiene GPS cargado.
-function resolvePoint(p: { latitud: number | null; longitud: number | null; comuna: string | null }): GeoPoint | null {
-  if (p.latitud != null && p.longitud != null) return { lat: p.latitud, lng: p.longitud }
+// Punto resuelto: GPS real del predio, o el centro de su comuna cuando no tiene GPS
+// cargado (o cuando el GPS cargado cae fuera de Chile — un error de tipeo típico
+// que, sin este resguardo, produce distancias/horarios absurdos aguas abajo).
+function resolvePoint(p: { id: number; latitud: number | null; longitud: number | null; comuna: string | null }): GeoPoint | null {
+  if (p.latitud != null && p.longitud != null) {
+    const punto = { lat: p.latitud, lng: p.longitud }
+    if (isPuntoEnChile(punto)) return punto
+    console.log(`[generar-diag] predio id ${p.id} tiene GPS fuera de rango (${p.latitud}, ${p.longitud}) — se usa la comuna como respaldo`)
+  }
   return coordenadaComuna(p.comuna)
 }
 
