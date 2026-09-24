@@ -1,5 +1,19 @@
 export type GeoPoint = { lat: number; lng: number }
 
+// Caja delimitadora generosa de Chile continental. Un GPS cargado con error
+// (signo invertido, lat/lng traspapelados, etc.) cae fuera de este rango y,
+// si se usa igual, produce distancias absurdas (miles de km) que revientan
+// los cálculos de horario. isPuntoEnChile() sirve para descartarlo a tiempo.
+const CHILE_LAT_MIN = -56
+const CHILE_LAT_MAX = -17
+const CHILE_LNG_MIN = -76
+const CHILE_LNG_MAX = -66
+
+/** true si el punto cae dentro de un rectángulo generoso que cubre Chile continental. */
+export function isPuntoEnChile(p: GeoPoint): boolean {
+  return p.lat >= CHILE_LAT_MIN && p.lat <= CHILE_LAT_MAX && p.lng >= CHILE_LNG_MIN && p.lng <= CHILE_LNG_MAX
+}
+
 /**
  * Convierte una coordenada en formato grados-minutos-segundos (ej: 34°47'56.11"S,
  * con comillas rectas o tipográficas) o grados decimales (ej: -34.798919) a un
@@ -159,10 +173,15 @@ export function buildTimedSchedule<T extends GeoPoint & { id: number; visitas: n
 
       if (estado.visitasHoy > 0 && finDia > JORNADA_FIN_MIN) continue // día lleno, probar el siguiente
 
+      const llegadaRedondeada = Math.round(llegada)
+      let hh = Math.floor(llegadaRedondeada / 60)
+      let mm = llegadaRedondeada % 60
+      if (mm === 60) { mm = 0; hh += 1 } // evita "10:60" cuando el redondeo cae justo en el minuto 60
+
       result.push({
         id: visita.id,
         date: workdays[dayIdx],
-        horaInicio: `${String(Math.floor(llegada / 60)).padStart(2, '0')}:${String(Math.round(llegada % 60)).padStart(2, '0')}`,
+        horaInicio: `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`,
         distKm: Math.round(dist * 10) / 10,
       })
       estado.cursor = visita
