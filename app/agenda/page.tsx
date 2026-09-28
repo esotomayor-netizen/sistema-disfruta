@@ -18,6 +18,7 @@ function agendaTargetName(a: AgendaItem): string {
 }
 interface Stat { mes: string; planificadas: number; realizadas: number }
 interface GenerarResult { ok: boolean; creadas?: number; tecnicos?: number; diasHabiles?: number; desde?: string; hasta?: string; error?: string }
+interface Ausencia { id: number; fechaInicio: string; fechaFin: string; motivo: string | null }
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -56,6 +57,8 @@ export default function AgendaPage() {
   const [editModal, setEditModal] = useState<AgendaItem | null>(null)
   const [editForm, setEditForm] = useState({ fecha: '', predioId: '', tecnicoId: '', notas: '', hora: '09:00' })
   const [editSaving, setEditSaving] = useState(false)
+  const [notificando, setNotificando] = useState(false)
+  const [notificarResult, setNotificarResult] = useState<string | null>(null)
 
   // Generar agenda
   const [generarModal, setGenerarModal] = useState(false)
@@ -63,6 +66,11 @@ export default function AgendaPage() {
   const [generarSobreescribir, setGenerarSobreescribir] = useState(true)
   const [generarLoading, setGenerarLoading] = useState(false)
   const [generarResult, setGenerarResult] = useState<GenerarResult | null>(null)
+
+  // Días no disponibles del técnico (vacaciones, licencias, etc.)
+  const [ausencias, setAusencias] = useState<Ausencia[]>([])
+  const [ausenciaForm, setAusenciaForm] = useState({ fechaInicio: '', fechaFin: '', motivo: '' })
+  const [ausenciaLoading, setAusenciaLoading] = useState(false)
 
   // Sincronizar con Outlook / Google Calendar (feed .ics)
   const [syncModal, setSyncModal] = useState(false)
@@ -90,6 +98,15 @@ export default function AgendaPage() {
 
   useEffect(() => { fetchAgendas() }, [fetchAgendas])
   useEffect(() => { fetchStats() }, [fetchStats])
+
+  const fetchAusencias = useCallback((tecnicoId: string) => {
+    if (!tecnicoId) { setAusencias([]); return }
+    fetch(`/api/agenda/ausencias?tecnicoId=${tecnicoId}`).then((r) => r.json()).then(setAusencias)
+  }, [])
+
+  useEffect(() => {
+    if (generarModal) fetchAusencias(generarTecnicoId)
+  }, [generarModal, generarTecnicoId, fetchAusencias])
 
   // Calendar grid
   const firstDay = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay()
@@ -140,6 +157,7 @@ export default function AgendaPage() {
     if (!esSupervisor && !esDueño) return
     if (!item.predio) return // Las visitas agendadas a una oportunidad se editan desde su propia ficha
     setEditModal(item)
+    setNotificarResult(null)
     setEditForm({
       fecha: toYMD(new Date(item.fecha)),
       predioId: String(item.predio.id),
@@ -188,6 +206,41 @@ export default function AgendaPage() {
       fetchAgendas()
       fetchStats()
     }
+  }
+
+  const handleReenviarAviso = async () => {
+    if (!editModal) return
+    setNotificando(true)
+    setNotificarResult(null)
+    const res = await fetch(`/api/agenda/${editModal.id}/notificar`, { method: 'POST' })
+    const data = await res.json()
+    setNotificando(false)
+    setNotificarResult(res.ok ? `Aviso enviado a ${data.contacto} (${data.telefono})` : (data.error ?? 'Error al enviar el aviso'))
+  }
+
+  const handleAgregarAusencia = async () => {
+    if (!generarTecnicoId || !ausenciaForm.fechaInicio) return
+    setAusenciaLoading(true)
+    const res = await fetch('/api/agenda/ausencias', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tecnicoId: generarTecnicoId,
+        fechaInicio: ausenciaForm.fechaInicio,
+        fechaFin: ausenciaForm.fechaFin || ausenciaForm.fechaInicio,
+        motivo: ausenciaForm.motivo,
+      }),
+    })
+    setAusenciaLoading(false)
+    if (res.ok) {
+      setAusenciaForm({ fechaInicio: '', fechaFin: '', motivo: '' })
+      fetchAusencias(generarTecnicoId)
+    }
+  }
+
+  const handleEliminarAusencia = async (id: number) => {
+    await fetch(`/api/agenda/ausencias/${id}`, { method: 'DELETE' })
+    fetchAusencias(generarTecnicoId)
   }
 
   const handleAbrirSync = async () => {
@@ -592,6 +645,20 @@ export default function AgendaPage() {
                   placeholder="Objetivo de la visita, observaciones…"
                 />
               </div>
+              {esSupervisor && (
+                <div className="border-t border-gray-100 pt-4">
+                  <button
+                    onClick={handleReenviarAviso}
+                    disabled={notificando}
+                    className="btn-secondary text-sm w-full"
+                  >
+                    {notificando ? 'Enviando…' : 'Reenviar aviso WhatsApp al contacto'}
+                  </button>
+                  {notificarResult && (
+                    <p className="text-xs text-gray-500 mt-2">{notificarResult}</p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="px-6 pb-6 flex gap-3">
               <button
@@ -637,6 +704,72 @@ export default function AgendaPage() {
                 </select>
               </div>
 
+              {/* Días no disponibles del técnico (vacaciones, licencias, etc.) */}
+              {generarTecnicoId && (
+                <div>
+                  <label className="label">Días no disponibles (vacaciones, licencia, etc.)</label>
+                  <p className="text-xs text-gray-400 -mt-1 mb-2">La agenda no va a usar estos días para este técnico.</p>
+
+                  {ausencias.length > 0 && (
+                    <div className="space-y-1 mb-3">
+                      {ausencias.map((a) => (
+                        <div key={a.id} className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              {new Date(a.fechaInicio).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
+                              {a.fechaFin && a.fechaFin.slice(0, 10) !== a.fechaInicio.slice(0, 10)
+                                ? ` – ${new Date(a.fechaFin).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}`
+                                : ''}
+                            </span>
+                            {a.motivo && <span className="text-gray-400 ml-2">{a.motivo}</span>}
+                          </div>
+                          <button
+                            onClick={() => handleEliminarAusencia(a.id)}
+                            className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="input text-sm"
+                      type="date"
+                      value={ausenciaForm.fechaInicio}
+                      onChange={(e) => setAusenciaForm({ ...ausenciaForm, fechaInicio: e.target.value })}
+                      placeholder="Desde"
+                    />
+                    <input
+                      className="input text-sm"
+                      type="date"
+                      value={ausenciaForm.fechaFin}
+                      onChange={(e) => setAusenciaForm({ ...ausenciaForm, fechaFin: e.target.value })}
+                      placeholder="Hasta (opcional)"
+                    />
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      className="input text-sm flex-1"
+                      value={ausenciaForm.motivo}
+                      onChange={(e) => setAusenciaForm({ ...ausenciaForm, motivo: e.target.value })}
+                      placeholder="Motivo (opcional): vacaciones, licencia médica…"
+                    />
+                    <button
+                      onClick={handleAgregarAusencia}
+                      disabled={!ausenciaForm.fechaInicio || ausenciaLoading}
+                      className="btn-secondary text-sm whitespace-nowrap"
+                    >
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -657,6 +790,7 @@ export default function AgendaPage() {
                 <p>• Si el técnico tiene un punto de partida fijo configurado, arma su ruta real considerando tiempos de viaje.</p>
                 <p>• Si no, distribuye las visitas usando el GPS de cada predio para agrupar los más cercanos.</p>
                 <p>• Los predios sin GPS ni comuna cargada se agregan al final de la ruta.</p>
+                <p>• Los días marcados como no disponibles para el técnico (abajo) se excluyen de la agenda.</p>
               </div>
 
               {/* Resultado */}

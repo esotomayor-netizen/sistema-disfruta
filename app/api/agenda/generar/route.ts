@@ -141,6 +141,31 @@ export async function POST(req: Request) {
       .map((t) => [t.id, { lat: t.origenLat!, lng: t.origenLng! }])
   )
 
+  // Ausencias (vacaciones, licencias, etc.) que se cruzan con la ventana de 30
+  // días: los días dentro de esos rangos se excluyen de la agenda de ese técnico.
+  const ventanaInicio = chileDateTime(desde.year, desde.month, desde.day, 0, 0)
+  const ventanaFin = chileDateTime(hasta.year, hasta.month, hasta.day, 23, 59)
+  const ausencias = await prisma.ausenciaTecnico.findMany({
+    where: {
+      tecnicoId: { in: Array.from(byTecnico.keys()) },
+      fechaInicio: { lte: ventanaFin },
+      fechaFin: { gte: ventanaInicio },
+    },
+  })
+  console.log('[generar-diag] ausencias:', JSON.stringify(ausencias.map(a => ({ tecnicoId: a.tecnicoId, desde: a.fechaInicio.toISOString(), hasta: a.fechaFin.toISOString(), motivo: a.motivo }))))
+  const ausenciasPorTecnico = new Map<number, { inicio: Date; fin: Date }[]>()
+  ausencias.forEach((a) => {
+    const list = ausenciasPorTecnico.get(a.tecnicoId) ?? []
+    list.push({ inicio: a.fechaInicio, fin: a.fechaFin })
+    ausenciasPorTecnico.set(a.tecnicoId, list)
+  })
+  function diaDisponible(tecId: number, d: DiaCalendario): boolean {
+    const rangos = ausenciasPorTecnico.get(tecId)
+    if (!rangos || rangos.length === 0) return true
+    const fechaDia = chileDateTime(d.year, d.month, d.day, 12, 0)
+    return !rangos.some((r) => fechaDia >= r.inicio && fechaDia <= r.fin)
+  }
+
   if (sobreescribir) {
     const start = chileDateTime(desde.year, desde.month, desde.day, 0, 0)
     const end = chileDateTime(hasta.year, hasta.month, hasta.day, 23, 59)
@@ -150,18 +175,24 @@ export async function POST(req: Request) {
     console.log(`[generar-diag] sobreescribir: borradas ${borradas.count} visitas en [${start.toISOString()}, ${end.toISOString()}]`)
   }
 
-  // Agrupa los días hábiles disponibles por columna de día de semana: [0]=Lunes, ..., [4]=Viernes
-  const weekdayGroups: DiaCalendario[][] = [[], [], [], [], []]
-  workingDays.forEach((d) => {
-    const dow = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay()
-    const col = dow - 1 // Lun→0 ... Vie→4
-    if (col >= 0 && col <= 4) weekdayGroups[col].push(d)
-  })
-
   const toCreate: { fecha: Date; predioId: number; tecnicoId: number; notas: null }[] = []
 
   for (const [tecId, tecnicoPredios] of Array.from(byTecnico.entries())) {
     const origen = origenPorTecnico.get(tecId)
+    const workingDaysTec = workingDays.filter((d) => diaDisponible(tecId, d))
+    if (workingDaysTec.length === 0) {
+      console.log(`[generar-diag] técnico ${tecId}: sin días hábiles disponibles en la ventana (ausencia cubre todo el período), se omite`)
+      continue
+    }
+
+    // Agrupa los días hábiles disponibles (ya descontadas las ausencias) por
+    // columna de día de semana: [0]=Lunes, ..., [4]=Viernes.
+    const weekdayGroups: DiaCalendario[][] = [[], [], [], [], []]
+    workingDaysTec.forEach((d) => {
+      const dow = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay()
+      const col = dow - 1 // Lun→0 ... Vie→4
+      if (col >= 0 && col <= 4) weekdayGroups[col].push(d)
+    })
 
     // Usa el GPS real del predio, o el centro de su comuna cuando no tiene GPS cargado,
     // para el ordenamiento geográfico y (si aplica) el cálculo de tiempos de viaje.
@@ -181,7 +212,7 @@ export async function POST(req: Request) {
       }))
       console.log(`[generar-diag] técnico ${tecId}: ${items.length} predios con punto, ${efectivos.length - conPunto.length} sin punto`)
       console.log('[generar-diag] items:', JSON.stringify(items.map(i => ({ id: i.id, visitas: i.visitas }))))
-      const diasComoDate = workingDays.map((d) => new Date(d.year, d.month - 1, d.day))
+      const diasComoDate = workingDaysTec.map((d) => new Date(d.year, d.month - 1, d.day))
       const schedule = buildTimedSchedule(items, diasComoDate, origen)
       console.log('[generar-diag] schedule:', JSON.stringify(schedule.map(e => ({ id: e.id, fecha: `${e.date.getFullYear()}-${e.date.getMonth()+1}-${e.date.getDate()}`, hora: e.horaInicio }))))
       schedule.forEach((e) => {
