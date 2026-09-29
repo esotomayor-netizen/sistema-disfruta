@@ -61,8 +61,25 @@ model Empresa {
   tecnico          Usuario? @relation("TecnicoEmpresa", fields: [tecnicoId], references: [id])
   tecnicoId        Int?
   predios          Predio[]
+  mensajesWhatsApp MensajeWhatsApp[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+// Respuestas de WhatsApp de los contactos, recibidas vía webhook de Meta.
+// El número de WhatsApp del negocio es distinto al celular personal del
+// técnico, así que las respuestas no le llegan directo — quedan acá.
+model MensajeWhatsApp {
+  id             Int      @id @default(autoincrement())
+  telefono       String
+  nombreContacto String?
+  texto          String
+  waMessageId    String   @unique
+  empresa        Empresa? @relation(fields: [empresaId], references: [id])
+  empresaId      Int?
+  leido          Boolean  @default(false)
+  fecha          DateTime
+  createdAt      DateTime @default(now())
 }
 
 model Predio {
