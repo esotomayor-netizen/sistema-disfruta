@@ -20,6 +20,41 @@ function normalizarCultivo(cultivo: string): string {
   return cultivo
 }
 
+// Las fotos de cámara de celular (varios MB, a veces HEIC) superan fácil el
+// límite de tamaño de payload de las funciones serverless de Vercel (~4.5MB),
+// lo que hace fallar el guardado sin aviso. Se redimensionan y recomprimen a
+// JPEG antes de convertirlas a base64 para que el guardado sea confiable.
+function compressImageFile(file: File, maxDim = 1600, quality = 0.75): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const img = new Image()
+      img.onload = () => {
+        let { width, height } = img
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height)
+          width = Math.round(width * scale)
+          height = Math.round(height * scale)
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { resolve(dataUrl); return }
+        ctx.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      }
+      // Si el navegador no puede decodificar el formato (ej. algún HEIC), se
+      // usa el original tal cual en vez de perder la foto.
+      img.onerror = () => resolve(dataUrl)
+      img.src = dataUrl
+    }
+    reader.onerror = () => resolve('')
+    reader.readAsDataURL(file)
+  })
+}
+
 function especieDeVisita(visita: Visita): string {
   return visita.especie || visita.predio.cultivos[0]?.cultivo || ''
 }
@@ -194,7 +229,7 @@ export default function VisitaDetailPage() {
   const handleAgregarLabor = async () => {
     if (!laborSeleccionada || !visita) return
     setSaving(true)
-    await fetch('/api/labores', {
+    const res = await fetch('/api/labores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -224,6 +259,10 @@ export default function VisitaDetailPage() {
       }),
     })
     setSaving(false)
+    if (!res.ok) {
+      alert('No se pudo guardar la labor. Vuelve a intentarlo (si las fotos son muy pesadas, prueba con menos fotos a la vez).')
+      return
+    }
     setModal(null)
     setLaborSeleccionada(null)
     setBusquedaLabor('')
@@ -232,16 +271,12 @@ export default function VisitaDetailPage() {
     fetchVisita()
   }
 
-  const handleAgregarFotos = (files: FileList | null) => {
+  const handleAgregarFotos = async (files: FileList | null) => {
     if (!files) return
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result
-        if (typeof result === 'string') setFotosNuevas((prev) => [...prev, result])
-      }
-      reader.readAsDataURL(file)
-    })
+    for (const file of Array.from(files)) {
+      const result = await compressImageFile(file)
+      if (result) setFotosNuevas((prev) => [...prev, result])
+    }
   }
 
   const handleEliminarFotoNueva = (index: number) => {
@@ -326,17 +361,11 @@ export default function VisitaDetailPage() {
     fetchVisita()
   }
 
-  const handleImagenChange = (index: number, files: FileList | null) => {
+  const handleImagenChange = async (index: number, files: FileList | null) => {
     const file = files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const result = e.target?.result
-      if (typeof result === 'string') {
-        setImagenesVisita((prev) => prev.map((img, i) => (i === index ? result : img)))
-      }
-    }
-    reader.readAsDataURL(file)
+    const result = await compressImageFile(file)
+    if (result) setImagenesVisita((prev) => prev.map((img, i) => (i === index ? result : img)))
   }
 
   const handleEliminarImagen = (index: number) => {
@@ -346,7 +375,7 @@ export default function VisitaDetailPage() {
   const handleGuardarImagenes = async () => {
     if (!visita) return
     setGuardandoImagenes(true)
-    await fetch(`/api/visitas/${id}`, {
+    const res = await fetch(`/api/visitas/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -356,13 +385,17 @@ export default function VisitaDetailPage() {
       }),
     })
     setGuardandoImagenes(false)
+    if (!res.ok) {
+      alert('No se pudieron guardar las imágenes. Vuelve a intentarlo.')
+      return
+    }
     fetchVisita()
   }
 
   const handleAgregarLaborManual = async () => {
     if (!visita || !manualLaborDescripcion.trim()) return
     setSaving(true)
-    await fetch('/api/labores', {
+    const res = await fetch('/api/labores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -378,6 +411,10 @@ export default function VisitaDetailPage() {
       }),
     })
     setSaving(false)
+    if (!res.ok) {
+      alert('No se pudo guardar la labor. Vuelve a intentarlo (si las fotos son muy pesadas, prueba con menos fotos a la vez).')
+      return
+    }
     setModal(null)
     setManualLaborTipo('MANTENIMIENTO')
     setManualLaborDescripcion('')
