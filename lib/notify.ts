@@ -108,6 +108,31 @@ export async function notifyAgendaProgramada(
   await sendWhatsApp(contacto.telefono, 'agenda_programada_productores', [contacto.nombre, predioNombre, fechaStr, horaStr])
 }
 
+// ─── Respuesta de WhatsApp recibida (bandeja) ───────────────────────────
+// El número de WhatsApp del negocio es distinto al celular personal del
+// técnico, así que las respuestas de los contactos no le llegan directo a su
+// WhatsApp — se avisa por email de que hay algo nuevo en la bandeja del sistema.
+
+export async function notifyMensajeWhatsApp(
+  mensaje: { telefono: string; nombreContacto: string | null; texto: string },
+  empresaNombre: string | null
+): Promise<void> {
+  const destinatario = await prisma.usuario.findUnique({ where: { email: AGENDA_WHATSAPP_SUPERVISOR_EMAIL } })
+  if (!destinatario) return
+
+  const quien = mensaje.nombreContacto || empresaNombre || mensaje.telefono
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px">
+      <h2 style="color:#075e54;margin-bottom:4px">Nuevo mensaje de WhatsApp</h2>
+      <p>Hola <strong>${fullName(destinatario)}</strong>,</p>
+      <p><strong>${quien}</strong> (${mensaje.telefono}) respondió:</p>
+      <div style="background:#f0f2f5;border-radius:8px;padding:12px;margin:12px 0;white-space:pre-wrap">${mensaje.texto}</div>
+      <p style="color:#6b7280;font-size:14px">Ingresa al sistema (sección Mensajes) para ver la conversación completa.</p>
+    </div>`
+
+  await sendEmail(destinatario.email, `WhatsApp: ${quien}`, html)
+}
+
 // ─── Informe de visita generado ─────────────────────────────────────
 // Templates WhatsApp requeridos en Meta Business Manager:
 //   Nombre: informe_visita | Idioma: es | Categoría: UTILITY
