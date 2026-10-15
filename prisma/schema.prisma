@@ -257,6 +257,10 @@ model Aplicacion {
   unidad        String
   fecha         DateTime
   estado        String   @default("PENDIENTE")
+  // Cuándo corresponde aplicar, cuando no es una fecha fija sino una condición
+  // (ej. "10 días antes de cosecha", "en caso de lluvia"). Se usa en vez de
+  // mostrar `fecha` para agrupar y describir recomendaciones de próxima visita.
+  condicion     String?
   observaciones String?
   predio        Predio   @relation(fields: [predioId], references: [id])
   predioId      Int
