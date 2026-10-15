@@ -10,7 +10,7 @@ import { formatDate, TIPOS_PRODUCTO, UNIDADES, ESTADOS_FENOLOGICOS, LABOR_TIPOS,
 interface Predio { id: number; nombre: string; csg: string; cultivos: { cultivo: string; variedades: string | null }[]; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
 interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; fotos: string[]; estado: string; responsable: Usuario }
-interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; observaciones: string | null; estado: string; tecnico: Usuario }
+interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; fecha: string; condicion: string | null; observaciones: string | null; estado: string; tecnico: Usuario }
 interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; checkinLat: number | null; checkinLng: number | null; especie: string | null; variedades: string | null; fotos: string[]; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
 interface CatalogoItem { id: number; labor: string; categoria: string; descripcion: string; especie: string }
 interface ProgramaItem { id: number; producto: string; ingredienteActivo: string | null; dosisHa: string | null; tratamientoObjetivo: string | null; grupo?: string }
@@ -91,7 +91,7 @@ export default function VisitaDetailPage() {
   const [eliminandoVisita, setEliminandoVisita] = useState(false)
   const [catalogo, setCatalogo] = useState<CatalogoItem[]>([])
   const [programa, setPrograma] = useState<ProgramaItem[]>([])
-  const [modal, setModal] = useState<'labor' | 'aplicacion' | null>(null)
+  const [modal, setModal] = useState<'labor' | 'aplicacion' | 'recomendacion' | null>(null)
   const [saving, setSaving] = useState(false)
   const [laborSeleccionada, setLaborSeleccionada] = useState<CatalogoItem | null>(null)
   const [descripcionEditable, setDescripcionEditable] = useState('')
@@ -123,6 +123,13 @@ export default function VisitaDetailPage() {
   const [manualLaborDetalle, setManualLaborDetalle] = useState('')
   const [imagenesVisita, setImagenesVisita] = useState<(string | null)[]>([null, null, null, null])
   const [guardandoImagenes, setGuardandoImagenes] = useState(false)
+
+  // Recomendación para la próxima aplicación (varios productos agrupados bajo
+  // una misma fecha estimada o condición, ej. "10 días antes de cosecha").
+  const [recProductos, setRecProductos] = useState<{ producto: string; tipoProducto: string; dosis: string; unidad: string }[]>([])
+  const [recFecha, setRecFecha] = useState('')
+  const [recCondicion, setRecCondicion] = useState('')
+  const [recGuardando, setRecGuardando] = useState(false)
 
   const fetchVisita = useCallback(() => {
     fetch(`/api/visitas/${id}`).then((r) => r.json()).then((v) => {
@@ -463,6 +470,56 @@ export default function VisitaDetailPage() {
     fetchVisita()
   }
 
+  const handleAgregarProductoARecomendacion = () => {
+    if (!productoSeleccionado || !dosisOverride) return
+    setRecProductos((prev) => [...prev, { producto: productoSeleccionado.producto, tipoProducto: tipoOverride, dosis: dosisOverride, unidad: unidadOverride }])
+    setProductoSeleccionado(null)
+    setDosisOverride('')
+    setBusquedaProducto('')
+  }
+
+  const handleAgregarManualARecomendacion = () => {
+    if (!manualProducto.trim() || !manualDosis) return
+    setRecProductos((prev) => [...prev, { producto: manualProducto.trim(), tipoProducto: manualTipo, dosis: manualDosis, unidad: manualUnidad }])
+    setManualProducto('')
+    setManualDosis('')
+    setManualUnidad('L/ha')
+    setManualTipo('OTRO')
+  }
+
+  const handleEliminarProductoDeRecomendacion = (index: number) => {
+    setRecProductos((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleGuardarRecomendacion = async () => {
+    if (!visita || recProductos.length === 0 || (!recFecha && !recCondicion.trim())) return
+    setRecGuardando(true)
+    const res = await fetch('/api/aplicaciones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productos: recProductos,
+        fecha: recFecha || visita.fecha,
+        estado: 'PENDIENTE',
+        condicion: recCondicion.trim() || null,
+        predioId: visita.predio.id,
+        tecnicoId: visita.tecnico.id,
+        visitaId: visita.id,
+      }),
+    })
+    setRecGuardando(false)
+    if (!res.ok) {
+      alert('No se pudo guardar la recomendación. Vuelve a intentarlo.')
+      return
+    }
+    setModal(null)
+    setRecProductos([])
+    setRecFecha('')
+    setRecCondicion('')
+    setMostrarManual(false)
+    fetchVisita()
+  }
+
   const handleCompletar = async () => {
     await fetch(`/api/visitas/${id}`, {
       method: 'PUT',
@@ -485,6 +542,19 @@ export default function VisitaDetailPage() {
   }
 
   if (!visita) return <div className="p-8 text-gray-400">Cargando…</div>
+
+  const aplicacionesRealizadas = visita.aplicaciones.filter((a) => a.estado !== 'PENDIENTE')
+  const recomendaciones = visita.aplicaciones.filter((a) => a.estado === 'PENDIENTE')
+  const gruposRecomendaciones = (() => {
+    const map = new Map<string, { key: string; label: string; items: Aplicacion[] }>()
+    recomendaciones.forEach((a) => {
+      const key = a.condicion || a.fecha.slice(0, 10)
+      const label = a.condicion ? `Condición: ${a.condicion}` : `Fecha estimada: ${formatDate(a.fecha)}`
+      if (!map.has(key)) map.set(key, { key, label, items: [] })
+      map.get(key)!.items.push(a)
+    })
+    return Array.from(map.values())
+  })()
 
   return (
     <div>
@@ -719,19 +789,19 @@ export default function VisitaDetailPage() {
           </div>
         </div>
 
-        {/* Aplicaciones */}
+        {/* Aplicaciones realizadas */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-800">Aplicaciones ({visita.aplicaciones.length})</h2>
+            <h2 className="font-semibold text-gray-800">Aplicaciones Realizadas ({aplicacionesRealizadas.length})</h2>
             {(visita.estado === 'EN_PROGRESO' || modoEdicion) && (
               <button onClick={() => { setModal('aplicacion'); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setEstadoFenologico(''); setMostrarManual(false); }} className="btn-primary text-xs py-1.5 px-3">+ Agregar aplicación</button>
             )}
           </div>
           <div className="space-y-2">
-            {visita.aplicaciones.length === 0 && (
+            {aplicacionesRealizadas.length === 0 && (
               <div className="card text-center py-8 text-gray-400 text-sm">No hay aplicaciones aún</div>
             )}
-            {visita.aplicaciones.map((a) => (
+            {aplicacionesRealizadas.map((a) => (
               <div key={a.id} className={`card py-3 px-4 transition-colors ${modoEdicion ? 'border-red-100 hover:border-red-300' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -755,6 +825,49 @@ export default function VisitaDetailPage() {
                       </svg>
                     </button>
                   )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Recomendaciones para la próxima visita */}
+          <div className="flex items-center justify-between mb-3 mt-6">
+            <h2 className="font-semibold text-gray-800">Recomendaciones Próxima Visita ({recomendaciones.length})</h2>
+            <button
+              onClick={() => { setModal('recomendacion'); setRecProductos([]); setRecFecha(''); setRecCondicion(''); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setMostrarManual(false) }}
+              className="btn-primary text-xs py-1.5 px-3"
+            >
+              + Agregar recomendación
+            </button>
+          </div>
+          <div className="space-y-2">
+            {gruposRecomendaciones.length === 0 && (
+              <div className="card text-center py-8 text-gray-400 text-sm">Sin recomendaciones para la próxima visita</div>
+            )}
+            {gruposRecomendaciones.map((g) => (
+              <div key={g.key} className="card py-3 px-4">
+                <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-2">{g.label}</p>
+                <div className="space-y-1.5">
+                  {g.items.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between gap-2 text-sm">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <span className="font-medium text-gray-900">{a.producto}</span>
+                        <span className={`badge text-xs ${tipoProductoColor(a.tipoProducto)}`}>{labelFromValue(TIPOS_PRODUCTO, a.tipoProducto)}</span>
+                        <span className="text-gray-500 text-xs">{a.dosis} {a.unidad}</span>
+                      </div>
+                      {modoEdicion && (
+                        <button
+                          onClick={() => handleEliminarAplicacion(a.id)}
+                          className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors"
+                          title="Eliminar producto de la recomendación"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -1125,6 +1238,156 @@ export default function VisitaDetailPage() {
                 {saving ? 'Guardando…' : 'Agregar aplicación'}
               </button>
               <button onClick={() => { setModal(null); setEstadoFenologico(''); setMostrarManual(false) }} className="btn-secondary">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal agregar recomendación para la próxima aplicación */}
+      {modal === 'recomendacion' && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">Recomendación para la próxima aplicación</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Agrupa los productos que se deben aplicar juntos en la próxima visita</p>
+              </div>
+              <button onClick={() => { setModal(null); setMostrarManual(false) }} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+
+            <div className="overflow-y-auto px-4 pt-4 pb-2 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Fecha estimada</label>
+                  <input className="input" type="date" value={recFecha} onChange={(e) => setRecFecha(e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">O condición</label>
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Ej: 10 días antes de cosecha"
+                    value={recCondicion}
+                    onChange={(e) => setRecCondicion(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 -mt-2">Completa la fecha, la condición, o ambas — al menos una es obligatoria.</p>
+
+              {/* Lista acumulada de productos de este grupo */}
+              {recProductos.length > 0 && (
+                <div className="space-y-1.5 bg-gray-50 rounded-lg p-2 border border-gray-100">
+                  {recProductos.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2 text-sm bg-white rounded-lg px-2.5 py-1.5 border border-gray-100">
+                      <div className="min-w-0">
+                        <span className="font-medium text-gray-900">{p.producto}</span>
+                        <span className="text-gray-400 text-xs ml-2">{p.dosis} {p.unidad}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleEliminarProductoDeRecomendacion(i)}
+                        className="text-red-400 hover:text-red-600 flex-shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Buscador de producto (programa fitosanitario) */}
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-xs text-gray-500 font-medium mb-1">Buscar producto (programa fitosanitario)</p>
+                <input
+                  type="text"
+                  placeholder="Buscar producto, ingrediente activo u objetivo…"
+                  value={busquedaProducto}
+                  onChange={(e) => { setBusquedaProducto(e.target.value); setProductoSeleccionado(null) }}
+                  className="input"
+                />
+                <div className="overflow-y-auto mt-2 space-y-1.5" style={{ maxHeight: 140 }}>
+                  {productosFiltrados.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => handleSelectProducto(p.producto)}
+                      className={`p-2.5 rounded-lg border cursor-pointer transition-colors text-sm ${productoSeleccionado?.producto === p.producto ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300'}`}
+                    >
+                      <p className="font-medium text-gray-900">{p.producto}</p>
+                    </div>
+                  ))}
+                </div>
+                {productoSeleccionado && (
+                  <div className="mt-2 space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <select className="input text-sm" value={tipoOverride} onChange={(e) => setTipoOverride(e.target.value)}>
+                        {TIPOS_PRODUCTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      </select>
+                      <input className="input text-sm" type="number" step="0.01" value={dosisOverride} onChange={(e) => setDosisOverride(e.target.value)} placeholder="Dosis" />
+                      <select className="input text-sm" value={unidadOverride} onChange={(e) => setUnidadOverride(e.target.value)}>
+                        {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAgregarProductoARecomendacion}
+                      disabled={!dosisOverride}
+                      className="btn-secondary w-full text-sm"
+                    >
+                      + Agregar a la lista
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Agregar producto manualmente */}
+              <div className="border-t border-gray-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setMostrarManual(!mostrarManual)}
+                  className="text-xs text-primary-600 hover:text-primary-800 font-medium"
+                >
+                  {mostrarManual ? '− Ocultar' : '+ Agregar producto manualmente (no está en el listado)'}
+                </button>
+                {mostrarManual && (
+                  <div className="mt-2 space-y-2">
+                    <input
+                      className="input"
+                      type="text"
+                      placeholder="Nombre del producto"
+                      value={manualProducto}
+                      onChange={(e) => setManualProducto(e.target.value)}
+                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <select className="input" value={manualTipo} onChange={(e) => setManualTipo(e.target.value)}>
+                        {TIPOS_PRODUCTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      </select>
+                      <input className="input" type="number" step="0.01" placeholder="Dosis" value={manualDosis} onChange={(e) => setManualDosis(e.target.value)} />
+                      <select className="input" value={manualUnidad} onChange={(e) => setManualUnidad(e.target.value)}>
+                        {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAgregarManualARecomendacion}
+                      disabled={!manualProducto.trim() || !manualDosis}
+                      className="btn-secondary w-full text-sm"
+                    >
+                      + Agregar a la lista
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={handleGuardarRecomendacion}
+                disabled={recProductos.length === 0 || (!recFecha && !recCondicion.trim()) || recGuardando}
+                className="btn-primary flex-1"
+              >
+                {recGuardando ? 'Guardando…' : `Guardar grupo (${recProductos.length})`}
+              </button>
+              <button onClick={() => { setModal(null); setMostrarManual(false) }} className="btn-secondary">Cancelar</button>
             </div>
           </div>
         </div>
