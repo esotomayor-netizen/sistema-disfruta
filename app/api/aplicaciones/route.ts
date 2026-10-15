@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     const base = {
       fecha: new Date(data.fecha),
       estado: data.estado || 'PENDIENTE',
+      condicion: data.condicion || null,
       observaciones: data.observaciones || null,
       predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
       unidad: data.unidad,
       fecha: new Date(data.fecha),
       estado: data.estado || 'PENDIENTE',
+      condicion: data.condicion || null,
       observaciones: data.observaciones || null,
       predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),

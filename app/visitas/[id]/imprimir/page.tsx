@@ -69,6 +69,19 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
 
   if (!visita) return notFound()
 
+  const aplicacionesRealizadas = visita.aplicaciones.filter((a) => a.estado !== 'PENDIENTE')
+  const recomendaciones = visita.aplicaciones.filter((a) => a.estado === 'PENDIENTE')
+  const gruposRecomendaciones = (() => {
+    const map = new Map<string, { key: string; label: string; items: typeof recomendaciones }>()
+    recomendaciones.forEach((a) => {
+      const key = a.condicion || a.fecha.toISOString().slice(0, 10)
+      const label = a.condicion ? `Condición: ${a.condicion}` : `Fecha estimada: ${formatDate(a.fecha)}`
+      if (!map.has(key)) map.set(key, { key, label, items: [] })
+      map.get(key)!.items.push(a)
+    })
+    return Array.from(map.values())
+  })()
+
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 11, color: '#111', background: 'white', minHeight: '100vh', padding: 32 }}>
       <style>{printStyles}</style>
@@ -126,7 +139,7 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
           </div>
           <div className="info-item">
             <label>N° Actividades</label>
-            <span>{visita.labores.length} labores · {visita.aplicaciones.length} aplicaciones</span>
+            <span>{visita.labores.length} labores · {aplicacionesRealizadas.length} aplicaciones</span>
           </div>
         </div>
 
@@ -189,10 +202,10 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
           )}
         </div>
 
-        {/* Aplicaciones */}
+        {/* Aplicaciones realizadas */}
         <div className="section">
-          <h2>Aplicaciones Fitosanitarias ({visita.aplicaciones.length})</h2>
-          {visita.aplicaciones.length === 0 ? (
+          <h2>Aplicaciones Fitosanitarias ({aplicacionesRealizadas.length})</h2>
+          {aplicacionesRealizadas.length === 0 ? (
             <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>No se registraron aplicaciones en esta visita.</p>
           ) : (
             <table className="zebra">
@@ -206,7 +219,7 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
                 </tr>
               </thead>
               <tbody>
-                {visita.aplicaciones.map((a, i) => (
+                {aplicacionesRealizadas.map((a, i) => (
                   <tr key={a.id}>
                     <td style={{ color: '#9ca3af' }}>{i + 1}</td>
                     <td><strong>{a.producto}</strong></td>
@@ -223,6 +236,42 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
             </table>
           )}
         </div>
+
+        {/* Recomendaciones para la próxima aplicación */}
+        {gruposRecomendaciones.length > 0 && (
+          <div className="section">
+            <h2>Recomendaciones para la Próxima Aplicación</h2>
+            <table className="zebra">
+              <thead>
+                <tr>
+                  <th style={{ width: '45%' }}>Producto</th>
+                  <th style={{ width: '20%' }}>Tipo</th>
+                  <th style={{ width: '35%' }}>Dosis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {gruposRecomendaciones.map((g) => (
+                  <>
+                    <tr key={g.key} className="labor-title-row">
+                      <td colSpan={3}>{g.label}</td>
+                    </tr>
+                    {g.items.map((a) => (
+                      <tr key={a.id}>
+                        <td><strong>{a.producto}</strong></td>
+                        <td>
+                          <span className={`badge ${a.tipoProducto === 'FUNGICIDA' ? 'badge-blue' : a.tipoProducto === 'INSECTICIDA' ? 'badge-orange' : 'badge-gray'}`}>
+                            {labelFromValue(TIPOS_PRODUCTO, a.tipoProducto)}
+                          </span>
+                        </td>
+                        <td style={{ fontFamily: 'monospace' }}>{a.dosis} {a.unidad}</td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Fotografías (todas al final) */}
         {(() => {
