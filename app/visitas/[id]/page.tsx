@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import { formatDate, TIPOS_PRODUCTO, UNIDADES, ESTADOS_FENOLOGICOS, LABOR_TIPOS, labelFromValue, tipoProductoColor } from '@/lib/constants'
+import { compressImageFile } from '@/lib/image'
 
 interface Predio { id: number; nombre: string; csg: string; cultivos: { cultivo: string; variedades: string | null }[]; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
@@ -18,41 +19,6 @@ interface ProgramaFitoItem { id: number; producto: string; ingredienteActivo: st
 
 function normalizarCultivo(cultivo: string): string {
   return cultivo
-}
-
-// Las fotos de cámara de celular (varios MB, a veces HEIC) superan fácil el
-// límite de tamaño de payload de las funciones serverless de Vercel (~4.5MB),
-// lo que hace fallar el guardado sin aviso. Se redimensionan y recomprimen a
-// JPEG antes de convertirlas a base64 para que el guardado sea confiable.
-function compressImageFile(file: File, maxDim = 1600, quality = 0.75): Promise<string> {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result as string
-      const img = new Image()
-      img.onload = () => {
-        let { width, height } = img
-        if (width > maxDim || height > maxDim) {
-          const scale = maxDim / Math.max(width, height)
-          width = Math.round(width * scale)
-          height = Math.round(height * scale)
-        }
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        if (!ctx) { resolve(dataUrl); return }
-        ctx.drawImage(img, 0, 0, width, height)
-        resolve(canvas.toDataURL('image/jpeg', quality))
-      }
-      // Si el navegador no puede decodificar el formato (ej. algún HEIC), se
-      // usa el original tal cual en vez de perder la foto.
-      img.onerror = () => resolve(dataUrl)
-      img.src = dataUrl
-    }
-    reader.onerror = () => resolve('')
-    reader.readAsDataURL(file)
-  })
 }
 
 function especieDeVisita(visita: Visita): string {
@@ -649,6 +615,27 @@ export default function VisitaDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Acceso al chat de registro */}
+      {visita.estado === 'EN_PROGRESO' && (
+        <Link
+          href={`/visitas/${visita.id}/chat`}
+          className="card mb-6 bg-primary-50/40 border-primary-100 flex items-center justify-between gap-3 hover:bg-primary-50/70 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">Asistente de registro (chat)</p>
+              <p className="text-xs text-gray-500">Cuéntale por texto y fotos lo que vas haciendo en la visita</p>
+            </div>
+          </div>
+          <span className="text-primary-600 text-sm font-medium shrink-0">Abrir →</span>
+        </Link>
+      )}
 
       {/* Observaciones */}
       <div className="card mb-6">
