@@ -11,7 +11,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   // Close drawer on route change
   useEffect(() => { setOpen(false) }, [pathname])
 
-  if (pathname?.endsWith('/imprimir')) return <>{children}</>
+  if (pathname?.endsWith('/imprimir') || pathname?.endsWith('/chat')) return <>{children}</>
 
   return (
     <div className="flex min-h-screen">
