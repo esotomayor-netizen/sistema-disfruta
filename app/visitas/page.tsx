@@ -81,8 +81,11 @@ export default async function VisitasPage() {
                   </span>
                 </td>
                 <td className="table-td">
-                  <Link href={`/visitas/${v.id}`} className="text-primary-600 hover:text-primary-700 text-xs font-medium">
-                    Ver detalle →
+                  <Link
+                    href={v.estado === 'EN_PROGRESO' ? `/visitas/${v.id}/chat` : `/visitas/${v.id}`}
+                    className="text-primary-600 hover:text-primary-700 text-xs font-medium"
+                  >
+                    {v.estado === 'EN_PROGRESO' ? 'Abrir chat →' : 'Ver detalle →'}
                   </Link>
                 </td>
               </tr>

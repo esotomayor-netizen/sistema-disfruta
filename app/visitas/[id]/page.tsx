@@ -7,7 +7,6 @@ import Header from '@/components/Header'
 import Link from 'next/link'
 import { formatDate, TIPOS_PRODUCTO, UNIDADES, ESTADOS_FENOLOGICOS, LABOR_TIPOS, labelFromValue, tipoProductoColor } from '@/lib/constants'
 import { compressImageFile } from '@/lib/image'
-import AsistenteChat from './AsistenteChat'
 
 interface Predio { id: number; nombre: string; csg: string; cultivos: { cultivo: string; variedades: string | null }[]; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
@@ -617,17 +616,25 @@ export default function VisitaDetailPage() {
         )}
       </div>
 
-      {/* Asistente de registro por chat */}
+      {/* Acceso al chat de registro */}
       {visita.estado === 'EN_PROGRESO' && (
-        <AsistenteChat
-          visitaId={visita.id}
-          especie={especieDeVisita(visita)}
-          predioNombre={visita.predio.nombre}
-          predioId={visita.predio.id}
-          tecnicoId={visita.tecnico.id}
-          fechaVisita={visita.fecha}
-          onGuardado={fetchVisita}
-        />
+        <Link
+          href={`/visitas/${visita.id}/chat`}
+          className="card mb-6 bg-primary-50/40 border-primary-100 flex items-center justify-between gap-3 hover:bg-primary-50/70 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">Asistente de registro (chat)</p>
+              <p className="text-xs text-gray-500">Cuéntale por texto y fotos lo que vas haciendo en la visita</p>
+            </div>
+          </div>
+          <span className="text-primary-600 text-sm font-medium shrink-0">Abrir →</span>
+        </Link>
       )}
 
       {/* Observaciones */}

@@ -184,8 +184,25 @@ model Visita {
   aplicaciones  Aplicacion[]
   conteos       Conteo[]
   informes      InformeGenerado[]
+  mensajes      VisitaMensaje[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
+}
+
+// Historial del chat de registro de la visita (estilo WhatsApp): cada fila es
+// un mensaje del técnico o de la IA. Las "propuestas" de un mensaje de IA son
+// labores/aplicaciones/notas de observaciones detectadas en la conversación,
+// que el técnico confirma una por una antes de que queden escritas en Labor/
+// Aplicacion/Visita.observaciones (ver estado de cada propuesta en el JSON).
+model VisitaMensaje {
+  id         Int      @id @default(autoincrement())
+  visita     Visita   @relation(fields: [visitaId], references: [id])
+  visitaId   Int
+  role       String // 'user' | 'assistant'
+  texto      String
+  fotos      String[] @default([])
+  propuestas Json     @default("[]")
+  createdAt  DateTime @default(now())
 }
 
 model InformeGenerado {

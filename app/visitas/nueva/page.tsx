@@ -110,7 +110,7 @@ export default function NuevaVisitaPage() {
       })
       if (res.ok) {
         const visita = await res.json()
-        router.push(`/visitas/${visita.id}`)
+        router.push(`/visitas/${visita.id}/chat`)
       }
     } finally {
       setLoading(false)
