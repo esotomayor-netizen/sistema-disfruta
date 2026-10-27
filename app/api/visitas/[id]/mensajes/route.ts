@@ -128,17 +128,32 @@ Responde SIEMPRE con un único objeto JSON, sin texto antes ni después, sin blo
 
     let respuesta = 'Listo, sigo atento.'
     let propuestas: Propuesta[] = []
-    try {
-      const limpio = texto.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim()
-      const parsed = JSON.parse(limpio) as { respuesta: string; propuestas: { tipo: Propuesta['tipo']; datos: Record<string, string> }[] }
-      respuesta = parsed.respuesta || respuesta
-      propuestas = (Array.isArray(parsed.propuestas) ? parsed.propuestas : []).map((p) => ({
-        id: randomUUID(),
-        tipo: p.tipo,
-        estado: 'pendiente' as const,
-        datos: p.datos || {},
-      }))
-    } catch (parseErr) {
+    // Claude a veces antepone texto conversacional antes del bloque JSON pese a
+    // la instrucción de responder solo JSON, así que además del intento directo
+    // se prueba a extraer el primer objeto { ... } del texto como respaldo.
+    const candidatos = [
+      texto.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim(),
+      texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1),
+    ]
+    let parseado = false
+    for (const candidato of candidatos) {
+      if (!candidato) continue
+      try {
+        const parsed = JSON.parse(candidato) as { respuesta: string; propuestas: { tipo: Propuesta['tipo']; datos: Record<string, string> }[] }
+        respuesta = parsed.respuesta || respuesta
+        propuestas = (Array.isArray(parsed.propuestas) ? parsed.propuestas : []).map((p) => ({
+          id: randomUUID(),
+          tipo: p.tipo,
+          estado: 'pendiente' as const,
+          datos: p.datos || {},
+        }))
+        parseado = true
+        break
+      } catch {
+        continue
+      }
+    }
+    if (!parseado) {
       console.error('[mensajes] no se pudo parsear la respuesta como JSON:', texto)
       respuesta = texto || respuesta
     }
