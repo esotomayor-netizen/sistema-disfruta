@@ -43,6 +43,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     prisma.aplicacion.deleteMany({ where: { visitaId } }),
     prisma.labor.deleteMany({ where: { visitaId } }),
     prisma.conteo.deleteMany({ where: { visitaId } }),
+    prisma.visitaMensaje.deleteMany({ where: { visitaId } }),
     prisma.visita.delete({ where: { id: visitaId } }),
   ])
 
