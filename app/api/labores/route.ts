@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       observaciones: data.observaciones || null,
       dibujo: data.dibujo || null,
       fotos: Array.isArray(data.fotos) ? data.fotos : [],
+      variedades: data.variedades || null,
       predioId: parseInt(data.predioId),
       responsableId: parseInt(data.responsableId),
       visitaId: data.visitaId ? parseInt(data.visitaId) : null,
