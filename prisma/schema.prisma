@@ -224,6 +224,9 @@ model Labor {
   observaciones String?
   dibujo        String?
   fotos         String[]  @default([])
+  // Variedades del predio a las que corresponde esta labor (lista separada por
+  // comas, ej. "Lapins, Bing"). Null significa que aplica al predio en general.
+  variedades    String?
   predio        Predio    @relation(fields: [predioId], references: [id])
   predioId      Int
   responsable   Usuario   @relation("Responsable", fields: [responsableId], references: [id])
@@ -279,6 +282,10 @@ model Aplicacion {
   // mostrar `fecha` para agrupar y describir recomendaciones de próxima visita.
   condicion     String?
   observaciones String?
+  // Variedades del predio a las que corresponde esta aplicación (lista
+  // separada por comas, ej. "Lapins, Bing"). Null significa que aplica al
+  // predio en general.
+  variedades    String?
   predio        Predio   @relation(fields: [predioId], references: [id])
   predioId      Int
   tecnico       Usuario  @relation("Tecnico", fields: [tecnicoId], references: [id])
@@ -289,7 +296,7 @@ model Aplicacion {
   updatedAt     DateTime @updatedAt
 }
 
-// ── Módulo Cosecha & Exportación ────────────────────────────────────────────────────────────────
+// ── Módulo Cosecha & Exportación ─────────────────────────────────────────────
 
 model Temporada {
   id                  Int                   @id @default(autoincrement())
@@ -386,7 +393,7 @@ model PrecioCalibres {
   updatedAt   DateTime  @updatedAt
 }
 
-// ── Módulo Conteos (dardos / carozos) ────────────────────────────────────────────
+// ── Módulo Conteos (dardos / carozos) ────────────────────────────────────────
 
 model Arbol {
   id        Int      @id @default(autoincrement())
@@ -438,7 +445,7 @@ enum TipoEstructura {
   VEGETATIVO
 }
 
-// ── Módulo Oportunidades ──────────────────────────────────────────────────────────
+// ── Módulo Oportunidades ──────────────────────────────────────────────────────
 
 model Oportunidad {
   id            Int            @id @default(autoincrement())
