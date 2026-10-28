@@ -10,8 +10,8 @@ import { compressImageFile } from '@/lib/image'
 
 interface Predio { id: number; nombre: string; csg: string; cultivos: { cultivo: string; variedades: string | null }[]; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
-interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; fotos: string[]; estado: string; responsable: Usuario }
-interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; fecha: string; condicion: string | null; observaciones: string | null; estado: string; tecnico: Usuario }
+interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; fotos: string[]; estado: string; variedades: string | null; responsable: Usuario }
+interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; fecha: string; condicion: string | null; observaciones: string | null; estado: string; variedades: string | null; tecnico: Usuario }
 interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; checkinLat: number | null; checkinLng: number | null; especie: string | null; variedades: string | null; fotos: string[]; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
 interface CatalogoItem { id: number; labor: string; categoria: string; descripcion: string; especie: string }
 interface ProgramaItem { id: number; producto: string; ingredienteActivo: string | null; dosisHa: string | null; tratamientoObjetivo: string | null; grupo?: string }
@@ -23,6 +23,11 @@ function normalizarCultivo(cultivo: string): string {
 
 function especieDeVisita(visita: Visita): string {
   return visita.especie || visita.predio.cultivos[0]?.cultivo || ''
+}
+
+function variedadesDeVisita(visita: Visita): string[] {
+  const raw = visita.variedades || visita.predio.cultivos.find((c) => c.cultivo === especieDeVisita(visita))?.variedades || ''
+  return raw.split(',').map((v) => v.trim()).filter(Boolean)
 }
 
 function parseDosisHa(dosisHa: string | null): { dosis: string; unidad: string } {
@@ -46,6 +51,28 @@ function inferTipo(item: ProgramaItem): string {
   if (['pulgon', 'mosca', 'trips', 'drosophila'].some((k) => t.includes(k))) return 'INSECTICIDA'
   if (['monilia', 'oidio', 'botrytis', 'pudricion', 'chancro', 'bacteriano'].some((k) => t.includes(k))) return 'FUNGICIDA'
   return 'OTRO'
+}
+
+function toggleVariedad(setter: React.Dispatch<React.SetStateAction<string[]>>, v: string) {
+  setter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
+}
+
+function SelectorVariedades({ opciones, seleccion, onToggle }: { opciones: string[]; seleccion: string[]; onToggle: (v: string) => void }) {
+  if (opciones.length === 0) return null
+  return (
+    <div>
+      <label className="label">Variedad(es) a la que corresponde</label>
+      <div className="flex flex-wrap gap-2">
+        {opciones.map((v) => (
+          <label key={v} className={`text-xs px-2 py-1 rounded-md border cursor-pointer ${seleccion.includes(v) ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600'}`}>
+            <input type="checkbox" className="hidden" checked={seleccion.includes(v)} onChange={() => onToggle(v)} />
+            {v}
+          </label>
+        ))}
+      </div>
+      {seleccion.length === 0 && <p className="text-xs text-gray-400 mt-1">Sin seleccionar, aplica al predio en general.</p>}
+    </div>
+  )
 }
 
 export default function VisitaDetailPage() {
@@ -89,6 +116,9 @@ export default function VisitaDetailPage() {
   const [manualLaborDetalle, setManualLaborDetalle] = useState('')
   const [imagenesVisita, setImagenesVisita] = useState<(string | null)[]>([null, null, null, null])
   const [guardandoImagenes, setGuardandoImagenes] = useState(false)
+  const [laborVariedades, setLaborVariedades] = useState<string[]>([])
+  const [aplicacionVariedades, setAplicacionVariedades] = useState<string[]>([])
+  const [recVariedades, setRecVariedades] = useState<string[]>([])
 
   // Recomendación para la próxima aplicación (varios productos agrupados bajo
   // una misma fecha estimada o condición, ej. "10 días antes de cosecha").
@@ -226,6 +256,7 @@ export default function VisitaDetailPage() {
         observaciones: descripcionEditable,
         dibujo: bosquejo,
         fotos: fotosNuevas,
+        variedades: laborVariedades.length > 0 ? laborVariedades.join(', ') : null,
         predioId: visita.predio.id,
         responsableId: visita.tecnico.id,
         visitaId: visita.id,
@@ -241,6 +272,7 @@ export default function VisitaDetailPage() {
     setBusquedaLabor('')
     setBosquejo(null)
     setFotosNuevas([])
+    setLaborVariedades([])
     fetchVisita()
   }
 
@@ -270,6 +302,7 @@ export default function VisitaDetailPage() {
         fecha: visita.fecha,
         estado: 'COMPLETADA',
         observaciones: productoSeleccionado.tratamientoObjetivo,
+        variedades: aplicacionVariedades.length > 0 ? aplicacionVariedades.join(', ') : null,
         predioId: visita.predio.id,
         tecnicoId: visita.tecnico.id,
         visitaId: visita.id,
@@ -278,6 +311,7 @@ export default function VisitaDetailPage() {
     setSaving(false)
     setModal(null)
     setProductoSeleccionado(null)
+    setAplicacionVariedades([])
     fetchVisita()
   }
 
@@ -296,6 +330,7 @@ export default function VisitaDetailPage() {
         fecha: visita.fecha,
         estado: 'COMPLETADA',
         observaciones: item.tratamientoObjetivo,
+        variedades: aplicacionVariedades.length > 0 ? aplicacionVariedades.join(', ') : null,
         predioId: visita.predio.id,
         tecnicoId: visita.tecnico.id,
         visitaId: visita.id,
@@ -319,6 +354,7 @@ export default function VisitaDetailPage() {
         fecha: visita.fecha,
         estado: 'COMPLETADA',
         observaciones: manualObjetivo ? `${manualObjetivo} (agregado manualmente)` : 'Agregado manualmente',
+        variedades: aplicacionVariedades.length > 0 ? aplicacionVariedades.join(', ') : null,
         predioId: visita.predio.id,
         tecnicoId: visita.tecnico.id,
         visitaId: visita.id,
@@ -331,6 +367,7 @@ export default function VisitaDetailPage() {
     setManualTipo('OTRO')
     setManualObjetivo('')
     setMostrarManual(false)
+    setAplicacionVariedades([])
     fetchVisita()
   }
 
@@ -378,6 +415,7 @@ export default function VisitaDetailPage() {
         estado: 'COMPLETADA',
         observaciones: manualLaborDetalle.trim() || null,
         fotos: fotosNuevas,
+        variedades: laborVariedades.length > 0 ? laborVariedades.join(', ') : null,
         predioId: visita.predio.id,
         responsableId: visita.tecnico.id,
         visitaId: visita.id,
@@ -394,6 +432,7 @@ export default function VisitaDetailPage() {
     setManualLaborDetalle('')
     setMostrarManualLabor(false)
     setFotosNuevas([])
+    setLaborVariedades([])
     fetchVisita()
   }
 
@@ -468,6 +507,7 @@ export default function VisitaDetailPage() {
         fecha: recFecha || visita.fecha,
         estado: 'PENDIENTE',
         condicion: recCondicion.trim() || null,
+        variedades: recVariedades.length > 0 ? recVariedades.join(', ') : null,
         predioId: visita.predio.id,
         tecnicoId: visita.tecnico.id,
         visitaId: visita.id,
@@ -482,6 +522,7 @@ export default function VisitaDetailPage() {
     setRecProductos([])
     setRecFecha('')
     setRecCondicion('')
+    setRecVariedades([])
     setMostrarManual(false)
     fetchVisita()
   }
@@ -729,7 +770,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Labores ({visita.labores.length})</h2>
             {(visita.estado === 'EN_PROGRESO' || modoEdicion) && (
-              <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null); setBosquejo(null); setFotosNuevas([]); setMostrarManualLabor(false); setManualLaborDescripcion(''); setManualLaborDetalle('') }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
+              <button onClick={() => { setModal('labor'); setBusquedaLabor(''); setLaborSeleccionada(null); setBosquejo(null); setFotosNuevas([]); setMostrarManualLabor(false); setManualLaborDescripcion(''); setManualLaborDetalle(''); setLaborVariedades([]) }} className="btn-primary text-xs py-1.5 px-3">+ Agregar labor</button>
             )}
           </div>
           <div className="space-y-2">
@@ -745,6 +786,7 @@ export default function VisitaDetailPage() {
                       <p className="text-xs text-gray-600 mt-1 leading-relaxed">{l.observaciones}</p>
                     )}
                     <p className="text-xs text-gray-400 mt-1">{l.tipo} · {l.responsable.nombre} {l.responsable.apellido}</p>
+                    {l.variedades && <p className="text-xs text-primary-600 mt-0.5">Variedad: {l.variedades}</p>}
                   </div>
                   {modoEdicion && (
                     <button
@@ -781,7 +823,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-800">Aplicaciones Realizadas ({aplicacionesRealizadas.length})</h2>
             {(visita.estado === 'EN_PROGRESO' || modoEdicion) && (
-              <button onClick={() => { setModal('aplicacion'); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setEstadoFenologico(''); setMostrarManual(false); }} className="btn-primary text-xs py-1.5 px-3">+ Agregar aplicación</button>
+              <button onClick={() => { setModal('aplicacion'); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setEstadoFenologico(''); setMostrarManual(false); setAplicacionVariedades([]) }} className="btn-primary text-xs py-1.5 px-3">+ Agregar aplicación</button>
             )}
           </div>
           <div className="space-y-2">
@@ -797,6 +839,7 @@ export default function VisitaDetailPage() {
                       <span className={`badge text-xs ${tipoProductoColor(a.tipoProducto)}`}>{labelFromValue(TIPOS_PRODUCTO, a.tipoProducto)}</span>
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{a.dosis} {a.unidad}</p>
+                    {a.variedades && <p className="text-xs text-primary-600 mt-0.5">Variedad: {a.variedades}</p>}
                     {a.observaciones && (
                       <p className="text-xs text-gray-600 mt-1 leading-relaxed">Objetivo: {a.observaciones}</p>
                     )}
@@ -821,7 +864,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3 mt-6">
             <h2 className="font-semibold text-gray-800">Recomendaciones Próxima Visita ({recomendaciones.length})</h2>
             <button
-              onClick={() => { setModal('recomendacion'); setRecProductos([]); setRecFecha(''); setRecCondicion(''); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setMostrarManual(false) }}
+              onClick={() => { setModal('recomendacion'); setRecProductos([]); setRecFecha(''); setRecCondicion(''); setRecVariedades([]); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setMostrarManual(false) }}
               className="btn-primary text-xs py-1.5 px-3"
             >
               + Agregar recomendación
@@ -834,6 +877,7 @@ export default function VisitaDetailPage() {
             {gruposRecomendaciones.map((g) => (
               <div key={g.key} className="card py-3 px-4">
                 <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-2">{g.label}</p>
+                {g.items[0]?.variedades && <p className="text-xs text-gray-500 mb-2">Variedad: {g.items[0].variedades}</p>}
                 <div className="space-y-1.5">
                   {g.items.map((a) => (
                     <div key={a.id} className="flex items-center justify-between gap-2 text-sm">
@@ -998,6 +1042,11 @@ export default function VisitaDetailPage() {
                 </div>
               </div>
             )}
+
+            {/* Variedad(es) a la que corresponde */}
+            <div className="px-4 pb-2 border-t border-gray-100 pt-3">
+              <SelectorVariedades opciones={variedadesDeVisita(visita)} seleccion={laborVariedades} onToggle={(v) => toggleVariedad(setLaborVariedades, v)} />
+            </div>
 
             {/* Agregar labor manualmente */}
             <div className="px-4 pb-2 border-t border-gray-100 pt-3">
@@ -1179,6 +1228,11 @@ export default function VisitaDetailPage() {
               </div>
             )}
 
+            {/* Variedad(es) a la que corresponde */}
+            <div className="px-4 pb-2 border-t border-gray-100 pt-3">
+              <SelectorVariedades opciones={variedadesDeVisita(visita)} seleccion={aplicacionVariedades} onToggle={(v) => toggleVariedad(setAplicacionVariedades, v)} />
+            </div>
+
             {/* Agregar producto manualmente */}
             <div className="px-4 pb-2 border-t border-gray-100 pt-3">
               <button
@@ -1260,6 +1314,8 @@ export default function VisitaDetailPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-400 -mt-2">Completa la fecha, la condición, o ambas — al menos una es obligatoria.</p>
+
+              <SelectorVariedades opciones={variedadesDeVisita(visita)} seleccion={recVariedades} onToggle={(v) => toggleVariedad(setRecVariedades, v)} />
 
               {/* Lista acumulada de productos de este grupo */}
               {recProductos.length > 0 && (
