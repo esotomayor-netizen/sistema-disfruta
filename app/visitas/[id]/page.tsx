@@ -11,7 +11,7 @@ import { compressImageFile } from '@/lib/image'
 interface Predio { id: number; nombre: string; csg: string; cultivos: { cultivo: string; variedades: string | null }[]; empresa: { razonSocial: string }; encargado: { nombre: string; apellido: string } | null }
 interface Usuario { id: number; nombre: string; apellido: string }
 interface Labor { id: number; tipo: string; descripcion: string; observaciones: string | null; dibujo: string | null; fotos: string[]; estado: string; variedades: string | null; responsable: Usuario }
-interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; fecha: string; condicion: string | null; observaciones: string | null; estado: string; variedades: string | null; tecnico: Usuario }
+interface Aplicacion { id: number; producto: string; tipoProducto: string; dosis: number; unidad: string; fecha: string; condicion: string | null; observaciones: string | null; estado: string; variedades: string | null; mojamiento: string | null; condicionesAplicacion: string | null; tecnico: Usuario }
 interface Visita { id: number; fecha: string; estado: string; observaciones: string | null; checkinLat: number | null; checkinLng: number | null; especie: string | null; variedades: string | null; fotos: string[]; predio: Predio; tecnico: Usuario; labores: Labor[]; aplicaciones: Aplicacion[] }
 interface CatalogoItem { id: number; labor: string; categoria: string; descripcion: string; especie: string }
 interface ProgramaItem { id: number; producto: string; ingredienteActivo: string | null; dosisHa: string | null; tratamientoObjetivo: string | null; grupo?: string }
@@ -56,6 +56,12 @@ function inferTipo(item: ProgramaItem): string {
 function toggleVariedad(setter: React.Dispatch<React.SetStateAction<string[]>>, v: string) {
   setter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
 }
+
+const CONDICIONES_APLICACION_DEFAULT = `• No aplicar con temperatura superior a 24°C.
+• Evaluar condición de viento (evitar sobre 10-15 km/h) y riesgo de deriva hacia predios vecinos.
+• Verificar compatibilidad de mezcla entre los productos antes de aplicar.
+• Aplicar preferentemente en horas de baja radiación solar (temprano en la mañana o al atardecer).
+• Respetar dosis, mojamiento y periodos de carencia indicados.`
 
 function SelectorVariedades({ opciones, seleccion, onToggle }: { opciones: string[]; seleccion: string[]; onToggle: (v: string) => void }) {
   if (opciones.length === 0) return null
@@ -125,6 +131,8 @@ export default function VisitaDetailPage() {
   const [recProductos, setRecProductos] = useState<{ producto: string; tipoProducto: string; dosis: string; unidad: string }[]>([])
   const [recFecha, setRecFecha] = useState('')
   const [recCondicion, setRecCondicion] = useState('')
+  const [recMojamiento, setRecMojamiento] = useState('')
+  const [recCondicionesAplicacion, setRecCondicionesAplicacion] = useState(CONDICIONES_APLICACION_DEFAULT)
   const [recGuardando, setRecGuardando] = useState(false)
 
   const fetchVisita = useCallback(() => {
@@ -508,6 +516,8 @@ export default function VisitaDetailPage() {
         estado: 'PENDIENTE',
         condicion: recCondicion.trim() || null,
         variedades: recVariedades.length > 0 ? recVariedades.join(', ') : null,
+        mojamiento: recMojamiento.trim() || null,
+        condicionesAplicacion: recCondicionesAplicacion.trim() || null,
         predioId: visita.predio.id,
         tecnicoId: visita.tecnico.id,
         visitaId: visita.id,
@@ -523,6 +533,8 @@ export default function VisitaDetailPage() {
     setRecFecha('')
     setRecCondicion('')
     setRecVariedades([])
+    setRecMojamiento('')
+    setRecCondicionesAplicacion(CONDICIONES_APLICACION_DEFAULT)
     setMostrarManual(false)
     fetchVisita()
   }
@@ -864,7 +876,7 @@ export default function VisitaDetailPage() {
           <div className="flex items-center justify-between mb-3 mt-6">
             <h2 className="font-semibold text-gray-800">Recomendaciones Próxima Visita ({recomendaciones.length})</h2>
             <button
-              onClick={() => { setModal('recomendacion'); setRecProductos([]); setRecFecha(''); setRecCondicion(''); setRecVariedades([]); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setMostrarManual(false) }}
+              onClick={() => { setModal('recomendacion'); setRecProductos([]); setRecFecha(''); setRecCondicion(''); setRecVariedades([]); setRecMojamiento(''); setRecCondicionesAplicacion(CONDICIONES_APLICACION_DEFAULT); setProductoSeleccionado(null); setDosisOverride(''); setBusquedaProducto(''); setMostrarManual(false) }}
               className="btn-primary text-xs py-1.5 px-3"
             >
               + Agregar recomendación
@@ -878,6 +890,12 @@ export default function VisitaDetailPage() {
               <div key={g.key} className="card py-3 px-4">
                 <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-2">{g.label}</p>
                 {g.items[0]?.variedades && <p className="text-xs text-gray-500 mb-2">Variedad: {g.items[0].variedades}</p>}
+                {g.items[0]?.mojamiento && <p className="text-xs text-gray-500 mb-2">Mojamiento: {g.items[0].mojamiento}</p>}
+                {g.items[0]?.condicionesAplicacion && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2 mb-2 whitespace-pre-line leading-relaxed">
+                    {g.items[0].condicionesAplicacion}
+                  </p>
+                )}
                 <div className="space-y-1.5">
                   {g.items.map((a) => (
                     <div key={a.id} className="flex items-center justify-between gap-2 text-sm">
@@ -1315,7 +1333,30 @@ export default function VisitaDetailPage() {
               </div>
               <p className="text-xs text-gray-400 -mt-2">Completa la fecha, la condición, o ambas — al menos una es obligatoria.</p>
 
+              <div>
+                <label className="label">Mojamiento (agua por hectárea)</label>
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Ej: 500 L/ha"
+                  value={recMojamiento}
+                  onChange={(e) => setRecMojamiento(e.target.value)}
+                />
+              </div>
+
               <SelectorVariedades opciones={variedadesDeVisita(visita)} seleccion={recVariedades} onToggle={(v) => toggleVariedad(setRecVariedades, v)} />
+
+              <div>
+                <label className="label">Condiciones para una aplicación efectiva</label>
+                <textarea
+                  className="input text-sm leading-relaxed"
+                  rows={5}
+                  value={recCondicionesAplicacion}
+                  onChange={(e) => setRecCondicionesAplicacion(e.target.value)}
+                  placeholder="Temperatura máxima, viento, deriva, compatibilidad de mezcla…"
+                />
+                <p className="text-xs text-gray-400 mt-1">Editable — se imprime en el informe junto con esta recomendación.</p>
+              </div>
 
               {/* Lista acumulada de productos de este grupo */}
               {recProductos.length > 0 && (
