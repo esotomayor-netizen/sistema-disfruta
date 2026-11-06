@@ -18,6 +18,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       email: data.email,
       rol: data.rol,
       telefono: data.telefono || null,
+      titulo: data.titulo || null,
       activo: data.activo,
     },
   })

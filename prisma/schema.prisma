@@ -130,6 +130,9 @@ model Usuario {
   password          String?
   rol               String
   telefono          String?
+  // Título profesional para la firma del informe de visita (ej. "Ing. Agrónomo").
+  // Si no se define, el informe muestra "Técnico Agrícola" por defecto.
+  titulo            String?
   activo            Boolean           @default(true)
   gmailRefreshToken String?
   origenLat         Float?
