@@ -23,6 +23,7 @@ export async function POST(req: Request) {
       email: data.email,
       rol: data.rol,
       telefono: data.telefono || null,
+      titulo: data.titulo || null,
       activo: data.activo !== false,
     },
   })

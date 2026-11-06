@@ -18,6 +18,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       email: data.email,
       rol: data.rol,
       telefono: data.telefono || null,
+      titulo: data.titulo || null,
       activo: data.activo,
     },
   })
@@ -30,7 +31,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     return NextResponse.json({ ok: true })
   } catch {
     return NextResponse.json(
-      { error: 'No se puede eliminar: tiene labores, visitas u otros registros asociados. Desactívalo en su lugar.' },
+      { error: 'No se puede eliminar: tiene labores, visitas u otros registros asociados. Desáctivalo en su lugar.' },
       { status: 409 }
     )
   }

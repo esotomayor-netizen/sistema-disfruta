@@ -314,7 +314,7 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
         <div className="firma">
           <div className="firma-box">
             <p><strong>{visita.tecnico.nombre} {visita.tecnico.apellido}</strong></p>
-            <p style={{ color: '#6b7280' }}>{visita.tecnico.email === 'e.sotomayor@exportadoradisfruta.cl' ? 'Ing. Agrónomo' : 'Técnico Agrícola'}</p>
+            <p style={{ color: '#6b7280' }}>{visita.tecnico.titulo || 'Técnico Agrícola'}</p>
           </div>
           <div className="firma-box">
             <p><strong>{visita.predio.encargado ? `${visita.predio.encargado.nombre} ${visita.predio.encargado.apellido}` : '___________________'}</strong></p>

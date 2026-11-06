@@ -16,14 +16,15 @@ export default function EditarMiembroPage() {
     email: '',
     rol: 'TECNICO',
     telefono: '',
+    titulo: '',
     activo: true,
   })
 
   useEffect(() => {
     fetch(`/api/equipo/${id}`)
       .then((r) => r.json())
-      .then((u: { nombre: string; apellido: string; email: string; rol: string; telefono: string | null; activo: boolean }) => {
-        setForm({ nombre: u.nombre, apellido: u.apellido, email: u.email, rol: u.rol, telefono: u.telefono ?? '', activo: u.activo })
+      .then((u: { nombre: string; apellido: string; email: string; rol: string; telefono: string | null; titulo: string | null; activo: boolean }) => {
+        setForm({ nombre: u.nombre, apellido: u.apellido, email: u.email, rol: u.rol, telefono: u.telefono ?? '', titulo: u.titulo ?? '', activo: u.activo })
       })
   }, [id])
 
@@ -81,6 +82,15 @@ export default function EditarMiembroPage() {
               <label className="label">Teléfono</label>
               <input className="input" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
             </div>
+          </div>
+          <div>
+            <label className="label">Título profesional (firma de informes)</label>
+            <input
+              className="input"
+              value={form.titulo}
+              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+              placeholder='Ej: Ing. Agrónomo (vacío = "Técnico Agrícola")'
+            />
           </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" id="activo" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} className="w-4 h-4 text-primary-600 rounded" />

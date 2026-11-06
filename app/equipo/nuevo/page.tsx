@@ -15,6 +15,7 @@ export default function NuevoMiembroPage() {
     email: '',
     rol: 'TECNICO',
     telefono: '',
+    titulo: '',
     activo: true,
   })
 
@@ -76,6 +77,15 @@ export default function NuevoMiembroPage() {
               <label className="label">Teléfono</label>
               <input className="input" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="+56912345678" />
             </div>
+          </div>
+          <div>
+            <label className="label">Título profesional (firma de informes)</label>
+            <input
+              className="input"
+              value={form.titulo}
+              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+              placeholder='Ej: Ing. Agrónomo (vacío = "Técnico Agrícola")'
+            />
           </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" id="activo" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} className="w-4 h-4 text-primary-600 rounded" />
