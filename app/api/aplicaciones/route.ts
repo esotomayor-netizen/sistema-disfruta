@@ -36,6 +36,8 @@ export async function POST(req: Request) {
       condicion: data.condicion || null,
       observaciones: data.observaciones || null,
       variedades: data.variedades || null,
+      mojamiento: data.mojamiento || null,
+      condicionesAplicacion: data.condicionesAplicacion || null,
       predioId: parseInt(data.predioId),
       tecnicoId: parseInt(data.tecnicoId),
       visitaId: data.visitaId ? parseInt(data.visitaId) : null,

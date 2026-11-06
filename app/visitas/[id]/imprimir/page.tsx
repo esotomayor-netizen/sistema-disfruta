@@ -45,6 +45,9 @@ const printStyles = `
   .sketch-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #7c3aed; margin-bottom: 6px; }
   .sketch-wrap { border: 1px solid #e9d5ff; border-radius: 6px; overflow: hidden; background: white; display: inline-block; max-width: 100%; }
   .sketch-wrap svg { display: block; max-width: 100%; height: auto; }
+  .mojamiento-row td { background: #eff6ff; color: #1e40af; font-size: 10.5px; padding: 6px 10px; border-top: none; }
+  .condiciones-row td { background: #fffbeb; padding: 8px 10px; border-top: none; }
+  .condiciones-row p { font-size: 10px; color: #92400e; line-height: 1.6; }
   .fotos-final-grid { display: flex; flex-wrap: wrap; gap: 14px; }
   .fotos-final-grid .foto-item { width: 10cm; }
   .fotos-final-grid img { width: 10cm; height: 10cm; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; display: block; }
@@ -255,6 +258,19 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
                     <tr key={g.key} className="labor-title-row">
                       <td colSpan={3}>{g.label}</td>
                     </tr>
+                    {g.items[0]?.mojamiento && (
+                      <tr key={`${g.key}-mojamiento`} className="mojamiento-row">
+                        <td colSpan={3}><strong>Mojamiento:</strong> {g.items[0].mojamiento}</td>
+                      </tr>
+                    )}
+                    {g.items[0]?.condicionesAplicacion && (
+                      <tr key={`${g.key}-condiciones`} className="condiciones-row">
+                        <td colSpan={3}>
+                          <div className="detalle-label" style={{ color: '#92400e' }}>Condiciones para una aplicación efectiva</div>
+                          <p style={{ whiteSpace: 'pre-line' }}>{g.items[0].condicionesAplicacion}</p>
+                        </td>
+                      </tr>
+                    )}
                     {g.items.map((a) => (
                       <tr key={a.id}>
                         <td><strong>{a.producto}</strong></td>
@@ -298,7 +314,7 @@ export default async function ImprimirVisitaPage({ params }: { params: { id: str
         <div className="firma">
           <div className="firma-box">
             <p><strong>{visita.tecnico.nombre} {visita.tecnico.apellido}</strong></p>
-            <p style={{ color: '#6b7280' }}>Técnico Agrícola</p>
+            <p style={{ color: '#6b7280' }}>{visita.tecnico.email === 'e.sotomayor@exportadoradisfruta.cl' ? 'Ing. Agrónomo' : 'Técnico Agrícola'}</p>
           </div>
           <div className="firma-box">
             <p><strong>{visita.predio.encargado ? `${visita.predio.encargado.nombre} ${visita.predio.encargado.apellido}` : '___________________'}</strong></p>
