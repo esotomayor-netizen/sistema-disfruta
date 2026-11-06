@@ -106,6 +106,7 @@ model Predio {
   agendas      AgendaVisita[]
   checkins     CheckIn[]
   arboles      Arbol[]
+  muestreos    Muestreo[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 }
@@ -149,6 +150,7 @@ model Usuario {
   interacciones     Interaccion[]     @relation("TecnicoInteraccion")
   informesGenerados InformeGenerado[] @relation("GeneradorInforme")
   ausencias         AusenciaTecnico[] @relation("TecnicoAusencia")
+  muestreos         Muestreo[]        @relation("TecnicoMuestreo")
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 }
@@ -494,4 +496,47 @@ enum TipoInteraccion {
   WHATSAPP
   REUNION
   NOTA
+}
+
+// ── Módulo Muestreo de Fruta (cerezas) ───────────────────────────────────────
+// Muestreo de calidad tomado en terreno (pre-cosecha, cosecha o despacho) con
+// el mismo formato de los informes de recepción de las plantas: curva de
+// calibres, distribución de color, firmeza, sólidos solubles y defectos de
+// calidad / condición. Los conteos se guardan en unidades (frutos) y los
+// porcentajes se calculan sobre `tamanoMuestra`.
+model Muestreo {
+  id                Int      @id @default(autoincrement())
+  fecha             DateTime
+  tipo              String   @default("COSECHA") // PRECOSECHA | COSECHA | DESPACHO
+  predio            Predio?  @relation(fields: [predioId], references: [id])
+  predioId          Int?
+  productor         String?
+  cuartel           String?
+  variedad          String
+  lote              String?
+  guia              String?
+  nEnvases          String?
+  kilos             Float?
+  tamanoMuestra     Int      @default(100)
+  tempPulpa         Float?
+  tempAmbiente      Float?
+  // { "PC": 2, "L": 6, "XL": 19, ... } — unidades por calibre
+  calibres          Json     @default("{}")
+  // { "ROJO_CLARO": 0, "ROJO": 12, ... } — unidades por color
+  colores           Json     @default("{}")
+  // { "MUY_BLANDO": 0, "BLANDO": 25, ... } — unidades por categoría
+  firmeza           Json     @default("{}")
+  // Lecturas individuales de °Brix
+  brix              Float[]  @default([])
+  defectosCalidad   Json     @default("{}")
+  defectosCondicion Json     @default("{}")
+  // [{ "src": "data:image/jpeg;base64,...", "nota": "Partidura" }]
+  fotos             Json     @default("[]")
+  observaciones     String?
+  latitud           Float?
+  longitud          Float?
+  tecnico           Usuario  @relation("TecnicoMuestreo", fields: [tecnicoId], references: [id])
+  tecnicoId         Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
