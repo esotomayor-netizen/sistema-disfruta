@@ -286,6 +286,13 @@ model Aplicacion {
   // separada por comas, ej. "Lapins, Bing"). Null significa que aplica al
   // predio en general.
   variedades    String?
+  // Volumen de agua por hectárea para diluir la mezcla (ej. "500 L/ha"). Se
+  // usa en recomendaciones para la próxima aplicación.
+  mojamiento    String?
+  // Notas editables sobre condiciones para que la aplicación sea efectiva
+  // (temperatura, viento, deriva, compatibilidad de mezcla, etc.), propias de
+  // una recomendación para la próxima aplicación.
+  condicionesAplicacion String?
   predio        Predio   @relation(fields: [predioId], references: [id])
   predioId      Int
   tecnico       Usuario  @relation("Tecnico", fields: [tecnicoId], references: [id])
