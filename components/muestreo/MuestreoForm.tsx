@@ -55,7 +55,7 @@ function ahoraLocal() {
 export function formVacio(): MuestreoFormData {
   return {
     tipo: 'COSECHA', fecha: ahoraLocal(), predioId: '', productor: '', cuartel: '', variedad: '',
-    lote: '', guia: '', nEnvases: '', kilos: '', tamanoMuestra: '100', tempPulpa: '', tempAmbiente: '',
+    lote: '', guia: '', nEnvases: '', kilos: '', tamanoMuestra: '30', tempPulpa: '', tempAmbiente: '',
     calibres: {}, colores: {}, firmeza: {}, brix: [], defectosCalidad: {}, defectosCondicion: {},
     fotos: [], observaciones: '', latitud: '', longitud: '',
   }

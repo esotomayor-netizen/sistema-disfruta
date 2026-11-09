@@ -21,7 +21,7 @@ export function parseMuestreo(d: any) {
     guia: str(d.guia),
     nEnvases: str(d.nEnvases),
     kilos: num(d.kilos),
-    tamanoMuestra: Math.max(1, parseInt(d.tamanoMuestra) || 100),
+    tamanoMuestra: Math.max(1, parseInt(d.tamanoMuestra) || 30),
     tempPulpa: num(d.tempPulpa),
     tempAmbiente: num(d.tempAmbiente),
     calibres: toConteos(d.calibres),
