@@ -4,7 +4,12 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { toFile } from 'openai/uploads'
 
-const client = new OpenAI()
+// Se instancia dentro del handler (no a nivel de módulo) para que el build
+// de Next.js no falle recolectando datos de la página si OPENAI_API_KEY
+// todavía no está configurada en el entorno.
+function getClient() {
+  return new OpenAI()
+}
 
 const EXTENSION_POR_SUBTIPO: Record<string, string> = {
   webm: 'webm',
@@ -42,6 +47,7 @@ export async function POST(req: Request) {
   const extension = EXTENSION_POR_SUBTIPO[subtipo] || 'webm'
 
   try {
+    const client = getClient()
     const file = await toFile(parsed.data, `audio.${extension}`)
     const transcripcion = await client.audio.transcriptions.create({
       file,
