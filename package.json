@@ -14,16 +14,17 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
-    "resend": "^3.5.0",
     "@prisma/client": "^5.10.0",
     "bcryptjs": "^3.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "next": "14.2.30",
     "next-auth": "^4.24.14",
+    "openai": "^7.55.0",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^3.8.1",
+    "resend": "^3.5.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

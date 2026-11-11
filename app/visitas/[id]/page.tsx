@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
@@ -57,6 +57,15 @@ function toggleVariedad(setter: React.Dispatch<React.SetStateAction<string[]>>, 
   setter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
 }
 
+function formatTiempo(segundos: number): string {
+  const m = Math.floor(segundos / 60).toString().padStart(2, '0')
+  const s = (segundos % 60).toString().padStart(2, '0')
+  return `${m}:${s}`
+}
+
+const AUDIO_MIME_CANDIDATOS = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']
+const AUDIO_DURACION_MAXIMA_SEG = 240
+
 const CONDICIONES_APLICACION_DEFAULT = `• No aplicar con temperatura superior a 24°C.
 • Evaluar condición de viento (evitar sobre 10-15 km/h) y riesgo de deriva hacia predios vecinos.
 • Verificar compatibilidad de mezcla entre los productos antes de aplicar.
@@ -108,6 +117,13 @@ export default function VisitaDetailPage() {
   const [observacionesEdit, setObservacionesEdit] = useState('')
   const [guardandoObs, setGuardandoObs] = useState(false)
   const [refinandoObs, setRefinandoObs] = useState(false)
+  const [grabandoAudio, setGrabandoAudio] = useState(false)
+  const [tiempoGrabacion, setTiempoGrabacion] = useState(0)
+  const [audioPendiente, setAudioPendiente] = useState<string | null>(null)
+  const [transcribiendo, setTranscribiendo] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const grabacionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [estadoFenologico, setEstadoFenologico] = useState('')
   const [programaFito, setProgramaFito] = useState<ProgramaFitoItem[]>([])
   const [mostrarManual, setMostrarManual] = useState(false)
@@ -473,6 +489,93 @@ export default function VisitaDetailPage() {
     setRefinandoObs(false)
   }
 
+  const handleDetenerGrabacion = useCallback(() => {
+    mediaRecorderRef.current?.stop()
+    setGrabandoAudio(false)
+    if (grabacionIntervalRef.current) {
+      clearInterval(grabacionIntervalRef.current)
+      grabacionIntervalRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (grabandoAudio && tiempoGrabacion >= AUDIO_DURACION_MAXIMA_SEG) {
+      handleDetenerGrabacion()
+    }
+  }, [tiempoGrabacion, grabandoAudio, handleDetenerGrabacion])
+
+  useEffect(() => {
+    return () => {
+      if (grabacionIntervalRef.current) clearInterval(grabacionIntervalRef.current)
+    }
+  }, [])
+
+  const handleIniciarGrabacion = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = AUDIO_MIME_CANDIDATOS.find((t) => MediaRecorder.isTypeSupported(t))
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      audioChunksRef.current = []
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop())
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        const reader = new FileReader()
+        reader.onload = () => setAudioPendiente(reader.result as string)
+        reader.readAsDataURL(blob)
+      }
+      recorder.start()
+      mediaRecorderRef.current = recorder
+      setAudioPendiente(null)
+      setTiempoGrabacion(0)
+      setGrabandoAudio(true)
+      grabacionIntervalRef.current = setInterval(() => setTiempoGrabacion((t) => t + 1), 1000)
+    } catch {
+      alert('No se pudo acceder al micrófono. Revisa los permisos del navegador.')
+    }
+  }
+
+  const handleSubirAudio = (file: File | undefined) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setAudioPendiente(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const handleDescartarAudio = () => {
+    setAudioPendiente(null)
+    setTiempoGrabacion(0)
+  }
+
+  const handleTranscribirAudio = async () => {
+    if (!audioPendiente) return
+    setTranscribiendo(true)
+    try {
+      const res = await fetch('/api/ia/transcribir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio: audioPendiente }),
+      })
+      let data: { texto?: string; error?: string } = {}
+      try {
+        data = await res.json()
+      } catch {}
+      if (!res.ok || !data.texto) {
+        alert(data.error || 'No se pudo transcribir el audio. Intenta con una grabación más corta.')
+        return
+      }
+      setObservacionesEdit((prev) => (prev.trim() ? `${prev}\n\n${data.texto}` : data.texto ?? ''))
+      setAudioPendiente(null)
+      setTiempoGrabacion(0)
+    } catch {
+      alert('No se pudo transcribir el audio. Revisa tu conexión e intenta de nuevo.')
+    } finally {
+      setTranscribiendo(false)
+    }
+  }
+
   const handleEliminarLabor = async (laborId: number) => {
     await fetch(`/api/labores/${laborId}`, { method: 'DELETE' })
     fetchVisita()
@@ -718,6 +821,71 @@ export default function VisitaDetailPage() {
           onChange={(e) => setObservacionesEdit(e.target.value)}
           placeholder="Observaciones generales de la visita…"
         />
+
+        {/* Dictado por audio: graba o sube un audio, se transcribe y se agrega arriba para editar */}
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          {!grabandoAudio && !audioPendiente && (
+            <>
+              <button
+                type="button"
+                onClick={handleIniciarGrabacion}
+                className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                </svg>
+                Grabar audio
+              </button>
+              <label className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 7.5L12 3m0 0L7.5 7.5M12 3v13.5" />
+                </svg>
+                Subir audio
+                <input
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={(e) => handleSubirAudio(e.target.files?.[0])}
+                />
+              </label>
+            </>
+          )}
+          {grabandoAudio && (
+            <button
+              type="button"
+              onClick={handleDetenerGrabacion}
+              className="btn-danger text-xs py-1.5 px-3 flex items-center gap-1.5"
+            >
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              Detener grabación · {formatTiempo(tiempoGrabacion)}
+            </button>
+          )}
+          {audioPendiente && !grabandoAudio && (
+            <div className="flex items-center gap-2 flex-wrap w-full">
+              <audio controls src={audioPendiente} className="h-8 max-w-[220px]" />
+              <button
+                type="button"
+                onClick={handleTranscribirAudio}
+                disabled={transcribiendo}
+                className="btn-primary text-xs py-1.5 px-3"
+              >
+                {transcribiendo ? 'Transcribiendo…' : 'Transcribir y agregar'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDescartarAudio}
+                disabled={transcribiendo}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Descartar
+              </button>
+            </div>
+          )}
+          {!grabandoAudio && !audioPendiente && (
+            <p className="text-xs text-gray-400 w-full">Graba una nota de voz (máx. 4 min) y se transcribe automáticamente.</p>
+          )}
+        </div>
+
         <div className="flex justify-end mt-2">
           <button onClick={handleGuardarObservaciones} disabled={guardandoObs} className="btn-secondary text-xs py-1.5 px-3">
             {guardandoObs ? 'Guardando…' : 'Guardar observaciones'}
