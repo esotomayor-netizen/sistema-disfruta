@@ -3,13 +3,14 @@ import { prisma } from '@/lib/prisma'
 import { getSession, isSupervisor } from '@/lib/session'
 import Header from '@/components/Header'
 import { ComparativaCurvas } from '@/components/muestreo/MuestreoCharts'
+import MuestreoProductorFilter from '@/components/muestreo/MuestreoProductorFilter'
 import {
   CALIBRES, COLORES, TIPOS_MUESTREO, APTITUD_LABEL, resumenMuestreo, toConteos, suma, clasifColor, pct,
 } from '@/lib/muestreo'
 
 export const dynamic = 'force-dynamic'
 
-interface SP { variedad?: string; tipo?: string; agrupar?: string }
+interface SP { variedad?: string; tipo?: string; productor?: string; agrupar?: string }
 
 const prom = (xs: (number | null)[]) => {
   const v = xs.filter((x): x is number => x !== null && Number.isFinite(x))
@@ -19,13 +20,15 @@ const prom = (xs: (number | null)[]) => {
 export default async function MuestreosPage({ searchParams }: { searchParams: SP }) {
   const session = await getSession()
   if (!session) return null
-  const { variedad, tipo } = searchParams
-  const agrupar = searchParams.agrupar === 'variedad' ? 'variedad' : 'productor'
+  const { variedad, tipo, productor } = searchParams
+  // Con un productor seleccionado, agrupar por productor solo daría una fila;
+  // por defecto se agrupa por variedad para ver su desglose de calidad.
+  const agrupar = searchParams.agrupar === 'productor' ? 'productor' : searchParams.agrupar === 'variedad' ? 'variedad' : productor ? 'variedad' : 'productor'
 
   const base = isSupervisor(session) ? {} : { tecnicoId: session.user.id }
-  const [muestreos, variedades] = await Promise.all([
+  const [muestreos, variedades, productores] = await Promise.all([
     prisma.muestreo.findMany({
-      where: { ...base, ...(variedad ? { variedad } : {}), ...(tipo ? { tipo } : {}) },
+      where: { ...base, ...(variedad ? { variedad } : {}), ...(tipo ? { tipo } : {}), ...(productor ? { productor } : {}) },
       orderBy: { fecha: 'desc' },
       take: 300,
       select: {
@@ -35,6 +38,12 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
       },
     }),
     prisma.muestreo.findMany({ where: base, distinct: ['variedad'], select: { variedad: true }, orderBy: { variedad: 'asc' } }),
+    prisma.muestreo.findMany({
+      where: { ...base, productor: { not: null } },
+      distinct: ['productor'],
+      select: { productor: true },
+      orderBy: { productor: 'asc' },
+    }),
   ])
 
   const filas = muestreos.map((m) => ({ m, r: resumenMuestreo(m), productor: m.productor || m.predio?.nombre || 'Sin productor' }))
@@ -73,7 +82,7 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
 
   const qs = (o: Partial<SP>) => {
     const p = new URLSearchParams()
-    const v = { variedad, tipo, agrupar, ...o }
+    const v = { variedad, tipo, productor, agrupar, ...o }
     for (const [k, val] of Object.entries(v)) if (val) p.set(k, val)
     return `/muestreos?${p.toString()}`
   }
@@ -107,7 +116,21 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
         {TIPOS_MUESTREO.map((t) => (
           <a key={t.value} href={qs({ tipo: t.value })} className={chip(tipo === t.value)}>{t.label.split(' (')[0]}</a>
         ))}
+        <MuestreoProductorFilter
+          productores={productores.map((p) => p.productor).filter((p): p is string => !!p)}
+          productor={productor}
+          variedad={variedad}
+          tipo={tipo}
+          agrupar={searchParams.agrupar}
+        />
       </div>
+
+      {productor && (
+        <p className="text-sm text-gray-500 -mt-2 mb-4">
+          Consolidado de <strong className="text-gray-800">{productor}</strong> — {filas.length} muestreo{filas.length !== 1 ? 's' : ''}
+          {' · '}<a href={qs({ productor: undefined })} className="text-primary-600 hover:underline">quitar filtro</a>
+        </p>
+      )}
 
       {comparativa.length > 0 && (
         <div className="card mb-6">
