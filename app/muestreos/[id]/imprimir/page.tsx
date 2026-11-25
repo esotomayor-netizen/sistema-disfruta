@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import InformeMuestreo from '@/components/muestreo/InformeMuestreo'
 import ImprimirBoton from '@/components/muestreo/ImprimirBoton'
 import { cargarMuestreo } from '../../cargar'
+import { nombreArchivoPdf } from '@/lib/muestreo-pdf'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ export default async function ImprimirMuestreoPage({ params }: { params: { id: s
   return (
     <div className="max-w-5xl mx-auto p-4 print:p-0 bg-white">
       <style>{`@media print { @page { size: A4; margin: 10mm } .card { box-shadow: none !important; break-inside: avoid } body { background: white } }`}</style>
-      <ImprimirBoton id={m.id} />
+      <ImprimirBoton id={m.id} nombreArchivo={nombreArchivoPdf(m)} />
       <div className="flex items-end justify-between border-b-2 border-primary-700 pb-3 mb-4">
         <div>
           <h1 className="text-2xl font-bold text-primary-800">Informe de Muestreo de Calidad · Cerezas</h1>
