@@ -20,7 +20,8 @@ export default async function MuestreoPage({ params }: { params: { id: string } 
           <div className="flex flex-wrap gap-2 justify-end">
             <Link href="/muestreos" className="btn-secondary">← Volver</Link>
             <Link href={`/muestreos/${m.id}/editar`} className="btn-secondary">Editar</Link>
-            <Link href={`/muestreos/${m.id}/imprimir`} className="btn-primary" target="_blank">PDF / Imprimir</Link>
+            <a href={`/api/muestreos/${m.id}/pdf`} className="btn-primary" target="_blank" rel="noopener">Descargar PDF</a>
+            <Link href={`/muestreos/${m.id}/imprimir`} className="btn-secondary hidden md:inline-flex" target="_blank">Imprimir</Link>
             <EliminarMuestreo id={m.id} />
           </div>
         }

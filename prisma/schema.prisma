@@ -520,7 +520,7 @@ model Muestreo {
   guia              String?
   nEnvases          String?
   kilos             Float?
-  tamanoMuestra     Int      @default(100)
+  tamanoMuestra     Int      @default(30)
   tempPulpa         Float?
   tempAmbiente      Float?
   // { "PC": 2, "L": 6, "XL": 19, ... } — unidades por calibre

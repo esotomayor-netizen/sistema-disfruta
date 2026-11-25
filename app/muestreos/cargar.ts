@@ -9,7 +9,7 @@ export async function cargarMuestreo(idStr: string) {
   if (!Number.isFinite(id)) return null
   const m = await prisma.muestreo.findUnique({
     where: { id },
-    include: { predio: { select: { nombre: true, csg: true } }, tecnico: { select: { nombre: true, apellido: true } } },
+    include: { predio: { select: { nombre: true, csg: true } }, tecnico: { select: { nombre: true, apellido: true, titulo: true } } },
   })
   if (!m) return null
   if (!isSupervisor(session) && m.tecnicoId !== session.user.id) return null
