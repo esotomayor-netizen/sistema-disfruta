@@ -112,6 +112,8 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
   const [gps, setGps] = useState('')
   const [borrador, setBorrador] = useState(false)
   const fotoRef = useRef<HTMLInputElement>(null)
+  const galeriaRef = useRef<HTMLInputElement>(null)
+  const [procesandoFotos, setProcesandoFotos] = useState(false)
   const esNuevo = !muestreoId
 
   useEffect(() => {
@@ -187,15 +189,22 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
     )
   }
 
-  const agregarFotos = async (files: FileList | null) => {
-    if (!files) return
-    const nuevas: Foto[] = []
-    for (const file of Array.from(files).slice(0, 12 - form.fotos.length)) {
-      const src = await compressImageFile(file, 1280, 0.7)
-      if (src) nuevas.push({ src, nota: '' })
+  const agregarFotos = async (input: HTMLInputElement) => {
+    const files = input.files
+    if (!files || !files.length) return
+    setProcesandoFotos(true)
+    try {
+      const nuevas: Foto[] = []
+      for (const file of Array.from(files).slice(0, 12 - form.fotos.length)) {
+        const src = await compressImageFile(file, 1280, 0.7)
+        if (src) nuevas.push({ src, nota: '' })
+      }
+      setForm((f) => ({ ...f, fotos: [...f.fotos, ...nuevas].slice(0, 12) }))
+    } finally {
+      setProcesandoFotos(false)
+      // Permite volver a elegir el mismo archivo.
+      input.value = ''
     }
-    setForm((f) => ({ ...f, fotos: [...f.fotos, ...nuevas] }))
-    if (fotoRef.current) fotoRef.current.value = ''
   }
 
   const guardar = async (e: React.FormEvent) => {
@@ -399,11 +408,25 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
 
       {seccion('6. Fotos y observaciones', 'Hasta 12 fotos; agrega una nota a cada una (ej. "Partidura estilar")', (
         <div>
-          <input ref={fotoRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
-            onChange={(e) => agregarFotos(e.target.files)} />
-          <button type="button" onClick={() => fotoRef.current?.click()} className="btn-secondary" disabled={form.fotos.length >= 12}>
-            📷 Tomar / subir foto
-          </button>
+          {/* Dos entradas: `capture` abre directo la cámara pero en el celular
+              impide elegir de la galería, así que la galería va sin `capture`. */}
+          <input ref={fotoRef} type="file" accept="image/*" capture="environment" className="hidden"
+            onChange={(e) => agregarFotos(e.currentTarget)} />
+          <input ref={galeriaRef} type="file" accept="image/*" multiple className="hidden"
+            onChange={(e) => agregarFotos(e.currentTarget)} />
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => fotoRef.current?.click()} className="btn-secondary"
+              disabled={form.fotos.length >= 12 || procesandoFotos}>
+              📷 Tomar foto
+            </button>
+            <button type="button" onClick={() => galeriaRef.current?.click()} className="btn-secondary"
+              disabled={form.fotos.length >= 12 || procesandoFotos}>
+              🖼️ Elegir de la galería
+            </button>
+            <span className="text-xs text-gray-500">
+              {procesandoFotos ? 'Procesando fotos…' : `${form.fotos.length} / 12`}
+            </span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
             {form.fotos.map((f, i) => (
               <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
