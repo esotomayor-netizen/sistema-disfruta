@@ -1,11 +1,13 @@
 'use client'
 
-export default function ImprimirBoton({ id }: { id: number }) {
+import PdfMuestreoBoton from './PdfMuestreoBoton'
+
+export default function ImprimirBoton({ id, nombreArchivo }: { id: number; nombreArchivo: string }) {
   return (
     <div className="print:hidden flex flex-wrap items-center gap-3 mb-4">
-      <a href={`/api/muestreos/${id}/pdf`} className="btn-primary" target="_blank" rel="noopener">Descargar PDF</a>
+      <PdfMuestreoBoton id={id} nombreArchivo={nombreArchivo} />
       <button onClick={() => window.print()} className="btn-secondary">Imprimir</button>
-      <span className="text-xs text-gray-400">“Descargar PDF” funciona también en el celular; desde ahí puedes guardarlo o enviarlo por WhatsApp o correo.</span>
+      <span className="text-xs text-gray-400">En el celular, “Enviar / guardar PDF” abre las opciones para mandarlo por WhatsApp o correo, o guardarlo en Archivos.</span>
     </div>
   )
 }
