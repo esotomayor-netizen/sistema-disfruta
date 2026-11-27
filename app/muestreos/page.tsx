@@ -6,6 +6,7 @@ import { ComparativaCurvas } from '@/components/muestreo/MuestreoCharts'
 import MuestreoProductorFilter from '@/components/muestreo/MuestreoProductorFilter'
 import {
   CALIBRES, COLORES, TIPOS_MUESTREO, APTITUD_LABEL, resumenMuestreo, toConteos, suma, clasifColor, pct,
+  diagnostico, valorizacion, ESTADO_INFO,
 } from '@/lib/muestreo'
 
 export const dynamic = 'force-dynamic'
@@ -33,7 +34,7 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
       take: 300,
       select: {
         id: true, fecha: true, tipo: true, variedad: true, productor: true, cuartel: true, tamanoMuestra: true,
-        calibres: true, colores: true, firmeza: true, brix: true, defectosCalidad: true, defectosCondicion: true,
+        calibres: true, colores: true, firmeza: true, brix: true, defectosCalidad: true, defectosCondicion: true, kilos: true,
         predio: { select: { nombre: true } }, tecnico: { select: { nombre: true, apellido: true } },
       },
     }),
@@ -46,7 +47,10 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
     }),
   ])
 
-  const filas = muestreos.map((m) => ({ m, r: resumenMuestreo(m), productor: m.productor || m.predio?.nombre || 'Sin productor' }))
+  const filas = muestreos.map((m) => {
+    const r = resumenMuestreo(m)
+    return { m, r, estado: diagnostico(m, r).estado, val: valorizacion(m, r), productor: m.productor || m.predio?.nombre || 'Sin productor' }
+  })
 
   // Comparativa entre productores (o variedades).
   const grupos = new Map<string, typeof filas>()
@@ -74,6 +78,9 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
       brix: prom(fs.map((f) => f.r.brixPromedio)),
       calidad: prom(fs.map((f) => f.r.pctCalidad)),
       condicion: prom(fs.map((f) => f.r.pctCondicion)),
+      // US$ por kg cosechado: precio por calibre × % exportable.
+      usdKg: prom(fs.map((f) => f.val?.usdPorKgCosechado ?? null)),
+      aptos: fs.filter((f) => f.estado === 'APTO').length,
       curva: CALIBRES.map((c) => pct(cal[c.key] ?? 0, tCal)),
       colorDom: COLORES.reduce((b, c) => ((col[c.key] ?? 0) > (col[b.key] ?? 0) ? c : b), COLORES[0]),
       tCol,
@@ -159,6 +166,8 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
                   <th className="table-th text-right">°Brix</th>
                   <th className="table-th text-right">Calidad</th>
                   <th className="table-th text-right">Condición</th>
+                  <th className="table-th text-right" title="US$ por kg cosechado: precio de referencia por calibre × % exportable">US$/kg</th>
+                  <th className="table-th text-right">Aptos</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -176,6 +185,8 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
                     <td className="table-td text-right">{g.brix ?? '–'}</td>
                     <td className="table-td text-right">{g.calidad ?? '–'}%</td>
                     <td className="table-td text-right">{g.condicion ?? '–'}%</td>
+                    <td className="table-td text-right font-semibold">{g.usdKg !== null ? g.usdKg.toFixed(2) : '–'}</td>
+                    <td className="table-td text-right">{g.aptos}/{g.n}</td>
                   </tr>
                 ))}
               </tbody>
@@ -196,17 +207,19 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
               <th className="table-th text-right">Daños</th>
               <th className="table-th text-right">Calibre</th>
               <th className="table-th text-right">°Brix</th>
+              <th className="table-th">Estado</th>
+              <th className="table-th text-right">US$/kg</th>
               <th className="table-th">Nota</th>
               <th className="table-th">Viaje</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filas.length === 0 && (
-              <tr><td colSpan={10} className="table-td text-center text-gray-400 py-10">
+              <tr><td colSpan={12} className="table-td text-center text-gray-400 py-10">
                 Aún no hay muestreos. <Link href="/muestreos/nuevo" className="text-primary-700 underline">Registrar el primero</Link>
               </td></tr>
             )}
-            {filas.map(({ m, r, productor }) => (
+            {filas.map(({ m, r, estado, val, productor }) => (
               <tr key={m.id} className="hover:bg-gray-50">
                 <td className="table-td whitespace-nowrap">
                   <Link href={`/muestreos/${m.id}`} className="text-primary-700 font-medium hover:underline">
@@ -220,6 +233,8 @@ export default async function MuestreosPage({ searchParams }: { searchParams: SP
                 <td className="table-td text-right">{r.pctDanos}%</td>
                 <td className="table-td text-right">{r.calibrePromedioMm ? `${r.calibrePromedioMm} mm` : '–'}</td>
                 <td className="table-td text-right">{r.brixPromedio ?? '–'}</td>
+                <td className="table-td"><span className={`badge ${ESTADO_INFO[estado].badge} whitespace-nowrap`}>{ESTADO_INFO[estado].titulo}</span></td>
+                <td className="table-td text-right">{val ? val.usdPorKgCosechado.toFixed(2) : '–'}</td>
                 <td className="table-td"><span className={`badge ${clasifColor(r.notaFinal)}`}>{r.notaFinal}</span></td>
                 <td className="table-td text-xs">{APTITUD_LABEL[r.aptitudViaje].split(' /')[0]}</td>
               </tr>

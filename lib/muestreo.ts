@@ -3,6 +3,8 @@
 // calculan sobre el tamaño de la muestra, igual que los informes de recepción
 // de las plantas (Fripack / Fresh-Pak).
 
+import { PRECIOS_CALIBRES } from './cosecha-data'
+
 export type Conteos = Record<string, number>
 
 export interface Item {
@@ -287,4 +289,112 @@ export function toFotos(v: unknown): Foto[] {
   return v
     .map((f) => (typeof f === 'string' ? { src: f } : f && typeof f === 'object' ? (f as Foto) : null))
     .filter((f): f is Foto => !!f && typeof f.src === 'string' && f.src.length > 0)
+}
+
+// ── Diagnóstico (semáforo) ────────────────────────────────────────────────
+// Lectura rápida del muestreo para quien recibe el informe. Criterio
+// referencial: no apto con pudrición > 1% o exportable < 70%; apto con nota
+// final 1 y exportable >= 85%; el resto, revisar.
+
+export type EstadoMuestreo = 'APTO' | 'REVISAR' | 'NO_APTO'
+
+export const ESTADO_INFO: Record<EstadoMuestreo, { titulo: string; badge: string; fondo: string; rgb: [number, number, number] }> = {
+  APTO: { titulo: 'Apto exportación', badge: 'bg-green-600 text-white', fondo: 'bg-green-50 border-green-200', rgb: [22, 128, 61] },
+  REVISAR: { titulo: 'Revisar', badge: 'bg-amber-500 text-white', fondo: 'bg-amber-50 border-amber-200', rgb: [217, 119, 6] },
+  NO_APTO: { titulo: 'No apto', badge: 'bg-red-600 text-white', fondo: 'bg-red-50 border-red-200', rgb: [220, 38, 38] },
+}
+
+const f1 = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+
+export function diagnostico(m: MuestreoLike, r: Resumen = resumenMuestreo(m)) {
+  const dCal = defectosDetalle(DEFECTOS_CALIDAD, toConteos(m.defectosCalidad), m.tamanoMuestra)
+  const dCon = defectosDetalle(DEFECTOS_CONDICION, toConteos(m.defectosCondicion), m.tamanoMuestra)
+  const pudricion = dCon.find((d) => d.key === 'PUDRICION')?.pct ?? 0
+
+  const motivos: string[] = []
+  let estado: EstadoMuestreo
+  if (pudricion > TOLERANCIA_PUDRICION.c2 || r.pctExportable < 70) {
+    estado = 'NO_APTO'
+    if (pudricion > TOLERANCIA_PUDRICION.c2) motivos.push(`pudrición ${f1(pudricion)}%`)
+    if (r.pctExportable < 70) motivos.push(`exportable bajo 70% (${f1(r.pctExportable)}%)`)
+  } else if (r.notaFinal === 1 && r.pctExportable >= 85) {
+    estado = 'APTO'
+  } else {
+    estado = 'REVISAR'
+    if (r.notaFinal > 1) motivos.push(`defectos fuera de tolerancia (nota ${r.notaFinal})`)
+    if (r.pctExportable < 85) motivos.push(`exportable ${f1(r.pctExportable)}%`)
+  }
+
+  const frases: string[] = []
+  frases.push(`Exportable estimado ${f1(r.pctExportable)}% · daños ${f1(r.pctDanos)}% (calidad ${f1(r.pctCalidad)}%, condición ${f1(r.pctCondicion)}%).`)
+  if (r.calibreTotal) {
+    const cal = distribucion(CALIBRES, toConteos(m.calibres))
+    const moda = cal.reduce((a, b) => (b.pct > a.pct ? b : a))
+    let s = `Calibre dominante ${moda.label} (${f1(moda.pct)}%); ${f1(r.pct2JMas)}% en 2J o mayor; promedio ${r.calibrePromedioMm} mm.`
+    if (r.pctPrecalibre > 0) s += ` Pre-calibre ${f1(r.pctPrecalibre)}%.`
+    frases.push(s)
+  }
+  if (r.colorTotal) {
+    const col = distribucion(COLORES, toConteos(m.colores))
+    const moda = col.reduce((a, b) => (b.pct > a.pct ? b : a))
+    frases.push(`Color dominante ${moda.nombre.toLowerCase()} (${f1(moda.pct)}%); ${f1(r.pctCaobaMas)}% caoba o más oscuro.`)
+  }
+  const todos = [...dCal.map((d) => ({ ...d, tipo: 'calidad' })), ...dCon.map((d) => ({ ...d, tipo: 'condición' }))]
+  if (todos.length) {
+    const peor = todos.reduce((a, b) => (b.pct > a.pct ? b : a))
+    frases.push(`Principal problema: ${peor.label.toLowerCase()} (${f1(peor.pct)}%, ${peor.tipo}).`)
+  } else {
+    frases.push('Sin defectos registrados en la muestra.')
+  }
+  const extra: string[] = []
+  if (r.firmezaTotal) extra.push(`firmeza ${f1(r.pctFirmes)}% firme o muy firme`)
+  if (r.brixPromedio !== null) extra.push(`°Brix promedio ${r.brixPromedio} (${r.brixMin}–${r.brixMax})`)
+  if (extra.length) frases.push(extra.join(' · ').replace(/^./, (c) => c.toUpperCase()) + '.')
+
+  return { estado, motivos, frases }
+}
+
+// ── Valorización por calibre ──────────────────────────────────────────────
+// Reparte la fruta exportable según la curva de calibres (sin pre-calibre) y
+// la valoriza con los precios de referencia del módulo Cosecha (US$/kg).
+
+export function valorizacion(m: MuestreoLike & { kilos?: number | null }, r: Resumen = resumenMuestreo(m)) {
+  const cal = toConteos(m.calibres)
+  const exportables = CALIBRES.filter((c) => c.key !== 'PC')
+  const total = exportables.reduce((a, c) => a + (cal[c.key] ?? 0), 0)
+  if (!total) return null
+  const kilos = m.kilos && m.kilos > 0 ? m.kilos : null
+  const kgExport = kilos ? (kilos * r.pctExportable) / 100 : null
+  const filas = exportables
+    .map((c) => {
+      const share = (cal[c.key] ?? 0) / total
+      const precio = PRECIOS_CALIBRES.find((p) => p.calibre === c.key)?.precioUSD ?? null
+      const kg = kgExport !== null ? kgExport * share : null
+      return {
+        calibre: c.key,
+        pct: Math.round(share * 1000) / 10,
+        precio,
+        kg: kg !== null ? Math.round(kg) : null,
+        usd: kg !== null && precio !== null ? Math.round(kg * precio) : null,
+      }
+    })
+    .filter((f) => f.pct > 0)
+  const precioPonderado = filas.reduce((a, f) => a + (f.pct / 100) * (f.precio ?? 0), 0)
+  const sinPrecio = filas.filter((f) => f.precio === null).map((f) => f.calibre)
+  return {
+    filas,
+    kilos,
+    kgExport: kgExport !== null ? Math.round(kgExport) : null,
+    usdTotal: kgExport !== null ? Math.round(filas.reduce((a, f) => a + (f.usd ?? 0), 0)) : null,
+    // US$ por kg exportable y por kg cosechado (descontando lo no exportable).
+    precioPonderado: Math.round(precioPonderado * 100) / 100,
+    usdPorKgCosechado: Math.round(((precioPonderado * r.pctExportable) / 100) * 100) / 100,
+    sinPrecio,
+  }
+}
+
+export const FUENTE_PRECIOS = 'Precios de referencia por calibre (US$/kg) del módulo Cosecha, ODEPA / Asoex.'
+
+export function fmtUsd(n: number) {
+  return `US$ ${Math.round(n).toLocaleString('es-CL')}`
 }

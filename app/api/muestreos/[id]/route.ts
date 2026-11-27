@@ -26,7 +26,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!(await cargar(id, session))) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   const data = parseMuestreo(await req.json())
   if (!data.variedad) return NextResponse.json({ error: 'La variedad es obligatoria' }, { status: 400 })
-  await prisma.muestreo.update({ where: { id }, data })
+  const { clienteId: _ignorado, ...cambios } = data
+  await prisma.muestreo.update({ where: { id }, data: cambios })
   return NextResponse.json({ id })
 }
 

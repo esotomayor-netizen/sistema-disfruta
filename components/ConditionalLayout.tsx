@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
+import ColaMuestreos from './muestreo/ColaMuestreos'
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -58,7 +59,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 py-4 lg:p-8">{children}</div>
+        <div className="max-w-7xl mx-auto px-4 py-4 lg:p-8"><ColaMuestreos />{children}</div>
       </main>
     </div>
   )

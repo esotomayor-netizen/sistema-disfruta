@@ -6,6 +6,7 @@ import autoTable from 'jspdf-autotable'
 import {
   CALIBRES, COLORES, FIRMEZAS, DEFECTOS_CALIDAD, DEFECTOS_CONDICION, TIPOS_MUESTREO, APTITUD_LABEL,
   distribucion, defectosDetalle, resumenMuestreo, toConteos, toFotos,
+  diagnostico, valorizacion, ESTADO_INFO, FUENTE_PRECIOS, fmtUsd,
 } from './muestreo'
 import type { MuestreoInforme } from '@/components/muestreo/InformeMuestreo'
 
@@ -197,6 +198,41 @@ export function generarPdfMuestreo(m: MuestreoInforme & { tecnico: { nombre: str
   doc.text(t(`${m.variedad} · ${m.productor || m.predio?.nombre || 'Sin productor'}`), M, y + 6)
   y += 10
 
+  // ── Resumen (semáforo) ──────────────────────────────────────────────────
+  const diag = diagnostico(m, r)
+  const est = ESTADO_INFO[diag.estado]
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8.5)
+  const lineasResumen = diag.frases.flatMap((f) => doc.splitTextToSize(t(f), CW - 52) as string[])
+  const altoResumen = Math.max(22, 8 + lineasResumen.length * 4.2)
+  doc.setFillColor(249, 250, 251)
+  doc.setDrawColor(...est.rgb)
+  doc.setLineWidth(0.6)
+  doc.roundedRect(M, y, CW, altoResumen, 2, 2, 'FD')
+  doc.setFillColor(...est.rgb)
+  doc.roundedRect(M + 3, y + 3, 40, altoResumen - 6, 2, 2, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(est.titulo.length > 10 ? 10.5 : 13)
+  doc.text(t(est.titulo.toUpperCase()), M + 23, y + altoResumen / 2 + (diag.motivos.length ? -1 : 1.5), { align: 'center', maxWidth: 37 })
+  if (diag.motivos.length) {
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(6.3)
+    doc.text(doc.splitTextToSize(t(diag.motivos.join(' · ')), 36) as string[], M + 23, y + altoResumen / 2 + 3.5, { align: 'center' })
+  }
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8.5)
+  doc.setTextColor(31, 41, 55)
+  let ly = y + 6.5
+  for (const f of diag.frases) {
+    const ls = doc.splitTextToSize(t(f), CW - 52) as string[]
+    doc.setFillColor(...est.rgb)
+    doc.circle(M + 47, ly - 1.1, 0.7, 'F')
+    doc.text(ls, M + 49.5, ly)
+    ly += ls.length * 4.2
+  }
+  y += altoResumen + 5
+
   // ── Datos del lote ──────────────────────────────────────────────────────
   const datos: [string, string][] = [
     ['Fecha', fecha],
@@ -258,38 +294,52 @@ export function generarPdfMuestreo(m: MuestreoInforme & { tecnico: { nombre: str
   })
   y += 22
 
-  // ── Curva de calibres y color ───────────────────────────────────────────
+  // ── Curva de calibres y color (solo las secciones con datos) ──────────
   const half = (CW - 4) / 2
-  caja(doc, M, y, half, 68)
-  tituloCaja(doc, M + 4, y + 6, 'Curva de calibres', `% sobre ${r.calibreTotal} frutos calibrados · moda ${r.calibreModal ?? '–'}`)
-  barras(doc, M + 3, y + 15, half - 7, 50, curva.map((c) => ({ label: c.label, pct: c.pct })), { curva: true })
-
   const cx2 = M + half + 4
-  caja(doc, cx2, y, half, 68)
-  tituloCaja(doc, cx2 + 4, y + 6, 'Distribución de color', `% sobre ${r.colorTotal} frutos · caoba o más oscuro ${fmtPct(r.pctCaobaMas)}`)
-  barras(doc, cx2 + 3, y + 15, half - 7, 50, colores.map((c) => ({ label: c.nombre, pct: c.pct, color: c.color })), {})
-  y += 73
+  const paneles = <T,>(items: (T | false)[]) => items.filter(Boolean) as T[]
+  const graficos = paneles<{ titulo: string; sub: string; data: { label: string; pct: number; color?: string }[]; curva?: boolean }>([
+    r.calibreTotal > 0 && { titulo: 'Curva de calibres', sub: `% sobre ${r.calibreTotal} frutos calibrados · moda ${r.calibreModal ?? '–'}`, data: curva.map((c) => ({ label: c.label, pct: c.pct })), curva: true },
+    r.colorTotal > 0 && { titulo: 'Distribución de color', sub: `% sobre ${r.colorTotal} frutos · caoba o más oscuro ${fmtPct(r.pctCaobaMas)}`, data: colores.map((c) => ({ label: c.nombre, pct: c.pct, color: c.color })) },
+  ])
+  if (graficos.length) {
+    if (y + 68 > H - 15) { doc.addPage(); y = M }
+    const ancho = graficos.length === 1 ? CW : half
+    graficos.forEach((g, i) => {
+      const x = i === 0 ? M : cx2
+      caja(doc, x, y, ancho, 68)
+      tituloCaja(doc, x + 4, y + 6, g.titulo, g.sub)
+      barras(doc, x + 3, y + 15, ancho - 7, 50, g.data, { curva: g.curva })
+    })
+    y += 73
+  }
 
   // ── Firmeza y sólidos solubles ──────────────────────────────────────────
-  caja(doc, M, y, half, 30)
-  tituloCaja(doc, M + 4, y + 6, 'Firmeza')
-  apilada(doc, M + 4, y + 10, half - 8, firmezas.map((f) => ({ label: f.nombre, pct: f.pct, color: f.color })))
-
-  caja(doc, cx2, y, half, 30)
-  tituloCaja(doc, cx2 + 4, y + 6, 'Sólidos solubles (°Brix)')
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(55, 65, 81)
-  if (m.brix.length) {
-    doc.text(t(`Promedio ${r.brixPromedio} · mín ${r.brixMin} · máx ${r.brixMax} · n = ${m.brix.length}`), cx2 + 4, y + 13)
-    doc.setFontSize(7.5)
-    doc.setTextColor(...GRIS)
-    doc.text(doc.splitTextToSize(`Lecturas: ${m.brix.join('  ')}`, half - 8) as string[], cx2 + 4, y + 19)
-  } else {
-    doc.setTextColor(...GRIS)
-    doc.text('Sin lecturas', cx2 + 4, y + 13)
+  const hayFirmeza = r.firmezaTotal > 0
+  const hayBrix = m.brix.length > 0
+  if (hayFirmeza || hayBrix) {
+    if (y + 30 > H - 15) { doc.addPage(); y = M }
+    const ancho = hayFirmeza && hayBrix ? half : CW
+    let x = M
+    if (hayFirmeza) {
+      caja(doc, x, y, ancho, 30)
+      tituloCaja(doc, x + 4, y + 6, 'Firmeza')
+      apilada(doc, x + 4, y + 10, ancho - 8, firmezas.map((f) => ({ label: f.nombre, pct: f.pct, color: f.color })))
+      x = cx2
+    }
+    if (hayBrix) {
+      caja(doc, x, y, ancho, 30)
+      tituloCaja(doc, x + 4, y + 6, 'Sólidos solubles (°Brix)')
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(55, 65, 81)
+      doc.text(t(`Promedio ${r.brixPromedio} · mín ${r.brixMin} · máx ${r.brixMax} · n = ${m.brix.length}`), x + 4, y + 13)
+      doc.setFontSize(7.5)
+      doc.setTextColor(...GRIS)
+      doc.text(doc.splitTextToSize(`Lecturas: ${m.brix.join('  ')}`, ancho - 8) as string[], x + 4, y + 19)
+    }
+    y += 35
   }
-  y += 35
 
   // ── Defectos ────────────────────────────────────────────────────────────
   const tablaDefectos = (titulo: string, color: RGB, filas: ReturnType<typeof defectosDetalle>, total: { n: number; pct: number }, clasif: 1 | 2 | 3, x: number, startY: number) => {
@@ -327,6 +377,43 @@ export function generarPdfMuestreo(m: MuestreoInforme & { tecnico: { nombre: str
   const pageCon = doc.getNumberOfPages()
   doc.setPage(Math.max(pageCal, pageCon))
   y = (pageCal === pageCon ? Math.max(yCal, yCon) : pageCal > pageCon ? yCal : yCon) + 6
+
+  // ── Kilos y valor por calibre ──────────────────────────────────────────
+  const val = valorizacion(m, r)
+  if (val) {
+    if (y + 40 > H - 15) { doc.addPage(); y = M + 4 }
+    tituloCaja(doc, M, y, 'Kilos y valor estimado por calibre', FUENTE_PRECIOS)
+    const conKg = val.kgExport !== null
+    const head = conKg ? [['Calibre', '% exportable', 'Kg', 'US$/kg', 'US$']] : [['Calibre', '% exportable', 'US$/kg']]
+    const body = val.filas.map((f) => conKg
+      ? [f.calibre, fmtPct(f.pct), (f.kg ?? 0).toLocaleString('es-CL'), f.precio !== null ? f.precio.toFixed(2) : 'sin precio', f.usd !== null ? f.usd.toLocaleString('es-CL') : '–']
+      : [f.calibre, fmtPct(f.pct), f.precio !== null ? f.precio.toFixed(2) : 'sin precio'])
+    if (conKg) body.push(['Total exportable', `${fmtPct(r.pctExportable)} de ${val.kilos?.toLocaleString('es-CL')} kg`, (val.kgExport ?? 0).toLocaleString('es-CL'), val.precioPonderado.toFixed(2), (val.usdTotal ?? 0).toLocaleString('es-CL')])
+    else body.push(['Ponderado', '', val.precioPonderado.toFixed(2)])
+    autoTable(doc, {
+      startY: y + 6,
+      head,
+      body,
+      theme: 'grid',
+      margin: { left: M, right: M },
+      styles: { fontSize: 7.5, cellPadding: 1.5, lineColor: BORDE, lineWidth: 0.2, textColor: [31, 41, 55], halign: 'right' },
+      headStyles: { fillColor: VERDE, textColor: [255, 255, 255], fontStyle: 'bold' },
+      columnStyles: { 0: { halign: 'left' } },
+      didParseCell: (h) => {
+        if (h.section === 'body' && h.row.index === body.length - 1) { h.cell.styles.fontStyle = 'bold'; h.cell.styles.fillColor = [249, 250, 251] }
+      },
+    })
+    y = (doc as any).lastAutoTable.finalY + 4
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...GRIS)
+    const notas = [`US$/kg exportable ${val.precioPonderado.toFixed(2)} · US$/kg cosechado ${val.usdPorKgCosechado.toFixed(2)}`]
+    if (conKg && val.usdTotal !== null) notas[0] += ` · valor estimado del lote ${fmtUsd(val.usdTotal)}`
+    if (!conKg) notas.push(`Sin kilos del lote: cada 1.000 kg cosechados ≈ ${fmtUsd(val.usdPorKgCosechado * 1000)}.`)
+    if (val.sinPrecio.length) notas.push(`Sin precio de referencia: ${val.sinPrecio.join(', ')}.`)
+    for (const n of notas) { doc.text(t(n), M, y); y += 4 }
+    y += 3
+  }
 
   // ── Observaciones ───────────────────────────────────────────────────────
   if (m.observaciones) {

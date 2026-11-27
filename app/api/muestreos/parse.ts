@@ -33,6 +33,7 @@ export function parseMuestreo(d: any) {
     defectosCondicion: toConteos(d.defectosCondicion),
     fotos: toFotos(d.fotos).slice(0, 12).map((f) => ({ src: f.src, nota: f.nota?.slice(0, 200) || '' })),
     observaciones: str(d.observaciones),
+    clienteId: str(d.clienteId)?.slice(0, 64) ?? null,
     latitud: num(d.latitud),
     longitud: num(d.longitud),
   }

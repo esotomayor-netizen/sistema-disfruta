@@ -4,6 +4,7 @@ import './globals.css'
 import ConditionalLayout from '@/components/ConditionalLayout'
 import SessionProviderWrapper from '@/components/SessionProviderWrapper'
 import AutoRefresh from '@/components/AutoRefresh'
+import RegistrarSW from '@/components/RegistrarSW'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         <SessionProviderWrapper>
           <AutoRefresh />
+          <RegistrarSW />
           <ConditionalLayout>{children}</ConditionalLayout>
         </SessionProviderWrapper>
       </body>

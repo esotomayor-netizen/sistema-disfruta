@@ -36,6 +36,14 @@ export async function POST(req: Request) {
   if (!session) return unauthorized()
   const data = parseMuestreo(await req.json())
   if (!data.variedad) return NextResponse.json({ error: 'La variedad es obligatoria' }, { status: 400 })
+  // Reenvío desde la cola sin señal: si ya llegó, se devuelve el existente.
+  if (data.clienteId) {
+    const existente = await prisma.muestreo.findUnique({ where: { clienteId: data.clienteId }, select: { id: true, tecnicoId: true } })
+    if (existente) {
+      if (existente.tecnicoId !== session.user.id) return NextResponse.json({ error: 'Identificador en uso' }, { status: 409 })
+      return NextResponse.json({ id: existente.id, duplicado: true })
+    }
+  }
   const muestreo = await prisma.muestreo.create({
     data: { ...data, tecnicoId: session.user.id },
   })

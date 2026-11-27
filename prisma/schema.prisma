@@ -538,6 +538,9 @@ model Muestreo {
   observaciones     String?
   latitud           Float?
   longitud          Float?
+  // Identificador generado en el celular. Evita duplicados cuando un muestreo
+  // guardado sin señal se reenvía y el primer envío sí había llegado.
+  clienteId         String?  @unique
   tecnico           Usuario  @relation("TecnicoMuestreo", fields: [tecnicoId], references: [id])
   tecnicoId         Int
   createdAt         DateTime @default(now())

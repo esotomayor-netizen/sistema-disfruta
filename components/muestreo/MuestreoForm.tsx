@@ -9,6 +9,7 @@ import {
   Conteos, Item, Foto, distribucion, resumenMuestreo, suma, clasifColor, APTITUD_LABEL, muestraAutomatica,
 } from '@/lib/muestreo'
 import { CurvaCalibre, BarraApilada } from './MuestreoCharts'
+import { encolar, esErrorDeRed, nuevoClienteId } from '@/lib/cola-muestreos'
 
 interface Predio {
   id: number
@@ -42,6 +43,9 @@ export interface MuestreoFormData {
   observaciones: string
   latitud: string
   longitud: string
+  // Identificador del muestreo generado en el teléfono (evita duplicados al
+  // reenviar desde la cola sin señal).
+  clienteId?: string
 }
 
 const DRAFT_KEY = 'muestreo-borrador'
@@ -111,6 +115,7 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
   const [error, setError] = useState('')
   const [gps, setGps] = useState('')
   const [borrador, setBorrador] = useState(false)
+  const [mensajeOk, setMensajeOk] = useState('')
   const fotoRef = useRef<HTMLInputElement>(null)
   const galeriaRef = useRef<HTMLInputElement>(null)
   const [procesandoFotos, setProcesandoFotos] = useState(false)
@@ -211,14 +216,53 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setMensajeOk('')
     if (!form.variedad.trim()) { setError('Indica la variedad.'); return }
     setGuardando(true)
+    const clienteId = form.clienteId || (esNuevo ? nuevoClienteId() : undefined)
+    if (clienteId && !form.clienteId) setForm((f) => ({ ...f, clienteId }))
+    const cuerpo = { ...form, clienteId }
+
+    // Sin señal: el muestreo completo (con fotos) queda en el teléfono y se
+    // envía solo cuando vuelve la conexión.
+    const guardarEnTelefono = async (motivo: string) => {
+      try {
+        await encolar({ clienteId: clienteId!, creado: Date.now(), datos: cuerpo })
+      } catch {
+        setError('Sin conexión y no se pudo guardar en el teléfono. No cierres esta pantalla e intenta de nuevo con señal.')
+        return
+      }
+      try { localStorage.removeItem(DRAFT_KEY) } catch {}
+      setForm(formVacio())
+      setMensajeOk(`${motivo} El muestreo de ${cuerpo.variedad.toUpperCase()} quedó guardado en este teléfono y se enviará solo cuando haya señal. Ya puedes empezar el siguiente.`)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
     try {
-      const res = await fetch(muestreoId ? `/api/muestreos/${muestreoId}` : '/api/muestreos', {
-        method: muestreoId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
+      if (esNuevo && typeof navigator !== 'undefined' && navigator.onLine === false) {
+        await guardarEnTelefono('Sin señal.')
+        return
+      }
+      // Con señal débil la petición puede quedar colgada: se corta a los 25 s.
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), 25000)
+      let res: Response
+      try {
+        res = await fetch(muestreoId ? `/api/muestreos/${muestreoId}` : '/api/muestreos', {
+          method: muestreoId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cuerpo),
+          signal: ctrl.signal,
+        })
+      } finally {
+        clearTimeout(timer)
+      }
+      const esJson = res.headers.get('content-type')?.includes('application/json')
+      if (res.redirected || !esJson || res.status === 401) {
+        if (esNuevo) await guardarEnTelefono('La sesión expiró.')
+        else setError('La sesión expiró. Inicia sesión de nuevo y vuelve a guardar.')
+        return
+      }
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
         setError(j.error || (res.status === 413 ? 'Las fotos pesan demasiado; quita alguna e intenta de nuevo.' : 'No se pudo guardar.'))
@@ -228,8 +272,9 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
       if (esNuevo) { try { localStorage.removeItem(DRAFT_KEY) } catch {} }
       router.push(`/muestreos/${id}`)
       router.refresh()
-    } catch {
-      setError('Sin conexión. El borrador queda guardado en este equipo; intenta de nuevo con señal.')
+    } catch (err) {
+      if (esNuevo && (esErrorDeRed(err) || (err as Error)?.name === 'AbortError')) await guardarEnTelefono('Sin señal.')
+      else setError('Sin conexión. Intenta de nuevo cuando tengas señal.')
     } finally {
       setGuardando(false)
     }
@@ -245,6 +290,13 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
 
   return (
     <form onSubmit={guardar} className="space-y-4 pb-28">
+      {mensajeOk && (
+        <div className="card bg-green-50 border-green-200 flex items-start gap-3">
+          <span className="text-2xl">📥</span>
+          <p className="text-sm text-green-900 flex-1">{mensajeOk}</p>
+          <button type="button" onClick={() => setMensajeOk('')} className="text-green-800 text-sm">✕</button>
+        </div>
+      )}
       {borrador && (
         <div className="card bg-amber-50 border-amber-200 flex flex-wrap items-center gap-3">
           <p className="text-sm text-amber-800 flex-1">Hay un muestreo sin guardar en este equipo.</p>
