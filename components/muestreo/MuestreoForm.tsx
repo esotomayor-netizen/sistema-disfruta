@@ -6,7 +6,7 @@ import { compressImageFile } from '@/lib/image'
 import { VARIEDADES_POR_CULTIVO } from '@/lib/constants'
 import {
   CALIBRES, COLORES, FIRMEZAS, DEFECTOS_CALIDAD, DEFECTOS_CONDICION, TIPOS_MUESTREO,
-  Conteos, Item, Foto, distribucion, resumenMuestreo, suma, clasifColor, APTITUD_LABEL,
+  Conteos, Item, Foto, distribucion, resumenMuestreo, suma, clasifColor, APTITUD_LABEL, muestraAutomatica,
 } from '@/lib/muestreo'
 import { CurvaCalibre, BarraApilada } from './MuestreoCharts'
 
@@ -55,7 +55,7 @@ function ahoraLocal() {
 export function formVacio(): MuestreoFormData {
   return {
     tipo: 'COSECHA', fecha: ahoraLocal(), predioId: '', productor: '', cuartel: '', variedad: '',
-    lote: '', guia: '', nEnvases: '', kilos: '', tamanoMuestra: '30', tempPulpa: '', tempAmbiente: '',
+    lote: '', guia: '', nEnvases: '', kilos: '', tamanoMuestra: '', tempPulpa: '', tempAmbiente: '',
     calibres: {}, colores: {}, firmeza: {}, brix: [], defectosCalidad: {}, defectosCondicion: {},
     fotos: [], observaciones: '', latitud: '', longitud: '',
   }
@@ -164,7 +164,8 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
     setForm((f) => ({ ...f, predioId: id, productor: f.productor || p?.empresa?.razonSocial || '' }))
   }
 
-  const muestra = Math.max(1, parseInt(form.tamanoMuestra) || 0)
+  const muestraAuto = muestraAutomatica(form)
+  const muestra = Math.max(1, parseInt(form.tamanoMuestra) || muestraAuto)
   const resumen = resumenMuestreo({ ...form, tamanoMuestra: muestra })
   const curva = distribucion(CALIBRES, form.calibres)
   const colores = distribucion(COLORES, form.colores)
@@ -305,7 +306,8 @@ export default function MuestreoForm({ inicial, muestreoId }: { inicial?: Muestr
           </div>
           <div>
             <label className="label">Tamaño muestra (frutos)</label>
-            <input className="input" inputMode="numeric" value={form.tamanoMuestra} onChange={(e) => set('tamanoMuestra', e.target.value)} />
+            <input className="input" inputMode="numeric" value={form.tamanoMuestra} onChange={(e) => set('tamanoMuestra', e.target.value)}
+              placeholder={muestraAuto ? `Auto: ${muestraAuto}` : 'Libre'} />
           </div>
           <div>
             <label className="label">T° pulpa (°C)</label>

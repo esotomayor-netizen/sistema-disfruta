@@ -1,4 +1,4 @@
-import { toConteos, toFotos } from '@/lib/muestreo'
+import { toConteos, toFotos, muestraAutomatica } from '@/lib/muestreo'
 
 const num = (v: unknown) => {
   if (v === '' || v === null || v === undefined) return null
@@ -21,7 +21,8 @@ export function parseMuestreo(d: any) {
     guia: str(d.guia),
     nEnvases: str(d.nEnvases),
     kilos: num(d.kilos),
-    tamanoMuestra: Math.max(1, parseInt(d.tamanoMuestra) || 30),
+    // Libre: si no se indica, se usa la sección con más frutos contados.
+    tamanoMuestra: Math.max(1, parseInt(d.tamanoMuestra) || muestraAutomatica(d)),
     tempPulpa: num(d.tempPulpa),
     tempAmbiente: num(d.tempAmbiente),
     calibres: toConteos(d.calibres),

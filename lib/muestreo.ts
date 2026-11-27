@@ -97,6 +97,19 @@ export function suma(c: Conteos) {
   return Object.values(c).reduce((a, b) => a + (Number(b) || 0), 0)
 }
 
+// Tamaño de muestra cuando el inspector no lo indica: la sección con más
+// frutos contados (calibre, color, firmeza o defectos).
+export function muestraAutomatica(m: {
+  calibres: unknown; colores: unknown; firmeza: unknown; defectosCalidad: unknown; defectosCondicion: unknown
+}) {
+  return Math.max(
+    suma(toConteos(m.calibres)),
+    suma(toConteos(m.colores)),
+    suma(toConteos(m.firmeza)),
+    suma(toConteos(m.defectosCalidad)) + suma(toConteos(m.defectosCondicion)),
+  )
+}
+
 export function pct(n: number, total: number) {
   if (!total) return 0
   return Math.round((n / total) * 1000) / 10
